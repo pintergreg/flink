@@ -124,7 +124,7 @@ Note that **1**, **2**, and **4** can be arbitrary data flows.
 Delta Iterate Operator
 ----------------------
 
-The **delta iterate operator** covers the case of **incremental iterations**. Incremental iterations **selectively modify elements** of their **solution solution** and evolve the solution rather than fully recompute it.
+The **delta iterate operator** covers the case of **incremental iterations**. Incremental iterations **selectively modify elements** of their **solution** and evolve the solution rather than fully recompute it.
 
 Where applicable, this leads to **more efficient algorithms**, because not every element in the solution set changes in each iteration. This allows to **focus on the hot parts** of the solution and leave the **cold parts untouched**. Frequently, the majority of the solution cools down comparatively fast and the later iterations operate only on a small subset of the data.
 

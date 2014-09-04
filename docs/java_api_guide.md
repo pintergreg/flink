@@ -161,7 +161,7 @@ a map transformation looks like this:
 ```java
 DataSet<String> input = ...;
 
-DataSet<Integer> tokenized = text.map(new MapFunction<String, Integer>() {
+DataSet<Integer> tokenized = input.map(new MapFunction<String, Integer>() {
     @Override
     public Integer map(String value) {
         return Integer.parseInt(value);
@@ -424,7 +424,7 @@ Defining Keys
 -------------
 
 Some transformations (join, coGroup) require that a key is defined on
-its argument DataSets, and other transformations (Reduce, GroupReduce,
+their argument DataSets, and other transformations (Reduce, GroupReduce,
 Aggregate) allow that the DataSet is grouped on a key before they are
 applied.
 
