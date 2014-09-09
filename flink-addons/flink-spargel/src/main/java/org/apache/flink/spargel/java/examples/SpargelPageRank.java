@@ -46,7 +46,7 @@ public class SpargelPageRank {
 		
 		ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 		
-		// enumerate some sample edges and assign an initial uniform probability (rank)
+		// enumerate some sample nodes and assign an initial uniform probability (rank)
 		DataSet<Tuple2<Long, Double>> intialRanks = env.generateSequence(1, numVertices)
 								.map(new MapFunction<Long, Tuple2<Long, Double>>() {
 									public Tuple2<Long, Double> map(Long value) {
@@ -96,7 +96,7 @@ public class SpargelPageRank {
 			}
 			
 			// apply the dampening factor / random jump
-			double newRank = (beta * rankSum) + (1-BETA)/numVertices;
+			double newRank = (beta * rankSum) + (1-beta)/numVertices;
 			setNewVertexValue(newRank);
 		}
 	}

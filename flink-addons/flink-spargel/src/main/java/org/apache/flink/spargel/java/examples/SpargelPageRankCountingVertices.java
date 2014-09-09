@@ -79,6 +79,7 @@ public class SpargelPageRankCountingVertices {
 				}
 			});
 		
+		
 		// enumerate some sample edges and assign an initial uniform probability (rank)
 		DataSet<Tuple2<Long, Double>> intialRanks = vertices
 			.map(new RichMapFunction<Long, Tuple2<Long, Double>>() {
@@ -95,7 +96,7 @@ public class SpargelPageRankCountingVertices {
 				}
 			}).withBroadcastSet(count, "count");
 		
-
+		
 		VertexCentricIteration<Long, Double, Double, Double> iteration = VertexCentricIteration.withValuedEdges(edgesWithProbability,
 				new VertexRankUpdater(BETA), new RankMessenger(), 20);
 		iteration.addBroadcastSetForUpdateFunction("count", count);

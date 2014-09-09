@@ -255,6 +255,7 @@ public class PageRankBasic {
 			System.out.println("  Usage: PageRankBasic <pages path> <links path> <output path> <num pages> <num iterations>");
 			
 			numPages = PageRankData.getNumberOfPages();
+			
 		}
 		return true;
 	}
