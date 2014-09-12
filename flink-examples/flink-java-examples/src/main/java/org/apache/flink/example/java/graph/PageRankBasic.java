@@ -125,7 +125,7 @@ public class PageRankBasic {
 		} else {
 			finalPageRanks.print();
 		}
-
+		
 		// execute program
 		env.execute("Basic Page Rank Example");
 		
