@@ -713,7 +713,7 @@ Flink comes with pre-defined Value types that correspond to Java's basic data ty
 You can use types that implement the `org.apache.hadoop.Writable` interface. The serialization logic defined in the `write()`and `readFields()` methods will be used for serialization.
 
 
-#### Type Erasure & Type Inferrence
+#### Type Erasure & Type Inference
 
 The Java compiler throws away much of the generic type information after the compilation. This is known as *type erasure* in Java. It means that at runtime, an instance of an object does not know its generic type any more. For example, instances of `DataSet<String>` and `DataSet<Long>` look the same to the JVM.
 
