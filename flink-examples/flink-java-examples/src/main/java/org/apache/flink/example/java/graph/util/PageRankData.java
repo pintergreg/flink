@@ -40,9 +40,9 @@ public class PageRankData {
 	public static DataSet<Tuple1<Long>> getDefaultPagesDataSet(ExecutionEnvironment env) {
 		
 		List<Tuple1<Long>> data = new ArrayList<Tuple1<Long>>();
-		
+		// edges go between nodes indexed 1..15
 		for(long i=0; i<numPages; i++) {
-			data.add(new Tuple1<Long>(i));
+			data.add(new Tuple1<Long>(i+1));
 		}
 		return env.fromCollection(data);
 	}
