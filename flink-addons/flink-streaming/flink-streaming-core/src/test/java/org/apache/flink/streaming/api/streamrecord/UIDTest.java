@@ -23,6 +23,7 @@ import static org.junit.Assert.assertEquals;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import org.apache.flink.api.java.typeutils.streamrecord.UID;
 import org.apache.flink.runtime.io.network.serialization.DataInputDeserializer;
 import org.apache.flink.runtime.io.network.serialization.DataOutputSerializer;
 import org.junit.Test;

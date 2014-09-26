@@ -33,6 +33,7 @@ import org.apache.flink.api.common.functions.RichFlatMapFunction;
 import org.apache.flink.api.common.functions.RichMapFunction;
 import org.apache.flink.api.common.functions.RichReduceFunction;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.api.java.typeutils.TupleTypeInfo;
 import org.apache.flink.streaming.api.JobGraphBuilder;
@@ -1165,6 +1166,10 @@ public class DataStream<OUT> {
 	 */
 	protected DataStream<OUT> copy() {
 		return new DataStream<OUT>(this);
+	}
+	
+	public LambdaStream<OUT> lambdaJoin(DataSet<OUT> dataSet){
+		return new LambdaStream<OUT>(this.copy(),dataSet);
 	}
 
 }

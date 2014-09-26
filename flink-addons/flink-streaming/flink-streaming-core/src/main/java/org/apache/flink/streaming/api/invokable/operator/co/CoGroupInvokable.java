@@ -21,8 +21,8 @@ import java.io.Serializable;
 
 import org.apache.commons.math.util.MathUtils;
 import org.apache.flink.api.common.functions.CoGroupFunction;
+import org.apache.flink.api.java.typeutils.streamrecord.StreamRecord;
 import org.apache.flink.streaming.api.invokable.util.TimeStamp;
-import org.apache.flink.streaming.api.streamrecord.StreamRecord;
 import org.apache.flink.streaming.state.CircularFifoList;
 
 public class CoGroupInvokable<IN1, IN2, OUT> extends CoInvokable<IN1, IN2, OUT> {

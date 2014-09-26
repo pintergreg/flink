@@ -22,8 +22,8 @@ import static org.junit.Assert.assertEquals;
 
 import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.api.java.typeutils.streamrecord.StreamRecord;
 import org.apache.flink.runtime.plugable.SerializationDelegate;
-import org.apache.flink.streaming.api.streamrecord.StreamRecord;
 import org.junit.Before;
 import org.junit.Test;
 

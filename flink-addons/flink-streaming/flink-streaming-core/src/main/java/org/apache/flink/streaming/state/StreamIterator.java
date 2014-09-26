@@ -20,7 +20,7 @@ package org.apache.flink.streaming.state;
 import java.io.Serializable;
 import java.util.Iterator;
 
-import org.apache.flink.streaming.api.streamrecord.StreamRecord;
+import org.apache.flink.api.java.typeutils.streamrecord.StreamRecord;
 
 /**
  * Simple wrapper class to convert an Iterator<StreamRecord<T>> to an

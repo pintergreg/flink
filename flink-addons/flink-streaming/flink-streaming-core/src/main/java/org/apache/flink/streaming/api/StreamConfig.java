@@ -37,6 +37,8 @@ public class StreamConfig {
 	private static final String INPUT_TYPE = "inputType_";
 	private static final String NUMBER_OF_OUTPUTS = "numberOfOutputs";
 	private static final String NUMBER_OF_INPUTS = "numberOfInputs";
+	private static final String NUMBER_OF_LAMBDA_INPUTS = "numberOfLambdaInputs";
+	private static final String NUMBER_OF_LAMBDA_OUTPUTS = "numberOfLambdaOutputs";
 	private static final String OUTPUT_NAME = "outputName_";
 	private static final String OUTPUT_SELECT_ALL = "outputSelectAll_";
 	private static final String PARTITIONER_OBJECT = "partitionerObject_";
@@ -150,7 +152,7 @@ public class StreamConfig {
 		return config.getLong(BUFFER_TIMEOUT, DEFAULT_TIMEOUT);
 	}
 
-	public void setUserInvokable(StreamInvokable<?,?> invokableObject) {
+	public void setUserInvokable(StreamInvokable<?, ?> invokableObject) {
 		if (invokableObject != null) {
 			config.setClass(USER_FUNCTION, invokableObject.getClass());
 
@@ -217,8 +219,7 @@ public class StreamConfig {
 		try {
 			return deserializeObject(config.getBytes(OUTPUT_SELECTOR, null));
 		} catch (Exception e) {
-			throw new StreamVertexException("Cannot deserialize and instantiate OutputSelector",
-					e);
+			throw new StreamVertexException("Cannot deserialize and instantiate OutputSelector", e);
 		}
 	}
 
@@ -289,12 +290,28 @@ public class StreamConfig {
 		return config.getInteger(NUMBER_OF_INPUTS, 0);
 	}
 
+	public int getNumberOfLambdaInputs() {
+		return config.getInteger(NUMBER_OF_LAMBDA_INPUTS, 0);
+	}
+
+	public void addLambdaInput() {
+		config.setInteger(NUMBER_OF_LAMBDA_INPUTS, getNumberOfLambdaInputs()+1);
+	}
+
 	public void setNumberOfOutputs(int numberOfOutputs) {
 		config.setInteger(NUMBER_OF_OUTPUTS, numberOfOutputs);
 	}
 
 	public int getNumberOfOutputs() {
 		return config.getInteger(NUMBER_OF_OUTPUTS, 0);
+	}
+
+	public int getNumberOfLambdaOutputs() {
+		return config.getInteger(NUMBER_OF_LAMBDA_OUTPUTS, 0);
+	}
+
+	public void addLambdaOutput() {
+		config.setInteger(NUMBER_OF_LAMBDA_OUTPUTS, getNumberOfLambdaOutputs()+1);
 	}
 
 	public void setInputType(int inputNumber, Integer inputTypeNumber) {

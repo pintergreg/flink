@@ -127,6 +127,10 @@ public abstract class Operator<OUT> implements Visitable<Operator<?>> {
 	public void setParameter(String key, String value) {
 		this.parameters.setString(key, value);
 	}
+	
+	public void setLambdaID(String id){
+		this.parameters.setString("lambda.id", id);
+	}
 
 	/**
 	 * Sets a stub parameters in the configuration of this contract. The stub parameters are accessible by the user

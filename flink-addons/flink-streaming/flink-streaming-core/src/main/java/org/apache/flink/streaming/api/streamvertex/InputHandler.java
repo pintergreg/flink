@@ -19,6 +19,8 @@ package org.apache.flink.streaming.api.streamvertex;
 
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.java.typeutils.streamrecord.StreamRecord;
+import org.apache.flink.api.java.typeutils.streamrecord.StreamRecordSerializer;
 import org.apache.flink.core.io.IOReadableWritable;
 import org.apache.flink.runtime.io.network.api.MutableReader;
 import org.apache.flink.runtime.io.network.api.MutableRecordReader;
@@ -26,8 +28,6 @@ import org.apache.flink.runtime.io.network.api.MutableUnionRecordReader;
 import org.apache.flink.runtime.operators.util.ReaderIterator;
 import org.apache.flink.runtime.plugable.DeserializationDelegate;
 import org.apache.flink.streaming.api.StreamConfig;
-import org.apache.flink.streaming.api.streamrecord.StreamRecord;
-import org.apache.flink.streaming.api.streamrecord.StreamRecordSerializer;
 import org.apache.flink.util.MutableObjectIterator;
 
 public class InputHandler<IN> {
@@ -35,10 +35,10 @@ public class InputHandler<IN> {
 	private MutableObjectIterator<StreamRecord<IN>> inputIter;
 	private MutableReader<IOReadableWritable> inputs;
 
-	private StreamVertex<IN,?> streamVertex;
+	private StreamVertex<IN, ?> streamVertex;
 	private StreamConfig configuration;
 
-	public InputHandler(StreamVertex<IN,?> streamComponent) {
+	public InputHandler(StreamVertex<IN, ?> streamComponent) {
 		this.streamVertex = streamComponent;
 		this.configuration = new StreamConfig(streamComponent.getTaskConfiguration());
 		try {
@@ -55,16 +55,18 @@ public class InputHandler<IN> {
 		setDeserializer();
 
 		int numberOfInputs = configuration.getNumberOfInputs();
-		if (numberOfInputs > 0) {
+		int numberOfLambdaInputs = configuration.getNumberOfLambdaInputs();
 
-			if (numberOfInputs < 2) {
+		if (numberOfInputs + numberOfLambdaInputs > 0) {
+
+			if (numberOfInputs + numberOfLambdaInputs == 1) {
 
 				inputs = new MutableRecordReader<IOReadableWritable>(streamVertex);
 
 			} else {
-				MutableRecordReader<IOReadableWritable>[] recordReaders = (MutableRecordReader<IOReadableWritable>[]) new MutableRecordReader<?>[numberOfInputs];
+				MutableRecordReader<IOReadableWritable>[] recordReaders = (MutableRecordReader<IOReadableWritable>[]) new MutableRecordReader<?>[numberOfInputs+ numberOfLambdaInputs];
 
-				for (int i = 0; i < numberOfInputs; i++) {
+				for (int i = 0; i < numberOfInputs + numberOfLambdaInputs; i++) {
 					recordReaders[i] = new MutableRecordReader<IOReadableWritable>(streamVertex);
 				}
 				inputs = new MutableUnionRecordReader<IOReadableWritable>(recordReaders);
@@ -72,6 +74,7 @@ public class InputHandler<IN> {
 
 			inputIter = createInputIterator();
 		}
+
 	}
 
 	private void setDeserializer() {

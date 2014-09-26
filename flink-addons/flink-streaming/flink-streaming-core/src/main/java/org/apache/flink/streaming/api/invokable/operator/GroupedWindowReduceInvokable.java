@@ -22,8 +22,8 @@ import java.util.Iterator;
 import java.util.Map;
 
 import org.apache.flink.api.common.functions.ReduceFunction;
+import org.apache.flink.api.java.typeutils.streamrecord.StreamRecord;
 import org.apache.flink.streaming.api.invokable.util.TimeStamp;
-import org.apache.flink.streaming.api.streamrecord.StreamRecord;
 
 public class GroupedWindowReduceInvokable<OUT> extends WindowReduceInvokable<OUT> {
 

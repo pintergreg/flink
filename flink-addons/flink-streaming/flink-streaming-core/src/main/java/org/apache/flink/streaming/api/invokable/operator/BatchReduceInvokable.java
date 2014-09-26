@@ -22,8 +22,8 @@ import java.util.Iterator;
 
 import org.apache.commons.math.util.MathUtils;
 import org.apache.flink.api.common.functions.ReduceFunction;
+import org.apache.flink.api.java.typeutils.streamrecord.StreamRecord;
 import org.apache.flink.streaming.api.invokable.StreamInvokable;
-import org.apache.flink.streaming.api.streamrecord.StreamRecord;
 import org.apache.flink.streaming.state.NullableCircularBuffer;
 
 public class BatchReduceInvokable<OUT> extends StreamInvokable<OUT, OUT> {

@@ -22,8 +22,8 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import org.apache.commons.collections.buffer.CircularFifoBuffer;
+import org.apache.flink.api.java.typeutils.streamrecord.StreamRecord;
 import org.apache.flink.streaming.api.invokable.operator.BatchIterator;
-import org.apache.flink.streaming.api.streamrecord.StreamRecord;
 
 public class SlidingWindowStateIterator<T> implements BatchIterator<T> {
 

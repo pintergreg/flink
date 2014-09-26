@@ -18,9 +18,9 @@
 package org.apache.flink.streaming.api.invokable.operator.co;
 
 import org.apache.flink.api.common.functions.Function;
+import org.apache.flink.api.java.typeutils.streamrecord.StreamRecord;
+import org.apache.flink.api.java.typeutils.streamrecord.StreamRecordSerializer;
 import org.apache.flink.streaming.api.invokable.StreamInvokable;
-import org.apache.flink.streaming.api.streamrecord.StreamRecord;
-import org.apache.flink.streaming.api.streamrecord.StreamRecordSerializer;
 import org.apache.flink.streaming.io.CoReaderIterator;
 import org.apache.flink.util.Collector;
 import org.apache.flink.util.StringUtils;

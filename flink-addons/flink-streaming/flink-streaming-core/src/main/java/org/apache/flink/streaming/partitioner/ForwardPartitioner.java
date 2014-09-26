@@ -17,8 +17,8 @@
 
 package org.apache.flink.streaming.partitioner;
 
+import org.apache.flink.api.java.typeutils.streamrecord.StreamRecord;
 import org.apache.flink.runtime.plugable.SerializationDelegate;
-import org.apache.flink.streaming.api.streamrecord.StreamRecord;
 
 /**
  * Partitioner that forwards the tuples to the local subtask of the output vertex

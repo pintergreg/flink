@@ -20,8 +20,8 @@ package org.apache.flink.streaming.api.invokable.operator.co;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.flink.api.java.typeutils.streamrecord.StreamRecord;
 import org.apache.flink.streaming.api.function.co.CoReduceFunction;
-import org.apache.flink.streaming.api.streamrecord.StreamRecord;
 
 public class CoGroupedBatchReduceInvokable<IN1, IN2, OUT> extends
 		CoBatchReduceInvokable<IN1, IN2, OUT> {

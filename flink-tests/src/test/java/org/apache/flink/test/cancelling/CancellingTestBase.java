@@ -22,7 +22,6 @@ package org.apache.flink.test.cancelling;
 import java.util.Iterator;
 
 import org.junit.Assert;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.flink.api.common.Plan;

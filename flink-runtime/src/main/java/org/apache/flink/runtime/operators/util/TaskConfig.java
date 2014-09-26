@@ -127,6 +127,10 @@ public class TaskConfig {
 	
 	private static final String OUTPUTS_NUM = "out.num";
 	
+	private static final String LAMBDA_OUTPUTS_NUM = "lambda.out.num";
+	
+	private static final String LAMBDA_ID = "lambda.id";
+	
 	private static final String OUTPUT_TYPE_SERIALIZER_FACTORY = "out.serializer";
 	
 	private static final String OUTPUT_TYPE_SERIALIZER_PARAMETERS_PREFIX = "out.serializer.param.";
@@ -527,6 +531,23 @@ public class TaskConfig {
 		} else {
 			return ShipStrategyType.values()[strategy];
 		}
+	}
+	
+
+	public int getNumLambdaOutputs() {
+		return this.config.getInteger(LAMBDA_OUTPUTS_NUM, 0);
+	}
+
+	public void addLambdaOutput() {
+		this.config.setInteger(LAMBDA_OUTPUTS_NUM, getNumLambdaOutputs() + 1);
+	}
+	
+	public void setLambdaID(String string) {
+		this.config.setString(LAMBDA_ID, string);
+	}
+
+	public String getLambdaID() {
+		return this.config.getString(LAMBDA_ID, "");
 	}
 	
 	public void setOutputSerializer(TypeSerializerFactory<?> factory) {

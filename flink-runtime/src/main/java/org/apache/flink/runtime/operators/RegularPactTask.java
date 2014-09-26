@@ -31,6 +31,7 @@ import org.apache.flink.api.common.typeutils.TypeComparator;
 import org.apache.flink.api.common.typeutils.TypeComparatorFactory;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.common.typeutils.TypeSerializerFactory;
+import org.apache.flink.api.java.typeutils.streamrecord.StreamRecord;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.io.IOReadableWritable;
 import org.apache.flink.runtime.accumulators.AccumulatorEvent;
@@ -49,6 +50,7 @@ import org.apache.flink.runtime.memorymanager.MemoryManager;
 import org.apache.flink.runtime.operators.chaining.ChainedDriver;
 import org.apache.flink.runtime.operators.chaining.ExceptionInChainedStubException;
 import org.apache.flink.runtime.operators.resettable.SpillingResettableMutableObjectIterator;
+import org.apache.flink.runtime.operators.shipping.LambdaCollector;
 import org.apache.flink.runtime.operators.shipping.OutputCollector;
 import org.apache.flink.runtime.operators.shipping.OutputEmitter;
 import org.apache.flink.runtime.operators.shipping.RecordOutputCollector;
@@ -1245,7 +1247,7 @@ public class RegularPactTask<S extends Function, OT> extends AbstractInvokable i
 	 *
 	 * @return The OutputCollector that data produced in this task is submitted to.
 	 */
-	public static <T> Collector<T> getOutputCollector(AbstractInvokable task, TaskConfig config, ClassLoader cl, List<BufferWriter> eventualOutputs, int numOutputs)
+	public static <T> Collector<T> getOutputCollector(AbstractInvokable task, TaskConfig config, ClassLoader cl, List<BufferWriter> eventualOutputs, int numOutputs, int numLambdaOutputs)
 			throws Exception
 	{
 		if (numOutputs == 0) {
@@ -1312,10 +1314,40 @@ public class RegularPactTask<S extends Function, OT> extends AbstractInvokable i
 
 				writers.add(new RecordWriter<SerializationDelegate<T>>(task, oe));
 			}
+			
 			if (eventualOutputs != null) {
 				eventualOutputs.addAll(writers);
 			}
-			return new OutputCollector<T>(writers, serializerFactory.getSerializer());
+			
+			final List<RecordWriter<SerializationDelegate<StreamRecord<T>>>> lambdaWriters = new ArrayList<RecordWriter<SerializationDelegate<StreamRecord<T>>>>(
+					numOutputs);
+
+			for (int i = 0; i < numLambdaOutputs; i++) {
+
+				ChannelSelector<SerializationDelegate<StreamRecord<T>>> oe = new ChannelSelector<SerializationDelegate<StreamRecord<T>>>() {
+					int[] ret = new int[] { 0 };
+
+					@Override
+					public int[] selectChannels(SerializationDelegate<StreamRecord<T>> record,
+							int numberOfOutputChannels) {
+						return ret;
+					}
+
+				};
+
+				lambdaWriters
+						.add(new RecordWriter<SerializationDelegate<StreamRecord<T>>>(task, oe));
+			}
+			if (!lambdaWriters.isEmpty()) {
+				if (eventualOutputs != null) {
+					eventualOutputs.addAll(lambdaWriters);
+				}
+				return new LambdaCollector<T>(writers, lambdaWriters,
+						serializerFactory.getSerializer(), serializerFactory.getDataType());
+			} else {
+				return new OutputCollector<T>(writers, serializerFactory.getSerializer());
+
+			}
 		}
 	}
 
@@ -1329,6 +1361,7 @@ public class RegularPactTask<S extends Function, OT> extends AbstractInvokable i
 	throws Exception
 	{
 		final int numOutputs = config.getNumOutputs();
+		final int numLambdaOutputs = config.getNumLambdaOutputs();
 
 		// check whether we got any chained tasks
 		final int numChained = config.getNumberOfChainedStubs();
@@ -1359,7 +1392,7 @@ public class RegularPactTask<S extends Function, OT> extends AbstractInvokable i
 
 				if (i == numChained -1) {
 					// last in chain, instantiate the output collector for this task
-					previous = getOutputCollector(nepheleTask, chainedStubConf, cl, eventualOutputs, chainedStubConf.getNumOutputs());
+					previous = getOutputCollector(nepheleTask, chainedStubConf, cl, eventualOutputs, chainedStubConf.getNumOutputs(), numLambdaOutputs);
 				}
 
 				ct.setup(chainedStubConf, taskName, previous, nepheleTask, cl);
@@ -1373,7 +1406,7 @@ public class RegularPactTask<S extends Function, OT> extends AbstractInvokable i
 		// else
 
 		// instantiate the output collector the default way from this configuration
-		return getOutputCollector(nepheleTask , config, cl, eventualOutputs, numOutputs);
+		return getOutputCollector(nepheleTask , config, cl, eventualOutputs, numOutputs, numLambdaOutputs);
 	}
 
 	public static void initOutputWriters(List<BufferWriter> writers) {

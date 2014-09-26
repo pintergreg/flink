@@ -24,7 +24,6 @@ import java.util.List;
 
 import org.apache.flink.api.common.InvalidProgramException;
 import org.apache.flink.runtime.testutils.CommonTestUtils;
-import org.apache.flink.runtime.jobgraph.JobGraph;
 import org.junit.Test;
 
 public class JobGraphTest {

@@ -98,4 +98,6 @@ public abstract class Operator<OUT, O extends Operator<OUT, O>> extends DataSet<
 		O returnType = (O) this;
 		return returnType;
 	}
+	
+	
 }

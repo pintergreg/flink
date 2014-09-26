@@ -26,7 +26,7 @@ import java.util.Iterator;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import org.apache.flink.streaming.api.streamrecord.StreamRecord;
+import org.apache.flink.api.java.typeutils.streamrecord.StreamRecord;
 import org.junit.Test;
 
 public class SlidingWindowStateTest {

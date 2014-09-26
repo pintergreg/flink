@@ -748,6 +748,8 @@ public class NepheleJobGraphGenerator implements Visitor<PlanNode> {
 			}
 		}
 		
+		chaining = false;
+		
 		final AbstractJobVertex vertex;
 		final TaskConfig config;
 		
@@ -767,6 +769,7 @@ public class NepheleJobGraphGenerator implements Visitor<PlanNode> {
 		// set user code
 		config.setStubWrapper(node.getPactContract().getUserCodeWrapper());
 		config.setStubParameters(node.getPactContract().getParameters());
+		config.setLambdaID(node.getPactContract().getParameters().getString("lambda.id", ""));
 		
 		// set the driver strategy
 		config.setDriverStrategy(ds);

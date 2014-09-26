@@ -23,7 +23,6 @@ import java.net.InetSocketAddress;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.apache.flink.client.program.Client;
 import org.apache.flink.client.program.JobWithJars;
 import org.apache.flink.client.program.ProgramInvocationException;
@@ -71,14 +70,14 @@ public class RemoteStreamEnvironment extends StreamExecutionEnvironment {
 	@Override
 	public void execute() {
 		
-		JobGraph jobGraph = jobGraphBuilder.getJobGraph();
+		JobGraph jobGraph = jobGraphBuilder.createJobGraph();
 		executeRemotely(jobGraph);
 	}
 	
 	@Override
 	public void execute(String jobName) {
 		
-		JobGraph jobGraph = jobGraphBuilder.getJobGraph(jobName);
+		JobGraph jobGraph = jobGraphBuilder.createJobGraph(jobName);
 		executeRemotely(jobGraph);
 	}
 

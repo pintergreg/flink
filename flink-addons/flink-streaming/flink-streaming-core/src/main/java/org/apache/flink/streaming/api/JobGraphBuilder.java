@@ -50,7 +50,6 @@ public class JobGraphBuilder {
 
 	private static final Logger LOG = LoggerFactory.getLogger(JobGraphBuilder.class);
 	private final static String DEAFULT_JOB_NAME = "Streaming Job";
-	private JobGraph jobGraph;
 
 	// Graph attributes
 	private Map<String, AbstractJobVertex> streamVertices;
@@ -313,8 +312,6 @@ public class JobGraphBuilder {
 		// Create vertex object
 		AbstractJobVertex vertex = new AbstractJobVertex(vertexName);
 
-		this.jobGraph.addVertex(vertex);
-
 		vertex.setInvokableClass(vertexClass);
 		vertex.setParallelism(parallelism);
 		if (LOG.isDebugEnabled()) {
@@ -533,29 +530,31 @@ public class JobGraphBuilder {
 	}
 
 	/**
-	 * Gets the assembled {@link JobGraph} and adds a default name for it.
+	 * Creates a new {@link JobGraph} from the job vertices and adds a default
+	 * name for it.
 	 */
-	public JobGraph getJobGraph() {
-		return getJobGraph(DEAFULT_JOB_NAME);
+	public JobGraph createJobGraph() {
+		return createJobGraph(DEAFULT_JOB_NAME);
 	}
 
 	/**
-	 * Gets the assembled {@link JobGraph} and adds a user specified name for
-	 * it.
+	 * Creates a new {@link JobGraph} from the job vertices and adds a user
+	 * specified name for it.
 	 * 
-	 * @param jobGraphName name of the jobGraph
+	 * @param jobGraphName
+	 *            name of the jobGraph
 	 */
-	public JobGraph getJobGraph(String jobGraphName) {
-		jobGraph = new JobGraph(jobGraphName);
-		buildJobGraph();
-		return jobGraph;
+	public JobGraph createJobGraph(String jobGraphName) {
+		AbstractJobVertex[] jobVertices = createVertices();
+		return new JobGraph(jobGraphName, jobVertices);
 	}
 
 	/**
-	 * Builds the {@link JobGraph} from the vertices with the edges and settings
-	 * provided.
+	 * Creates the {@link AbstractJobVertex}s for the streaming topology.
+	 *
+	 * @return Returns the {@link AbstractJobVertex}s in the topology
 	 */
-	private void buildJobGraph() {
+	private AbstractJobVertex[] createVertices() {
 		for (String vertexName : outEdgeList.keySet()) {
 			createVertex(vertexName);
 		}
@@ -583,6 +582,7 @@ public class JobGraphBuilder {
 		setSlotSharing();
 		setNumberOfJobInputs();
 		setNumberOfJobOutputs();
+		return streamVertices.values().toArray(new AbstractJobVertex[streamVertices.size()]);
 	}
 
 }

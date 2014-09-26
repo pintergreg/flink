@@ -21,7 +21,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.apache.commons.collections.buffer.CircularFifoBuffer;
-import org.apache.flink.streaming.api.streamrecord.StreamRecord;
+import org.apache.flink.api.java.typeutils.streamrecord.StreamRecord;
 
 /**
  * The window state for window operator. To be general enough, this class

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.flink.streaming.api.streamrecord;
+package org.apache.flink.api.java.typeutils.streamrecord;
 
 import java.io.IOException;
 

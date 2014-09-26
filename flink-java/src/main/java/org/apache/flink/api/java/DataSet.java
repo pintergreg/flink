@@ -89,6 +89,8 @@ public abstract class DataSet<T> {
 	
 	private final TypeInformation<T> type;
 	
+	public String lambdaID;
+
 	
 	protected DataSet(ExecutionEnvironment context, TypeInformation<T> type) {
 		if (context == null) {
@@ -1111,5 +1113,9 @@ public abstract class DataSet<T> {
 		if (set1.context != set2.context) {
 			throw new IllegalArgumentException("The two inputs have different execution contexts.");
 		}
+	}
+	
+	public void setLambdaID(String lambdaID){
+		this.lambdaID = lambdaID;
 	}
 }

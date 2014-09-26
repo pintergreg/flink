@@ -19,7 +19,6 @@
 package org.apache.flink.runtime.jobmanager;
 
 import static org.apache.flink.runtime.jobgraph.JobManagerTestUtils.*;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;

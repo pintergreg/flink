@@ -115,7 +115,7 @@ public class IterationHeadPactTask<X, Y, S extends Function, OT> extends Abstrac
 		this.finalOutputWriters = new ArrayList<BufferWriter>();
 		final TaskConfig finalOutConfig = this.config.getIterationHeadFinalOutputConfig();
 		this.finalOutputCollector = RegularPactTask.getOutputCollector(this, finalOutConfig,
-			this.userCodeClassLoader, this.finalOutputWriters, finalOutConfig.getNumOutputs());
+			this.userCodeClassLoader, this.finalOutputWriters, finalOutConfig.getNumOutputs(),0);
 
 		// sanity check the setup
 		final int writersIntoStepFunction = this.eventualOutputs.size();

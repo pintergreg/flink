@@ -21,9 +21,10 @@ import java.io.Serializable;
 
 import org.apache.commons.math.util.MathUtils;
 import org.apache.flink.api.common.functions.GroupReduceFunction;
+import org.apache.flink.api.java.typeutils.streamrecord.StreamRecord;
 import org.apache.flink.streaming.api.invokable.StreamInvokable;
-import org.apache.flink.streaming.api.streamrecord.StreamRecord;
 import org.apache.flink.streaming.state.CircularFifoList;
+
 
 public class BatchGroupReduceInvokable<IN, OUT> extends StreamInvokable<IN, OUT> {
 
