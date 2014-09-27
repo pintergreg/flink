@@ -18,6 +18,9 @@
 
 package org.apache.flink.api.java;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.commons.lang3.Validate;
 import org.apache.flink.api.common.InvalidProgramException;
 import org.apache.flink.api.common.functions.FilterFunction;
@@ -89,7 +92,7 @@ public abstract class DataSet<T> {
 	
 	private final TypeInformation<T> type;
 	
-	public String lambdaID;
+	public List<String> lambdaIDs;
 
 	
 	protected DataSet(ExecutionEnvironment context, TypeInformation<T> type) {
@@ -1115,7 +1118,10 @@ public abstract class DataSet<T> {
 		}
 	}
 	
-	public void setLambdaID(String lambdaID){
-		this.lambdaID = lambdaID;
+	public void addLambdaID(String lambdaID){
+		if(this.lambdaIDs == null){
+			this.lambdaIDs = new ArrayList<String>();
+		}
+		this.lambdaIDs.add(lambdaID);
 	}
 }

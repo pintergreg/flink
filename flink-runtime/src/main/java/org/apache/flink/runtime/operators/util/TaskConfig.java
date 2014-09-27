@@ -24,6 +24,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -31,6 +32,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.commons.lang3.SerializationUtils;
 import org.apache.flink.api.common.aggregators.Aggregator;
 import org.apache.flink.api.common.aggregators.AggregatorWithName;
 import org.apache.flink.api.common.aggregators.ConvergenceCriterion;
@@ -542,12 +544,22 @@ public class TaskConfig {
 		this.config.setInteger(LAMBDA_OUTPUTS_NUM, getNumLambdaOutputs() + 1);
 	}
 	
-	public void setLambdaID(String string) {
-		this.config.setString(LAMBDA_ID, string);
+	public void setLambdaIDs(List<String> ids) {
+		if (ids != null) {
+			this.config
+					.setBytes(LAMBDA_ID, SerializationUtils.serialize((Serializable) ids));
+		}
 	}
 
-	public String getLambdaID() {
-		return this.config.getString(LAMBDA_ID, "");
+	@SuppressWarnings("unchecked")
+	public List<String> getLambdaIDs() {
+		byte[] serializedIDs = this.config.getBytes(LAMBDA_ID, null);
+		if (serializedIDs != null) {
+			return (List<String>) SerializationUtils.deserialize(serializedIDs);
+		} else {
+			return null;
+		}
+
 	}
 	
 	public void setOutputSerializer(TypeSerializerFactory<?> factory) {

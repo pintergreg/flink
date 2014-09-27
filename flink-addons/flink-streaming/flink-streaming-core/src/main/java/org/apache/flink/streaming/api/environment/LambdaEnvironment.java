@@ -18,6 +18,7 @@
 package org.apache.flink.streaming.api.environment;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.flink.api.common.Plan;
@@ -82,16 +83,18 @@ public class LambdaEnvironment {
 		for (AbstractJobVertex vertex : batchGraph.getVertices()) {
 			lambdaGraph.addVertex(vertex);
 			TaskConfig config = new TaskConfig(vertex.getConfiguration());
-			String lambdaId = config.getLambdaID();
+			List<String> lambdaIds = config.getLambdaIDs();
+			if (lambdaIds != null) {
+				for (String lambdaID : lambdaIds) {
+					AbstractJobVertex streamVertex = streamVertices.get(lambdaID);
+					StreamConfig sConfig = new StreamConfig(streamVertex.getConfiguration());
+					streamVertex.connectNewDataSetAsInput(vertex, DistributionPattern.POINTWISE);
 
-			if (streamVertices.containsKey(lambdaId)) {
-				AbstractJobVertex streamVertex = streamVertices.get(lambdaId);
-				StreamConfig sConfig = new StreamConfig(streamVertex.getConfiguration());
-				streamVertex.connectNewDataSetAsInput(vertex, DistributionPattern.POINTWISE);
-				
-				sConfig.addLambdaInput();
-				config.addLambdaOutput();
+					sConfig.addLambdaInput();
+					config.addLambdaOutput();
+				}
 			}
+
 		}
 
 		return lambdaGraph;

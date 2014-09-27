@@ -57,6 +57,8 @@ public class LambdaCollector<T> extends OutputCollector<T> {
 		for (RecordWriter<SerializationDelegate<StreamRecord<T>>> output : lambdaWriters) {
 			try {
 				output.emit(lambdaDelegate);
+				//TODO: consider streamrecordwriter
+				output.flush();
 			} catch (Exception e) {
 				e.printStackTrace();
 			}

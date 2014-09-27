@@ -19,8 +19,10 @@
 
 package org.apache.flink.api.common.operators;
 
+import java.io.Serializable;
 import java.util.List;
 
+import org.apache.commons.lang3.SerializationUtils;
 import org.apache.flink.api.common.operators.util.UserCodeWrapper;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.configuration.Configuration;
@@ -128,8 +130,18 @@ public abstract class Operator<OUT> implements Visitable<Operator<?>> {
 		this.parameters.setString(key, value);
 	}
 	
-	public void setLambdaID(String id){
-		this.parameters.setString("lambda.id", id);
+	public void setLambdaIDs(List<String> ids){
+		this.parameters.setBytes("lambda.id", SerializationUtils.serialize((Serializable) ids));
+	}
+	
+	@SuppressWarnings("unchecked")
+	public List<String> getLambdaIDs() {
+		byte[] serializedIDs = this.parameters.getBytes("lambda.id", null);
+		if (serializedIDs != null) {
+			return (List<String>) SerializationUtils.deserialize(serializedIDs);
+		} else {
+			return null;
+		}
 	}
 
 	/**

@@ -748,10 +748,14 @@ public class NepheleJobGraphGenerator implements Visitor<PlanNode> {
 			}
 		}
 		
-		chaining = false;
 		
 		final AbstractJobVertex vertex;
 		final TaskConfig config;
+		List<String> lambdaIDs = node.getPactContract().getLambdaIDs();
+		
+		if(lambdaIDs !=null){
+			chaining = false;
+		}
 		
 		if (chaining) {
 			vertex = null;
@@ -769,7 +773,8 @@ public class NepheleJobGraphGenerator implements Visitor<PlanNode> {
 		// set user code
 		config.setStubWrapper(node.getPactContract().getUserCodeWrapper());
 		config.setStubParameters(node.getPactContract().getParameters());
-		config.setLambdaID(node.getPactContract().getParameters().getString("lambda.id", ""));
+		config.setLambdaIDs(lambdaIDs);
+		
 		
 		// set the driver strategy
 		config.setDriverStrategy(ds);
@@ -788,9 +793,12 @@ public class NepheleJobGraphGenerator implements Visitor<PlanNode> {
 		final TaskConfig config = new TaskConfig(vertex.getConfiguration());
 		vertex.setInvokableClass( (this.currentIteration != null && node.isOnDynamicPath()) ? IterationIntermediatePactTask.class : RegularPactTask.class);
 		
+		List<String> lambdaIDs = node.getPactContract().getLambdaIDs();
+		
 		// set user code
 		config.setStubWrapper(node.getPactContract().getUserCodeWrapper());
 		config.setStubParameters(node.getPactContract().getParameters());
+		config.setLambdaIDs(lambdaIDs);
 		
 		// set the driver strategy
 		config.setDriver(ds.getDriverClass());

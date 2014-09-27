@@ -117,6 +117,7 @@ public class OperatorTranslation {
 		Operator<I> input = translate(typedInput);
 		
 		org.apache.flink.api.common.operators.SingleInputOperator<?, O, ?> dataFlowOp = typedOp.translateToDataFlow(input);
+		dataFlowOp.setLambdaIDs(typedOp.lambdaIDs);
 		
 		if (op instanceof UdfOperator<?> ) {
 			@SuppressWarnings("unchecked")
@@ -149,6 +150,7 @@ public class OperatorTranslation {
 		Operator<I2> input2 = translate(typedInput2);
 		
 		org.apache.flink.api.common.operators.DualInputOperator<?, ?, O, ?> dataFlowOp = typedOp.translateToDataFlow(input1, input2);
+		dataFlowOp.setLambdaIDs(typedOp.lambdaIDs);
 		
 		if (op instanceof UdfOperator<?> ) {
 			@SuppressWarnings("unchecked")

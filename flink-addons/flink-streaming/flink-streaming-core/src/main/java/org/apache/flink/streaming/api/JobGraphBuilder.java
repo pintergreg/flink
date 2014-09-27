@@ -49,7 +49,7 @@ import org.slf4j.LoggerFactory;
 public class JobGraphBuilder {
 
 	private static final Logger LOG = LoggerFactory.getLogger(JobGraphBuilder.class);
-	private final static String DEAFULT_JOB_NAME = "Streaming Job";
+	private final static String DEFAULT_JOB_NAME = "Streaming Job";
 
 	// Graph attributes
 	private Map<String, AbstractJobVertex> streamVertices;
@@ -534,7 +534,7 @@ public class JobGraphBuilder {
 	 * name for it.
 	 */
 	public JobGraph createJobGraph() {
-		return createJobGraph(DEAFULT_JOB_NAME);
+		return createJobGraph(DEFAULT_JOB_NAME);
 	}
 
 	/**

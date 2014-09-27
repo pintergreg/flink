@@ -21,6 +21,7 @@ import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.java.DataSet;
+import org.apache.flink.streaming.api.function.sink.PrintSinkFunction;
 import org.apache.flink.streaming.api.invokable.operator.FlatMapInvokable;
 import org.apache.flink.streaming.api.invokable.operator.MapInvokable;
 import org.apache.flink.streaming.api.invokable.operator.StreamReduceInvokable;
@@ -44,7 +45,7 @@ public class LambdaStream<OUT> {
 
 		SingleOutputStreamOperator<R, ?> returnStream = dataStream.addFunction("map", mapper,
 				inTypeWrapper, outTypeWrapper, new MapInvokable<OUT, R>(mapper));
-		dataSet.setLambdaID(returnStream.getId());
+		dataSet.addLambdaID(returnStream.getId());
 		return returnStream;
 	}
 
@@ -57,7 +58,7 @@ public class LambdaStream<OUT> {
 		SingleOutputStreamOperator<R, ?> returnStream = dataStream
 				.addFunction("flatMap", flatMapper, inTypeWrapper, outTypeWrapper,
 						new FlatMapInvokable<OUT, R>(flatMapper));
-		dataSet.setLambdaID(returnStream.getId());
+		dataSet.addLambdaID(returnStream.getId());
 		return returnStream;
 	}
 
@@ -66,7 +67,14 @@ public class LambdaStream<OUT> {
 				new FunctionTypeWrapper<OUT>(reducer, ReduceFunction.class, 0),
 				new FunctionTypeWrapper<OUT>(reducer, ReduceFunction.class, 0),
 				new StreamReduceInvokable<OUT>(reducer));
-		dataSet.setLambdaID(returnStream.getId());
+		dataSet.addLambdaID(returnStream.getId());
+		return returnStream;
+	}
+	
+	public DataStreamSink<OUT> print() {
+		PrintSinkFunction<OUT> printFunction = new PrintSinkFunction<OUT>();
+		DataStreamSink<OUT> returnStream = dataStream.addSink(dataStream.copy(), printFunction, dataStream.outTypeWrapper);
+		dataSet.addLambdaID(returnStream.getId());
 		return returnStream;
 	}
 

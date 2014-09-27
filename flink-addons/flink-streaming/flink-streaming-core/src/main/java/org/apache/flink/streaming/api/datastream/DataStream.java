@@ -1141,7 +1141,7 @@ public class DataStream<OUT> {
 				SinkFunction.class, 0));
 	}
 
-	private DataStreamSink<OUT> addSink(DataStream<OUT> inputStream,
+	protected DataStreamSink<OUT> addSink(DataStream<OUT> inputStream,
 			SinkFunction<OUT> sinkFunction, TypeWrapper<OUT> inTypeWrapper) {
 		DataStreamSink<OUT> returnStream = new DataStreamSink<OUT>(environment, "sink",
 				outTypeWrapper);
