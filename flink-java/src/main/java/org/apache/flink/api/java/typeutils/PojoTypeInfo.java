@@ -112,7 +112,6 @@ public class PojoTypeInfo<T> extends CompositeType<T>{
 		return Comparable.class.isAssignableFrom(typeClass);
 	}
 
-
 	@Override
 	public void getFlatFields(String fieldExpression, int offset, List<FlatFieldDescriptor> result) {
 

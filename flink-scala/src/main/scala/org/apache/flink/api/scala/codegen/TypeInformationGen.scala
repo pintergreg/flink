@@ -19,7 +19,9 @@ package org.apache.flink.api.scala.codegen
 
 import java.lang.reflect.{Field, Modifier}
 
-import org.apache.flink.api.common.typeinfo._
+import org.apache.flink.api.common.expressions.Row
+import org.apache.flink.api.common.typeinfo.{TypeInformation, BasicArrayTypeInfo,
+PrimitiveArrayTypeInfo, BasicTypeInfo}
 
 import org.apache.flink.api.common.typeutils.TypeSerializer
 import org.apache.flink.api.java.typeutils._
@@ -51,6 +53,12 @@ private[flink] trait TypeInformationGen[C <: Context] {
   // We have this for internal use so that we can use it to recursively generate a tree of
   // TypeInformation from a tree of UDTDescriptor
   def mkTypeInfo[T: c.WeakTypeTag](desc: UDTDescriptor): c.Expr[TypeInformation[T]] = desc match {
+    case n: NothingDesciptor => reify { null.asInstanceOf[TypeInformation[T]] }
+
+    case d if weakTypeOf[T] <:< weakTypeOf[Row] =>
+      c.error(c.enclosingPosition, "Using Row as the result of an operation is not supported.")
+      reify { null }
+
     case cc@CaseClassDescriptor(_, tpe, _, _, _) =>
       mkCaseClassTypeInfo(cc)(c.WeakTypeTag(tpe).asInstanceOf[c.WeakTypeTag[Product]])
         .asInstanceOf[c.Expr[TypeInformation[T]]]
@@ -58,9 +66,8 @@ private[flink] trait TypeInformationGen[C <: Context] {
     case tp: TypeParameterDescriptor => mkTypeParameter(tp)
 
     case p : PrimitiveDescriptor => mkPrimitiveTypeInfo(p.tpe)
-    case p : BoxedPrimitiveDescriptor => mkPrimitiveTypeInfo(p.tpe)
 
-    case n: NothingDesciptor => reify { null.asInstanceOf[TypeInformation[T]] }
+    case p : BoxedPrimitiveDescriptor => mkPrimitiveTypeInfo(p.tpe)
 
     case e: EitherDescriptor => mkEitherTypeInfo(e)
 

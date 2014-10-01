@@ -44,6 +44,8 @@ class GroupedDataSet[T: ClassTag](
     private val set: DataSet[T],
     private val keys: Keys[T]) {
 
+  private[flink] def getType = set.getType
+
   // These are for optional secondary sort. They are only used
   // when using a group-at-a-time reduce function.
   private val groupSortKeyPositions = mutable.MutableList[Either[Int, String]]()

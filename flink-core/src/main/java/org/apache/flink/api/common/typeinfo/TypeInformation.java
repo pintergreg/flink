@@ -20,7 +20,11 @@ package org.apache.flink.api.common.typeinfo;
 
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 
-public abstract class TypeInformation<T> {
+import java.io.Serializable;
+import java.util.LinkedList;
+import java.util.List;
+
+public abstract class TypeInformation<T> implements Serializable {
 	
 	public abstract boolean isBasicType();
 	
@@ -29,7 +33,18 @@ public abstract class TypeInformation<T> {
 	public abstract int getArity();
 	
 	public abstract Class<T> getTypeClass();
-	
+
+	/**
+	 * Returns the generic parameters of this type.
+	 *
+	 * @return The list of generic parameters. This list can be empty.
+	 */
+	public List<TypeInformation<?>> getGenericParameters() {
+		// Return an empty list as the default implementation
+		return new LinkedList<TypeInformation<?>>();
+	}
+
+
 	public abstract boolean isKeyType();
 	
 	public abstract TypeSerializer<T> createSerializer();

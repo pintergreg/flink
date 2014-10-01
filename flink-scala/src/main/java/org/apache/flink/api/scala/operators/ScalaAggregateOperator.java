@@ -19,15 +19,19 @@
 package org.apache.flink.api.scala.operators;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import org.apache.commons.lang3.Validate;
 import org.apache.flink.api.common.InvalidProgramException;
+import org.apache.flink.api.common.expressions.Row;
+import org.apache.flink.api.common.expressions.typeinfo.RowTypeInfo;
 import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.api.common.operators.Operator;
 import org.apache.flink.api.common.operators.SingleInputSemanticProperties;
 import org.apache.flink.api.common.operators.UnaryOperatorInformation;
 import org.apache.flink.api.common.operators.base.GroupReduceOperatorBase;
+import org.apache.flink.api.common.typeutils.CompositeType;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.java.aggregation.AggregationFunction;
 import org.apache.flink.api.java.aggregation.AggregationFunctionFactory;
@@ -103,7 +107,7 @@ public class ScalaAggregateOperator<IN> extends SingleInputOperator<IN, IN, Scal
 			throw new InvalidProgramException("Aggregating on field positions is only possible on tuple data types.");
 		}
 
-		TupleTypeInfoBase<?> inType = (TupleTypeInfoBase<?>) input.getDataSet().getType();
+		CompositeType<?> inType = (CompositeType<?>) input.getDataSet().getType();
 
 		if (field < 0 || field >= inType.getArity()) {
 			throw new IllegalArgumentException("Aggregation field position is out of range.");
@@ -162,7 +166,13 @@ public class ScalaAggregateOperator<IN> extends SingleInputOperator<IN, IN, Scal
 		genName.setLength(genName.length()-1);
 
 		@SuppressWarnings("rawtypes")
-		RichGroupReduceFunction<IN, IN> function = new AggregatingUdf(getInputType().createSerializer(), aggFunctions, fields);
+		RichGroupReduceFunction<IN, IN> function = null;
+		if (getInputType() instanceof RowTypeInfo) {
+			function = new RowAggregatingUdf(aggFunctions, fields);
+		} else {
+			function = new CaseClassAggregatingUdf(getInputType().createSerializer(), aggFunctions, fields);
+
+		}
 
 
 		String name = getName() != null ? getName() : genName.toString();
@@ -231,16 +241,74 @@ public class ScalaAggregateOperator<IN> extends SingleInputOperator<IN, IN, Scal
 	// --------------------------------------------------------------------------------------------
 
 	@Combinable
-	public static final class AggregatingUdf<T extends Product> extends RichGroupReduceFunction<T, T> {
+	public static final class RowAggregatingUdf<T extends Row> extends RichGroupReduceFunction<T, T> {
 		private static final long serialVersionUID = 1L;
 
 		private final int[] fieldPositions;
 
 		private final AggregationFunction<Object>[] aggFunctions;
 
-		private TupleSerializerBase<T> serializer;
 
-		public AggregatingUdf(TypeSerializer<T> serializer, AggregationFunction<Object>[] aggFunctions, int[] fieldPositions) {
+		public RowAggregatingUdf(AggregationFunction<Object>[] aggFunctions, int[] fieldPositions) {
+			Validate.notNull(aggFunctions);
+			Validate.notNull(aggFunctions);
+			Validate.isTrue(aggFunctions.length == fieldPositions.length);
+
+			this.aggFunctions = aggFunctions;
+			this.fieldPositions = fieldPositions;
+		}
+
+
+		@Override
+		public void open(Configuration parameters) throws Exception {
+			for (int i = 0; i < aggFunctions.length; i++) {
+				aggFunctions[i].initializeAggregate();
+			}
+		}
+
+		@Override
+		public void reduce(Iterable<T> records, Collector<T> out) {
+			final AggregationFunction<Object>[] aggFunctions = this.aggFunctions;
+			final int[] fieldPositions = this.fieldPositions;
+
+			// aggregators are initialized from before
+
+			T current = null;
+			final Iterator<T> values = records.iterator();
+			while (values.hasNext()) {
+				current = values.next();
+
+				for (int i = 0; i < fieldPositions.length; i++) {
+					Object val = current.productElement(fieldPositions[i]);
+					aggFunctions[i].aggregate(val);
+				}
+			}
+
+			for (int i = 0; i < fieldPositions.length; i++) {
+				Object aggVal = aggFunctions[i].getAggregate();
+				current.setField(fieldPositions[i], aggVal);
+				aggFunctions[i].initializeAggregate();
+			}
+
+			out.collect(current);
+		}
+
+	}
+
+
+	@Combinable
+	public static final class CaseClassAggregatingUdf<T extends Product> extends RichGroupReduceFunction<T, T> {
+		private static final long serialVersionUID = 1L;
+
+		private final int[] fieldPositions;
+
+		private final AggregationFunction<Object>[] aggFunctions;
+
+		private transient TupleSerializerBase<T> serializer;
+
+		public CaseClassAggregatingUdf(TypeSerializer<T> serializer,
+			AggregationFunction<Object>[] aggFunctions, int[]
+				fieldPositions) {
 			Validate.notNull(serializer);
 			Validate.notNull(aggFunctions);
 			Validate.isTrue(aggFunctions.length == fieldPositions.length);

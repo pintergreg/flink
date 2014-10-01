@@ -20,6 +20,8 @@ package org.apache.flink.api.scala.typeutils
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.api.common.typeutils.TypeSerializer
 
+import scala.collection.JavaConverters._
+
 import scala.collection.generic.CanBuildFrom
 
 /**
@@ -36,6 +38,8 @@ abstract class TraversableTypeInfo[T <: TraversableOnce[E], E](
   override def getTotalFields: Int = 1
   override def getArity: Int = 1
   override def getTypeClass: Class[T] = clazz
+  override def getGenericParameters = List[TypeInformation[_]](elementTypeInfo).asJava
+
 
   def createSerializer(): TypeSerializer[T]
 

@@ -82,6 +82,8 @@ import scala.reflect.ClassTag
 class DataSet[T: ClassTag](set: JavaDataSet[T]) {
   Validate.notNull(set, "Java DataSet must not be null.")
 
+  private[flink] def classTag = implicitly[ClassTag[T]]
+
   /**
    * Returns the TypeInformation for the elements of this DataSet.
    */
