@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -22,6 +22,7 @@ package org.apache.flink.api.java.typeutils.runtime;
 import java.util.ArrayList;
 import java.util.Random;
 
+import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.api.java.tuple.Tuple1;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -208,7 +209,7 @@ public class TupleSerializerTest {
 	private final <T extends Tuple> void runTests(T... instances) {
 		try {
 			TupleTypeInfo<T> tupleTypeInfo = (TupleTypeInfo<T>) TypeExtractor.getForObject(instances[0]);
-			TupleSerializer<T> serializer = tupleTypeInfo.createSerializer();
+			TypeSerializer<T> serializer = tupleTypeInfo.createSerializer();
 			
 			Class<T> tupleClass = tupleTypeInfo.getTypeClass();
 			
