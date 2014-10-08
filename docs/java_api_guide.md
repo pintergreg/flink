@@ -582,9 +582,9 @@ Rich functions provide, in addition to the user-defined function (map,
 reduce, etc), four methods: `open`, `close`, `getRuntimeContext`, and
 `setRuntimeContext`. These are useful for creating and finalizing
 local state, accessing broadcast variables (see
-[Broadcast Variables](#broadcast_variables), and for accessing runtime
+[Broadcast Variables](#broadcast_variables)), and for accessing runtime
 information such as accumulators and counters (see
-[Accumulators and Counters](#accumulators_counters), and information
+[Accumulators and Counters](#accumulators_counters)), and information
 on iterations (see [Iterations](#iterations)).
 
 In particular for the `reduceGroup` transformation, using a rich
@@ -617,7 +617,7 @@ Out of the box, the Java API supports all common basic Java types: `Byte`, `Shor
 Furthermore, you can use the vast majority of custom Java classes. Restrictions apply to classes containing fields that cannot be serialized, like File pointers, I/O streams, or other native resources. Classes that follow the Java Beans conventions work well in general. The following defines a simple example class to illustrate how you can use custom classes:
 
 ```java
-public class WordWithCount {
+public class WordCount {
 
     public String word;
     public int count;
@@ -730,7 +730,7 @@ The {% gh_link /flink-java/src/main/java/org/apache/flink/api/java/typeutils/Res
 Data Sources
 ------------
 
-Data sources create the initial data sets, such as from files or from Java collections. The general mechanism of of creating data sets is abstracted behind an {% gh_link /flink-core/src/main/java/org/apache/flink/api/common/io/InputFormat.java "InputFormat" %}. Flink comes with several built-in formats to create data sets from common file formats. Many of them have shortcut methods on the *ExecutionEnvironment*.
+Data sources create the initial data sets, such as from files or from Java collections. The general mechanism  of creating data sets is abstracted behind an {% gh_link /flink-core/src/main/java/org/apache/flink/api/common/io/InputFormat.java "InputFormat" %}. Flink comes with several built-in formats to create data sets from common file formats. Many of them have shortcut methods on the *ExecutionEnvironment*.
 
 File-based:
 
