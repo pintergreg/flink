@@ -23,15 +23,18 @@ import org.apache.flink.api.common.InvalidProgramException;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.GroupReduceFunction;
+import org.apache.flink.api.common.functions.IterableFlatMapFunction;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.functions.MapPartitionFunction;
 import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.common.io.FileOutputFormat;
 import org.apache.flink.api.common.io.OutputFormat;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.operators.base.IterableFlatMapWrapper;
 import org.apache.flink.api.common.operators.base.JoinOperatorBase.JoinHint;
 import org.apache.flink.api.common.operators.base.PartitionOperatorBase.PartitionMethod;
+import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.aggregation.Aggregations;
+import org.apache.flink.api.java.functions.FirstReducer;
 import org.apache.flink.api.java.functions.FormattingMapper;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.functions.SelectByMaxFunction;
@@ -49,7 +52,6 @@ import org.apache.flink.api.java.operators.DataSink;
 import org.apache.flink.api.java.operators.DeltaIteration;
 import org.apache.flink.api.java.operators.DistinctOperator;
 import org.apache.flink.api.java.operators.FilterOperator;
-import org.apache.flink.api.java.functions.FirstReducer;
 import org.apache.flink.api.java.operators.FlatMapOperator;
 import org.apache.flink.api.java.operators.GroupReduceOperator;
 import org.apache.flink.api.java.operators.IterativeDataSet;
@@ -198,6 +200,18 @@ public abstract class DataSet<T> {
 
 		TypeInformation<R> resultType = TypeExtractor.getFlatMapReturnTypes(flatMapper, this.getType());
 		return new FlatMapOperator<T, R>(this, resultType, flatMapper);
+	}
+	
+	
+	public <R> FlatMapOperator<T, R> flatMap(IterableFlatMapFunction<T, R> flatMapper) {
+		if (flatMapper == null) {
+			throw new NullPointerException("FlatMap function must not be null.");
+		}
+		
+		FlatMapFunction<T,R> wrappedFlatMapper = new IterableFlatMapWrapper<T, R>(flatMapper); 
+		
+		TypeInformation<R> resultType = TypeExtractor.getIterableFlatMapReturnTypes(flatMapper, this.getType());
+		return new FlatMapOperator<T, R>(this, resultType, wrappedFlatMapper);
 	}
 	
 	/**

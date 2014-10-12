@@ -39,6 +39,7 @@ import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.Function;
 import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.api.common.functions.InvalidTypesException;
+import org.apache.flink.api.common.functions.IterableFlatMapFunction;
 import org.apache.flink.api.common.functions.JoinFunction;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.functions.MapPartitionFunction;
@@ -80,6 +81,10 @@ public class TypeExtractor {
 	
 	public static <IN, OUT> TypeInformation<OUT> getFlatMapReturnTypes(FlatMapFunction<IN, OUT> flatMapInterface, TypeInformation<IN> inType) {
 		return getUnaryOperatorReturnType((Function) flatMapInterface, FlatMapFunction.class, false, true, inType);
+	}
+	
+	public static <IN, OUT> TypeInformation<OUT> getIterableFlatMapReturnTypes(IterableFlatMapFunction<IN, OUT> flatMapInterface, TypeInformation<IN> inType) {
+		return getUnaryOperatorReturnType((Function) flatMapInterface, IterableFlatMapFunction.class, false, false, inType);
 	}
 	
 	public static <IN, OUT> TypeInformation<OUT> getMapPartitionReturnTypes(MapPartitionFunction<IN, OUT> mapPartitionInterface, TypeInformation<IN> inType) {
