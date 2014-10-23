@@ -148,8 +148,10 @@ object StreamJoinOperator {
     private def createJoinOperator(): JavaStream[(I1, I2)] = {
 
       val returnType = new CaseClassTypeInfo[(I1, I2)](
-
-        classOf[(I1, I2)], Seq(op.input1.getType, op.input2.getType), Array("_1", "_2")) {
+        classOf[(I1, I2)],
+        Array(op.input1.getType, op.input2.getType),
+        Seq(op.input1.getType, op.input2.getType),
+        Array("_1", "_2")) {
 
         override def createSerializer: TypeSerializer[(I1, I2)] = {
           val fieldSerializers: Array[TypeSerializer[_]] = new Array[TypeSerializer[_]](getArity)
