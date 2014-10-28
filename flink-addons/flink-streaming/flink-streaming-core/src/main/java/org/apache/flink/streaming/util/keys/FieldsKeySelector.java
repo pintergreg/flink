@@ -49,6 +49,8 @@ import org.apache.flink.api.java.tuple.Tuple6;
 import org.apache.flink.api.java.tuple.Tuple7;
 import org.apache.flink.api.java.tuple.Tuple8;
 import org.apache.flink.api.java.tuple.Tuple9;
+import org.apache.flink.streaming.api.datastream.DataStream;
+import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 
 public class FieldsKeySelector<IN> implements KeySelector<IN, Object> {
 
@@ -134,6 +136,17 @@ public class FieldsKeySelector<IN> implements KeySelector<IN, Object> {
 			}
 		}
 		return key;
+	}
+	
+	public static void main(String[] args) throws Exception {
+		StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+		
+		@SuppressWarnings("unchecked")
+		DataStream<Tuple2<Integer, Tuple2<Integer, Integer[]>>> d = env.fromElements(new Tuple2<Integer, Tuple2<Integer, Integer[]>> (1, new Tuple2<Integer, Integer[]> (3, new Integer[]{2,3, 4})), new Tuple2<Integer, Tuple2<Integer, Integer[]>> (2, new Tuple2<Integer, Integer[]> (3, new Integer[]{3,5,6})));
+		
+		d.min(1, 1, 0).print();
+		
+		env.execute();
 	}
 
 }

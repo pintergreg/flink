@@ -23,7 +23,7 @@ public class MaxAggregationFunction<T> extends ComparableAggregationFunction<T> 
 
 	private static final long serialVersionUID = 1L;
 
-	public MaxAggregationFunction(int pos, TypeInformation<?> type) {
+	public MaxAggregationFunction(int[] pos, TypeInformation<?> type) {
 		super(pos, type);
 	}
 

@@ -23,7 +23,7 @@ public class MaxByAggregationFunction<T> extends MinByAggregationFunction<T> {
 
 	private static final long serialVersionUID = 1L;
 
-	public MaxByAggregationFunction(int pos, boolean first, TypeInformation<?> type) {
+	public MaxByAggregationFunction(int[] pos, boolean first, TypeInformation<?> type) {
 		super(pos, first, type);
 	}
 

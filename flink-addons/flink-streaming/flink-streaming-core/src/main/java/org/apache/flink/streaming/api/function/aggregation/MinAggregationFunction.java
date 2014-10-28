@@ -23,7 +23,7 @@ public class MinAggregationFunction<T> extends ComparableAggregationFunction<T> 
 
 	private static final long serialVersionUID = 1L;
 
-	public MinAggregationFunction(int pos, TypeInformation<?> type) {
+	public MinAggregationFunction(int[] pos, TypeInformation<?> type) {
 		super(pos, type);
 	}
 

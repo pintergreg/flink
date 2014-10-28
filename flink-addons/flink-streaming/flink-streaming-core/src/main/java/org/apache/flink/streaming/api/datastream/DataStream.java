@@ -19,6 +19,7 @@ package org.apache.flink.streaming.api.datastream;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.lang3.SerializationException;
@@ -190,59 +191,86 @@ public class DataStream<OUT> {
 		return this.outTypeWrapper.getTypeInfo();
 	}
 
-	/**
-	 * Gets the class of the field at the given position
-	 * 
-	 * @param pos
-	 *            Position of the field
-	 * @return The class of the field
-	 */
-	@SuppressWarnings("rawtypes")
-	protected Class<?> getClassAtPos(int pos) {
-		Class<?> type;
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	protected Class<?> getClassAtPos(int[] positions) {
 		TypeInformation<OUT> outTypeInfo = outTypeWrapper.getTypeInfo();
-		if (outTypeInfo.isTupleType()) {
-			type = ((TupleTypeInfo) outTypeInfo).getTypeAt(pos).getTypeClass();
-
-		} else if (outTypeInfo instanceof BasicArrayTypeInfo) {
-
-			type = ((BasicArrayTypeInfo) outTypeInfo).getComponentTypeClass();
-
-		} else if (outTypeInfo instanceof PrimitiveArrayTypeInfo) {
-			Class<?> clazz = outTypeInfo.getTypeClass();
-			if (clazz == boolean[].class) {
-				type = Boolean.class;
-			} else if (clazz == short[].class) {
-				type = Short.class;
-			} else if (clazz == int[].class) {
-				type = Integer.class;
-			} else if (clazz == long[].class) {
-				type = Long.class;
-			} else if (clazz == float[].class) {
-				type = Float.class;
-			} else if (clazz == double[].class) {
-				type = Double.class;
-			} else if (clazz == char[].class) {
-				type = Character.class;
-			} else {
-				throw new IndexOutOfBoundsException("Type could not be determined for array");
-			}
-
-		} else if (pos == 0) {
-			type = outTypeInfo.getTypeClass();
+		
+		if (positions.length == 0) {
+			// TODO hiba
+			return null;
+		} else if (positions.length == 1) {
+			return getClassAtPos(positions, outTypeInfo);
 		} else {
-			throw new IndexOutOfBoundsException("Position is out of range");
+			if (outTypeInfo.isTupleType()) {
+				return getClassAtPos(Arrays.copyOfRange(positions, 1, positions.length), 
+									((TupleTypeInfo) outTypeInfo).getTypeAt(positions[0]));
+			} else if (outTypeInfo instanceof BasicArrayTypeInfo) {
+				return getClassAtPos(Arrays.copyOfRange(positions, 1, positions.length), 
+									((BasicArrayTypeInfo) outTypeInfo).getComponentInfo());
+			} else {
+				// TODO hiba
+				return null;
+			}
 		}
-		return type;
 	}
 
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	protected Class<?> getClassAtPos(int[] positions, TypeInformation<OUT> outTypeInfo) {
+		if (positions.length == 1) {
+			Class<?> type;
+			if (outTypeInfo.isTupleType()) {
+				type = ((TupleTypeInfo) outTypeInfo).getTypeAt(positions[0]).getTypeClass();
+
+			} else if (outTypeInfo instanceof BasicArrayTypeInfo) {
+
+				type = ((BasicArrayTypeInfo) outTypeInfo).getComponentTypeClass();
+
+			} else if (outTypeInfo instanceof PrimitiveArrayTypeInfo) {
+				Class<?> clazz = outTypeInfo.getTypeClass();
+				if (clazz == boolean[].class) {
+					type = Boolean.class;
+				} else if (clazz == short[].class) {
+					type = Short.class;
+				} else if (clazz == int[].class) {
+					type = Integer.class;
+				} else if (clazz == long[].class) {
+					type = Long.class;
+				} else if (clazz == float[].class) {
+					type = Float.class;
+				} else if (clazz == double[].class) {
+					type = Double.class;
+				} else if (clazz == char[].class) {
+					type = Character.class;
+				} else {
+					throw new IndexOutOfBoundsException("Type could not be determined for array");
+				}
+
+			} else if (positions[0] == 0) {
+				type = outTypeInfo.getTypeClass();
+			} else {
+				throw new IndexOutOfBoundsException("Position is out of range");
+			}
+			return type;
+		} else {
+			if (outTypeInfo.isTupleType()) {
+				return getClassAtPos(Arrays.copyOfRange(positions, 1, positions.length), 
+									((TupleTypeInfo) outTypeInfo).getTypeAt(positions[0]));
+			} else if (outTypeInfo instanceof BasicArrayTypeInfo) {
+				return getClassAtPos(Arrays.copyOfRange(positions, 1, positions.length), 
+									((BasicArrayTypeInfo) outTypeInfo).getComponentInfo());
+			} else {
+				// TODO hiba
+				return null;
+			}			
+		}
+	}
 	/**
 	 * Checks if the given field position is allowed for the output type
 	 * 
 	 * @param pos
 	 *            Position to check
 	 */
-	protected void checkFieldRange(int pos) {
+	protected void checkFieldRange(int... pos) {
 		try {
 			getClassAtPos(pos);
 		} catch (IndexOutOfBoundsException e) {
@@ -670,7 +698,7 @@ public class DataStream<OUT> {
 	 * @return The transformed DataStream.
 	 */
 	@SuppressWarnings("unchecked")
-	public SingleOutputStreamOperator<OUT, ?> sum(int positionToSum) {
+	public SingleOutputStreamOperator<OUT, ?> sum(int... positionToSum) {
 		checkFieldRange(positionToSum);
 		return aggregate((AggregationFunction<OUT>) SumAggregationFunction.getSumFunction(
 				positionToSum, getClassAtPos(positionToSum), getOutputType()));
@@ -693,7 +721,7 @@ public class DataStream<OUT> {
 	 *            The position in the data point to minimize
 	 * @return The transformed DataStream.
 	 */
-	public SingleOutputStreamOperator<OUT, ?> min(int positionToMin) {
+	public SingleOutputStreamOperator<OUT, ?> min(int... positionToMin) {
 		checkFieldRange(positionToMin);
 		return aggregate(new MinAggregationFunction<OUT>(positionToMin, getOutputType()));
 	}
@@ -708,8 +736,8 @@ public class DataStream<OUT> {
 	 *            The position in the data point to minimize
 	 * @return The transformed DataStream.
 	 */
-	public SingleOutputStreamOperator<OUT, ?> minBy(int positionToMinBy) {
-		return this.minBy(positionToMinBy, true);
+	public SingleOutputStreamOperator<OUT, ?> minBy(int... positionToMinBy) {
+		return this.minBy(true, positionToMinBy);
 	}
 
 	/**
@@ -725,7 +753,7 @@ public class DataStream<OUT> {
 	 *            minimal value, otherwise returns the last
 	 * @return The transformed DataStream.
 	 */
-	public SingleOutputStreamOperator<OUT, ?> minBy(int positionToMinBy, boolean first) {
+	public SingleOutputStreamOperator<OUT, ?> minBy(boolean first, int... positionToMinBy) {
 		checkFieldRange(positionToMinBy);
 		return aggregate(new MinByAggregationFunction<OUT>(positionToMinBy, first, getOutputType()));
 	}
@@ -747,7 +775,7 @@ public class DataStream<OUT> {
 	 *            The position in the data point to maximize
 	 * @return The transformed DataStream.
 	 */
-	public SingleOutputStreamOperator<OUT, ?> max(int positionToMax) {
+	public SingleOutputStreamOperator<OUT, ?> max(int... positionToMax) {
 		checkFieldRange(positionToMax);
 		return aggregate(new MaxAggregationFunction<OUT>(positionToMax, getOutputType()));
 	}
@@ -762,8 +790,8 @@ public class DataStream<OUT> {
 	 *            The position in the data point to maximize
 	 * @return The transformed DataStream.
 	 */
-	public SingleOutputStreamOperator<OUT, ?> maxBy(int positionToMaxBy) {
-		return this.maxBy(positionToMaxBy, true);
+	public SingleOutputStreamOperator<OUT, ?> maxBy(int... positionToMaxBy) {
+		return this.maxBy(true, positionToMaxBy);
 	}
 
 	/**
@@ -779,7 +807,7 @@ public class DataStream<OUT> {
 	 *            maximum value, otherwise returns the last
 	 * @return The transformed DataStream.
 	 */
-	public SingleOutputStreamOperator<OUT, ?> maxBy(int positionToMaxBy, boolean first) {
+	public SingleOutputStreamOperator<OUT, ?> maxBy(boolean first, int... positionToMaxBy) {
 		checkFieldRange(positionToMaxBy);
 		return aggregate(new MaxByAggregationFunction<OUT>(positionToMaxBy, first, getOutputType()));
 	}

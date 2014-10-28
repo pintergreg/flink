@@ -26,7 +26,7 @@ public abstract class ComparableAggregationFunction<T> extends AggregationFuncti
 
 	private static final long serialVersionUID = 1L;
 
-	public ComparableAggregationFunction(int positionToAggregate, TypeInformation<?> type) {
+	public ComparableAggregationFunction(int[] positionToAggregate, TypeInformation<?> type) {
 		super(positionToAggregate, type);
 	}
 
@@ -56,12 +56,12 @@ public abstract class ComparableAggregationFunction<T> extends AggregationFuncti
 
 	@SuppressWarnings("unchecked")
 	public T compareArray(T array1, T array2) {
-		Object v1 = Array.get(array1, position);
-		Object v2 = Array.get(array2, position);
+		Object v1 = Array.get(array1, position[0]);
+		Object v2 = Array.get(array2, position[0]);
 		if (isExtremal((Comparable<Object>) v1, v2)) {
-			Array.set(array2, position, v1);
+			Array.set(array2, position[0], v1);
 		} else {
-			Array.set(array2, position, v2);
+			Array.set(array2, position[0], v2);
 		}
 
 		return array2;
@@ -70,11 +70,11 @@ public abstract class ComparableAggregationFunction<T> extends AggregationFuncti
 	public <R> void compare(Tuple tuple1, Tuple tuple2) throws InstantiationException,
 			IllegalAccessException {
 
-		Comparable<R> o1 = tuple1.getField(position);
-		R o2 = tuple2.getField(position);
+		Comparable<R> o1 = tuple1.getField(position[0]);
+		R o2 = tuple2.getField(position[0]);
 
 		if (isExtremal(o1, o2)) {
-			tuple2.setField(o1, position);
+			tuple2.setField(o1, position[0]);
 		}
 		returnTuple = tuple2;
 	}

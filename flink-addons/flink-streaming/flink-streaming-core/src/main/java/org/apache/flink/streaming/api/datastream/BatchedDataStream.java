@@ -134,7 +134,7 @@ public class BatchedDataStream<OUT> {
 	 * @return The transformed DataStream.
 	 */
 	@SuppressWarnings("unchecked")
-	public SingleOutputStreamOperator<OUT, ?> sum(int positionToSum) {
+	public SingleOutputStreamOperator<OUT, ?> sum(int... positionToSum) {
 		dataStream.checkFieldRange(positionToSum);
 		return aggregate((AggregationFunction<OUT>) SumAggregationFunction.getSumFunction(
 				positionToSum, dataStream.getClassAtPos(positionToSum), dataStream.getOutputType()));
@@ -157,7 +157,7 @@ public class BatchedDataStream<OUT> {
 	 *            The position in the data point to minimize
 	 * @return The transformed DataStream.
 	 */
-	public SingleOutputStreamOperator<OUT, ?> min(int positionToMin) {
+	public SingleOutputStreamOperator<OUT, ?> min(int... positionToMin) {
 		dataStream.checkFieldRange(positionToMin);
 		return aggregate(new MinAggregationFunction<OUT>(positionToMin, dataStream.getOutputType()));
 	}
@@ -172,8 +172,8 @@ public class BatchedDataStream<OUT> {
 	 *            The position in the data point to minimize
 	 * @return The transformed DataStream.
 	 */
-	public SingleOutputStreamOperator<OUT, ?> minBy(int positionToMinBy) {
-		return this.minBy(positionToMinBy, true);
+	public SingleOutputStreamOperator<OUT, ?> minBy(int... positionToMinBy) {
+		return this.minBy(true, positionToMinBy);
 	}
 
 	/**
@@ -212,7 +212,7 @@ public class BatchedDataStream<OUT> {
 	 *            The position in the data point to maximize
 	 * @return The transformed DataStream.
 	 */
-	public SingleOutputStreamOperator<OUT, ?> max(int positionToMax) {
+	public SingleOutputStreamOperator<OUT, ?> max(int... positionToMax) {
 		dataStream.checkFieldRange(positionToMax);
 		return aggregate(new MaxAggregationFunction<OUT>(positionToMax, dataStream.getOutputType()));
 	}

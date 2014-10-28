@@ -18,9 +18,12 @@
 
 package org.apache.flink.api.common.typeinfo;
 
+import java.io.Serializable;
+
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 
-public abstract class TypeInformation<T> {
+public abstract class TypeInformation<T> implements Serializable {
+	private static final long serialVersionUID = 1L;
 	
 	public abstract boolean isBasicType();
 	

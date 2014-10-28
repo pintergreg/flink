@@ -26,15 +26,17 @@ import org.apache.flink.api.java.tuple.Tuple;
 public abstract class AggregationFunction<T> implements ReduceFunction<T> {
 	private static final long serialVersionUID = 1L;
 
-	public int position;
+	public int[] position;
 	protected Tuple returnTuple;
 	protected boolean isTuple;
 	protected boolean isArray;
+	protected TypeInformation<?> typeInfo;
 
-	public AggregationFunction(int pos, TypeInformation<?> type) {
+	public AggregationFunction(int[] pos, TypeInformation<?> typeInfo) {
 		this.position = pos;
-		this.isTuple = type.isTupleType();
-		this.isArray = type instanceof BasicArrayTypeInfo || type instanceof PrimitiveArrayTypeInfo;
+		this.isTuple = typeInfo.isTupleType();
+		this.isArray = typeInfo instanceof BasicArrayTypeInfo || typeInfo instanceof PrimitiveArrayTypeInfo;
+		this.typeInfo = typeInfo;
 	}
 
 }
