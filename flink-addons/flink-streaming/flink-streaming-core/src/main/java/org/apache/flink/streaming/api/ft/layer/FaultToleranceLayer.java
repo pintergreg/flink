@@ -1,3 +1,5 @@
+package org.apache.flink.streaming.api.ft.layer;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,42 +17,42 @@
  * limitations under the License.
  */
 
-package org.apache.flink.streaming.api.ft.layer;
+import java.util.ArrayList;
+import java.util.HashMap;
 
-import java.io.Serializable;
-
-import org.apache.commons.lang.SerializationUtils;
-
-public class FaultToleranceLayerCollector<OUT> implements AbstractFaultToleranceLayerCollector<OUT> {
+public class FaultToleranceLayer implements AbstractFaultToleranceLayer {
 
 	private static final long serialVersionUID = 1L;
 
-	private AbstractFaultToleranceLayer ftLayer;
-	private long topicId;
+	HashMap<Long, ArrayList<byte[]>> topics;
 
-	public FaultToleranceLayerCollector(AbstractFaultToleranceLayer ftLayer, long topicId) {
-		this.ftLayer = ftLayer;
-		this.topicId = topicId;
-		initialize();
-	}
-
-	public void initialize() {
-		ftLayer.createNewTopic(topicId);
+	public FaultToleranceLayer() {
+		this.topics = new HashMap<Long, ArrayList<byte[]>>();
 	}
 
 	@Override
-	public void collect(OUT record) {
-		byte[] out = SerializationUtils.serialize((Serializable) record);
-		ftLayer.consume(topicId, out);
+	public void createNewTopic(long topicId) {
+		topics.put(topicId, new ArrayList<byte[]>());
 	}
 
 	@Override
-	public void close() {
+	public void consume(long topicId, byte[] out) {
+		topics.get(topicId).add(out);
 
 	}
 
-	public void remove() {
-		ftLayer.remove(topicId);
+	@Override
+	public <T> FaultToleranceLayerIterator<T> iterator(long topicId) {
+		if (topics.containsKey(topicId)) {
+			return new FaultToleranceLayerIterator<T>(topics.get(topicId));
+		} else {
+			throw new RuntimeException("Topic '" + topicId + "' does not exist!");
+		}
+	}
+
+	@Override
+	public void remove(long topicId) {
+		topics.remove(topicId);
 	}
 
 }

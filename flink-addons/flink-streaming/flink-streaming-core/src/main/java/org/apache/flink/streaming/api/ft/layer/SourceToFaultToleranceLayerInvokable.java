@@ -8,9 +8,9 @@ public class SourceToFaultToleranceLayerInvokable<OUT> extends StreamInvokable<O
 	private static final long serialVersionUID = 1L;
 
 	private SourceFunction<OUT> sourceFunction;
-	private FaultToleranceLayerCollector<OUT> collector;
+	private AbstractFaultToleranceLayerCollector<OUT> collector;
 
-	public SourceToFaultToleranceLayerInvokable(SourceFunction<OUT> sourceFunction, FaultToleranceLayerCollector<OUT> collector) {
+	public SourceToFaultToleranceLayerInvokable(SourceFunction<OUT> sourceFunction, AbstractFaultToleranceLayerCollector<OUT> collector) {
 		super(sourceFunction);
 		this.sourceFunction = sourceFunction;
 		this.collector = collector;

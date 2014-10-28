@@ -17,28 +17,16 @@
 
 package org.apache.flink.streaming.api.ft.layer;
 
-public class MessageWithOffset<T> {
-	private long offset;
-	private T message;
+import java.io.Serializable;
 
-	public MessageWithOffset(long offset, T message) {
-		this.offset = offset;
-		this.message = message;
-	}
+public interface AbstractFaultToleranceLayer extends Serializable {
 
-	public long getOffset() {
-		return offset;
-	}
+	public void createNewTopic(long topicId);
 
-	public void setOffset(long offset) {
-		this.offset = offset;
-	}
+	public void consume(long topicId, byte[] out);
 
-	public T getMessage() {
-		return message;
-	}
+	public void remove(long topicId);
 
-	public void setMessage(T message) {
-		this.message = message;
-	}
+	public <T> AbstractFaultToleranceLayerIterator<T> iterator(long topicId);
+
 }

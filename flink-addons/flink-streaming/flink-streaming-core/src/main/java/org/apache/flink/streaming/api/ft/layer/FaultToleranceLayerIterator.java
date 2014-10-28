@@ -17,22 +17,74 @@
 
 package org.apache.flink.streaming.api.ft.layer;
 
-import java.io.Serializable;
-import java.util.Iterator;
+import java.util.ArrayList;
 
-public abstract class FaultToleranceLayerIterator implements Iterator<byte[]>, Serializable {
+import org.apache.commons.lang.SerializationUtils;
+
+public class FaultToleranceLayerIterator<T> extends AbstractFaultToleranceLayerIterator<T> {
 
 	private static final long serialVersionUID = 1L;
 
-	public abstract void reset(long offset);
-	public abstract MessageWithOffset nextWithOffset();
-	
-	public abstract void initializeFromBeginning();
-	public abstract void initializeFromCurrent();
-	public abstract void initializeFromOffset(long offset);
+	private ArrayList<byte[]> list;
+	int offset;
+
+	public FaultToleranceLayerIterator(ArrayList<byte[]> list) {
+		this.list = list;
+		this.offset = 0;
+	}
 
 	@Override
-	public void remove() {
-		throw new RuntimeException("Cannot remove message from queue.");
+	public boolean hasNext() {
+		return offset < list.size();
+	}
+
+	@Override
+	public T next() {
+		return deserialize(list.get(offset++));
+	}
+
+	@Override
+	public MessageWithOffset<T> nextWithOffset() {
+		return new MessageWithOffset<T>(offset, deserialize(list.get(offset++)));
+	}
+
+	@SuppressWarnings("unchecked")
+	private T deserialize(byte[] bytes) {
+		return (T) SerializationUtils.deserialize(bytes);
+	}
+	
+	@Override
+	public void reset(long offset) {
+		if (offset < 0 || offset > list.size()) {
+			throw new RuntimeException("Offset is out of bound!");
+		} else {
+			this.offset = (int) offset;
+		}
+	}
+
+	@Override
+	public void initializeFromBeginning() {
+		offset = 0;
+	}
+
+	@Override
+	public void initializeFromCurrent() {
+		offset = list.size();
+	}
+	
+	@Override
+	public void initializeFromOffset(long offset) {
+		reset(offset);
+	}
+
+
+	@Override
+	public long getLastOffset() {
+		return list.size() - 1;
+	}
+
+	@Override
+	public long currentOffset() {
+		return offset;
 	}
 }

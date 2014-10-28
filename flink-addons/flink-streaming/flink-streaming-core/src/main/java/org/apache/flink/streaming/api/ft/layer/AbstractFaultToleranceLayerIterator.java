@@ -17,28 +17,26 @@
 
 package org.apache.flink.streaming.api.ft.layer;
 
-public class MessageWithOffset<T> {
-	private long offset;
-	private T message;
+import java.io.Serializable;
+import java.util.Iterator;
 
-	public MessageWithOffset(long offset, T message) {
-		this.offset = offset;
-		this.message = message;
-	}
+public abstract class AbstractFaultToleranceLayerIterator<T> implements Iterator<T>, Serializable {
 
-	public long getOffset() {
-		return offset;
-	}
+	private static final long serialVersionUID = 1L;
 
-	public void setOffset(long offset) {
-		this.offset = offset;
-	}
+	public abstract void reset(long offset);
+	public abstract MessageWithOffset<T> nextWithOffset();
+	
+	public abstract void initializeFromBeginning();
+	public abstract void initializeFromCurrent();
+	public abstract void initializeFromOffset(long offset);
 
-	public T getMessage() {
-		return message;
+	@Override
+	public void remove() {
+		throw new RuntimeException("Cannot remove message from queue.");
 	}
+	
+	public abstract long getLastOffset();
 
-	public void setMessage(T message) {
-		this.message = message;
-	}
+	public abstract long currentOffset();
 }
