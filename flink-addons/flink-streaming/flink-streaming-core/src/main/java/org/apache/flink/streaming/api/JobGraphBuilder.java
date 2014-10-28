@@ -137,6 +137,39 @@ public class JobGraphBuilder {
 	}
 
 	/**
+	 * Adds a source vertex to the streaming JobGraph with the given parameters
+	 * 
+	 * @param vertexName
+	 *            Name of the vertex
+	 * @param invokableObject
+	 *            User defined operator
+	 * @param inTypeWrapper
+	 *            Input type wrapper for serialization
+	 * @param outTypeWrapper
+	 *            Output type wrapper for serialization
+	 * @param operatorName
+	 *            Operator type
+	 * @param serializedFunction
+	 *            Serialized udf
+	 * @param parallelism
+	 *            Number of parallel instances created
+	 */
+	public <IN, OUT> void addSourceVertex(String vertexName,
+			StreamInvokable<IN, OUT> invokableObject, TypeWrapper<?> inTypeWrapper,
+			TypeWrapper<?> outTypeWrapper, String operatorName, byte[] serializedFunction,
+			int parallelism) {
+
+		addVertex(vertexName, StreamVertex.class, invokableObject, operatorName,
+				serializedFunction, parallelism);
+
+		addTypeWrappers(vertexName, inTypeWrapper, null, outTypeWrapper, null);
+
+		if (LOG.isDebugEnabled()) {
+			LOG.debug("Vertex: {}", vertexName);
+		}
+	}
+
+	/**
 	 * Adds a vertex to the streaming JobGraph with the given parameters
 	 * 
 	 * @param vertexName
@@ -159,9 +192,20 @@ public class JobGraphBuilder {
 			TypeWrapper<?> outTypeWrapper, String operatorName, byte[] serializedFunction,
 			int parallelism) {
 
-		addVertex(vertexName, StreamVertex.class, invokableObject, operatorName,
-				serializedFunction, parallelism);
-
+		vertexClasses.put(vertexName, StreamVertex.class);
+		setParallelism(vertexName, parallelism);
+		mutability.put(vertexName, false);
+		invokableObjects.put(vertexName, invokableObject);
+		operatorNames.put(vertexName, operatorName);
+		serializedFunctions.put(vertexName, serializedFunction);
+		outEdgeList.put(vertexName, new ArrayList<String>());
+		outEdgeType.put(vertexName, new ArrayList<Integer>());
+		outEdgeNames.put(vertexName, new ArrayList<List<String>>());
+		outEdgeSelectAll.put(vertexName, new ArrayList<Boolean>());
+		inEdgeList.put(vertexName, new ArrayList<String>());
+		connectionTypes.put(vertexName, new ArrayList<StreamPartitioner<?>>());
+		iterationTailCount.put(vertexName, 0);
+		
 		addTypeWrappers(vertexName, inTypeWrapper, null, outTypeWrapper, null);
 
 		if (LOG.isDebugEnabled()) {
@@ -504,7 +548,6 @@ public class JobGraphBuilder {
 	}
 
 	public TypeInformation<?> getInTypeInfo(String id) {
-		System.out.println("DEBUG TypeInfo " + typeWrapperIn1.get(id));
 		return typeWrapperIn1.get(id).getTypeInfo();
 	}
 
@@ -598,6 +641,7 @@ public class JobGraphBuilder {
 
 				connect(upStreamVertexName, downStreamVertexName,
 						connectionTypes.get(upStreamVertexName).get(i));
+				
 				i++;
 			}
 		}

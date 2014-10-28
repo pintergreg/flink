@@ -20,6 +20,7 @@ package org.apache.flink.streaming.api.environment;
 import java.io.File;
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.Random;
 
 import org.apache.commons.lang3.SerializationException;
 import org.apache.commons.lang3.SerializationUtils;
@@ -27,12 +28,17 @@ import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.streaming.api.JobGraphBuilder;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
+import org.apache.flink.streaming.api.ft.layer.FaultToleranceLayerCollector;
+import org.apache.flink.streaming.api.ft.layer.FaultToleranceLayerIterator;
+import org.apache.flink.streaming.api.ft.layer.SourceFromFaultToleranceLayerInvokable;
+import org.apache.flink.streaming.api.ft.layer.SourceToFaultToleranceLayerInvokable;
+import org.apache.flink.streaming.api.ft.layer.kafka.KafkaLayerCollector;
+import org.apache.flink.streaming.api.ft.layer.kafka.KafkaLayerIterator;
 import org.apache.flink.streaming.api.function.source.FileSourceFunction;
 import org.apache.flink.streaming.api.function.source.FileStreamFunction;
 import org.apache.flink.streaming.api.function.source.FromElementsFunction;
 import org.apache.flink.streaming.api.function.source.GenSequenceFunction;
 import org.apache.flink.streaming.api.function.source.SourceFunction;
-import org.apache.flink.streaming.api.invokable.SourceInvokable;
 import org.apache.flink.streaming.util.serialization.FunctionTypeWrapper;
 import org.apache.flink.streaming.util.serialization.ObjectTypeWrapper;
 import org.apache.flink.streaming.util.serialization.TypeWrapper;
@@ -59,9 +65,11 @@ public abstract class StreamExecutionEnvironment {
 
 	private int executionParallelism = -1;
 
-	private long buffertimeout = 0;;
+	private long buffertimeout = 0;
 
 	protected JobGraphBuilder jobGraphBuilder;
+
+	private Random random;
 
 	// --------------------------------------------------------------------------------------------
 	// Constructor and Properties
@@ -72,6 +80,7 @@ public abstract class StreamExecutionEnvironment {
 	 */
 	protected StreamExecutionEnvironment() {
 		jobGraphBuilder = new JobGraphBuilder();
+		random = new Random();
 	}
 
 	public int getExecutionParallelism() {
@@ -225,18 +234,10 @@ public abstract class StreamExecutionEnvironment {
 		}
 
 		TypeWrapper<OUT> outTypeWrapper = new ObjectTypeWrapper<OUT>(data[0]);
-		DataStreamSource<OUT> returnStream = new DataStreamSource<OUT>(this, "elements",
-				outTypeWrapper);
 
-		try {
-			SourceFunction<OUT> function = new FromElementsFunction<OUT>(data);
-			jobGraphBuilder.addStreamVertex(returnStream.getId(),
-					new SourceInvokable<OUT>(function), null, outTypeWrapper, "source",
-					SerializationUtils.serialize(function), 1);
-		} catch (SerializationException e) {
-			throw new RuntimeException("Cannot serialize elements");
-		}
-		return returnStream;
+		SourceFunction<OUT> function = new FromElementsFunction<OUT>(data);
+
+		return addSource(function, 1, outTypeWrapper);
 	}
 
 	/**
@@ -261,20 +262,10 @@ public abstract class StreamExecutionEnvironment {
 		}
 
 		TypeWrapper<OUT> outTypeWrapper = new ObjectTypeWrapper<OUT>(data.iterator().next());
-		DataStreamSource<OUT> returnStream = new DataStreamSource<OUT>(this, "elements",
-				outTypeWrapper);
 
-		try {
-			SourceFunction<OUT> function = new FromElementsFunction<OUT>(data);
+		SourceFunction<OUT> function = new FromElementsFunction<OUT>(data);
 
-			jobGraphBuilder.addStreamVertex(returnStream.getId(), new SourceInvokable<OUT>(
-					new FromElementsFunction<OUT>(data)), null, new ObjectTypeWrapper<OUT>(data
-					.iterator().next()), "source", SerializationUtils.serialize(function), 1);
-		} catch (SerializationException e) {
-			throw new RuntimeException("Cannot serialize collection");
-		}
-
-		return returnStream;
+		return addSource(function, 1, outTypeWrapper);
 	}
 
 	/**
@@ -290,7 +281,40 @@ public abstract class StreamExecutionEnvironment {
 		if (from > to) {
 			throw new IllegalArgumentException("Start of sequence must not be greater than the end");
 		}
+
 		return addSource(new GenSequenceFunction(from, to), 1);
+	}
+
+	private <OUT> DataStreamSource<OUT> addSource(SourceFunction<OUT> function, int parallelism,
+			TypeWrapper<OUT> outTypeWrapper) {
+
+		String name = "source-" + Long.toHexString(random.nextLong());
+
+		DataStreamSource<OUT> toFTStream = new DataStreamSource<OUT>(this, name, outTypeWrapper);
+		FaultToleranceLayerCollector<OUT> ftCollector = new KafkaLayerCollector<OUT>(name,
+				"localhost:9092");
+
+		try {
+			jobGraphBuilder.addSourceVertex(toFTStream.getId(),
+					new SourceToFaultToleranceLayerInvokable<OUT>(function, ftCollector), null,
+					outTypeWrapper, name, SerializationUtils.serialize(function), parallelism);
+		} catch (SerializationException e) {
+			throw new RuntimeException("Cannot serialize SourceFunction");
+		}
+
+		DataStreamSource<OUT> returnStream = new DataStreamSource<OUT>(this, name, outTypeWrapper);
+		FaultToleranceLayerIterator ftIterator = new KafkaLayerIterator("127.0.0.1", 9092, name, 0,
+				100L);
+		try {
+			jobGraphBuilder.addSourceVertex(returnStream.getId(),
+					// function is not needed here
+					new SourceFromFaultToleranceLayerInvokable<OUT>(ftIterator), null,
+					outTypeWrapper, name, SerializationUtils.serialize(function), parallelism);
+		} catch (SerializationException e) {
+			throw new RuntimeException("Cannot serialize SourceFunction");
+		}
+
+		return returnStream;
 	}
 
 	/**
@@ -307,18 +331,8 @@ public abstract class StreamExecutionEnvironment {
 	public <OUT> DataStreamSource<OUT> addSource(SourceFunction<OUT> function, int parallelism) {
 		TypeWrapper<OUT> outTypeWrapper = new FunctionTypeWrapper<OUT>(function,
 				SourceFunction.class, 0);
-		DataStreamSource<OUT> returnStream = new DataStreamSource<OUT>(this, "source",
-				outTypeWrapper);
 
-		try {
-			jobGraphBuilder.addStreamVertex(returnStream.getId(),
-					new SourceInvokable<OUT>(function), null, outTypeWrapper, "source",
-					SerializationUtils.serialize(function), parallelism);
-		} catch (SerializationException e) {
-			throw new RuntimeException("Cannot serialize SourceFunction");
-		}
-
-		return returnStream;
+		return addSource(function, parallelism, outTypeWrapper);
 	}
 
 	public <OUT> DataStreamSource<OUT> addSource(SourceFunction<OUT> sourceFunction) {
@@ -465,10 +479,10 @@ public abstract class StreamExecutionEnvironment {
 	 * the program that have resulted in a "sink" operation. Sink operations are
 	 * for example printing results or forwarding them to a message queue.
 	 * <p>
-	 * The program execution will be logged and displayed with the provided
-	 * name
+	 * The program execution will be logged and displayed with the provided name
 	 * 
-	 * @param jobName Desired name of the job
+	 * @param jobName
+	 *            Desired name of the job
 	 * 
 	 * @throws Exception
 	 **/

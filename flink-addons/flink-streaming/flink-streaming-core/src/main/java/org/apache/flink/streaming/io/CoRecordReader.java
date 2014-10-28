@@ -108,7 +108,7 @@ public class CoRecordReader<T1 extends IOReadableWritable, T2 extends IOReadable
 			gate.publishEvent(event);
 		}
 	}
-	
+
 	@Override
 	public void publishEvent(AbstractTaskEvent event, int inputNumber) throws IOException,
 			InterruptedException {
