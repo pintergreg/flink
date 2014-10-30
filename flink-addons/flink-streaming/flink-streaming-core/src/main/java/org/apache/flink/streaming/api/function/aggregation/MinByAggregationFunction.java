@@ -18,9 +18,13 @@
 package org.apache.flink.streaming.api.function.aggregation;
 
 import java.lang.reflect.Array;
+import java.util.Arrays;
 
+import org.apache.flink.api.common.typeinfo.BasicArrayTypeInfo;
+import org.apache.flink.api.common.typeinfo.PrimitiveArrayTypeInfo;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.tuple.Tuple;
+import org.apache.flink.api.java.typeutils.TupleTypeInfo;
 
 public class MinByAggregationFunction<T> extends ComparableAggregationFunction<T> {
 
@@ -31,26 +35,84 @@ public class MinByAggregationFunction<T> extends ComparableAggregationFunction<T
 		super(pos, type);
 		this.first = first;
 	}
+	
+	@Override
+	public T reduce(T value1, T value2) throws Exception {
+		return reduce(value1, value2, position, typeInfo);
+	}
+	
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	protected T reduce(T field1, T field2, int[] pos,
+			TypeInformation<?> typeInfo) throws Exception {
+		
+		if (pos.length == 1) {			
+			if (typeInfo.isTupleType()) {
+				Tuple t1 = (Tuple) field1;
+				Tuple t2 = (Tuple) field2;
+	
+				return compare(t1, t2, pos[0]);
+			} else if (typeInfo instanceof BasicArrayTypeInfo
+					|| typeInfo instanceof PrimitiveArrayTypeInfo) {
+				return compareArray(field1, field2, pos[0]);
+			} else if (field1 instanceof Comparable) {
+				if (isExtremal((Comparable<Object>) field1, field2)) {
+					return field1;
+				} else {
+					return field2;
+				}
+			} else {
+				throw new RuntimeException("The values " + field1 + " and " + field2
+						+ " cannot be compared.");
+			}
+		} else {
+			if (typeInfo.isTupleType()) {
+				Tuple tuple1 = (Tuple) field1;
+				Tuple tuple2 = (Tuple) field2;
+
+				if (reduce((T) tuple1.getField(pos[0]), (T) tuple2.getField(pos[0]),
+						Arrays.copyOfRange(pos, 1, pos.length),
+						((TupleTypeInfo) typeInfo).getTypeAt(pos[0])).equals(tuple1.getField(pos[0]))) {
+					return (T) tuple1;
+				} else {
+					return (T) tuple2;
+				}
+			} else if (typeInfo instanceof BasicArrayTypeInfo
+					|| typeInfo instanceof PrimitiveArrayTypeInfo) {
+				Object v1 = Array.get(field1, pos[0]);
+				Object v2 = Array.get(field2, pos[0]);
+
+				if (reduce((T)v1, (T)v2,
+						Arrays.copyOfRange(pos, 1, pos.length),
+						((BasicArrayTypeInfo) typeInfo).getComponentInfo()).equals(v1)) {
+					return field1;
+				} else {
+					return field2;
+				}
+			}
+		}
+		return field2;
+	}
 
 	@Override
-	public <R> void compare(Tuple tuple1, Tuple tuple2) throws InstantiationException,
+	@SuppressWarnings("unchecked")
+	public <R> T compare(Tuple tuple1, Tuple tuple2, int pos) throws InstantiationException,
 			IllegalAccessException {
 
-		Comparable<R> o1 = tuple1.getField(position[0]);
-		R o2 = tuple2.getField(position[0]);
+		Comparable<R> o1 = tuple1.getField(pos);
+		R o2 = tuple2.getField(pos);
 
 		if (isExtremal(o1, o2)) {
-			returnTuple = tuple1;
+			return (T) tuple1;
 		} else {
-			returnTuple = tuple2;
+			return (T) tuple2;
 		}
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public T compareArray(T array1, T array2) {
-		Object v1 = Array.get(array1, position[0]);
-		Object v2 = Array.get(array2, position[0]);
+	public T compareArray(T array1, T array2, int pos) {		
+		Object v1 = Array.get(array1, pos);
+		Object v2 = Array.get(array2, pos);
 		if (isExtremal((Comparable<Object>) v1, v2)) {
 			return array1;
 		} else {

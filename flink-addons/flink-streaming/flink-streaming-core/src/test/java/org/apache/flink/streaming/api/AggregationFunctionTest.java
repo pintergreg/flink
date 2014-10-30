@@ -92,16 +92,16 @@ public class AggregationFunctionTest {
 
 		@SuppressWarnings("unchecked")
 		SumAggregationFunction<Tuple2<Integer, Integer>> sumFunction = SumAggregationFunction
-				.getSumFunction(1, Integer.class, type1);
+				.getSumFunction(new int[]{1}, Integer.class, type1);
 		@SuppressWarnings("unchecked")
-		SumAggregationFunction<Integer> sumFunction0 = SumAggregationFunction.getSumFunction(0,
+		SumAggregationFunction<Integer> sumFunction0 = SumAggregationFunction.getSumFunction(new int[]{0},
 				Integer.class, type2);
 		MinAggregationFunction<Tuple2<Integer, Integer>> minFunction = new MinAggregationFunction<Tuple2<Integer, Integer>>(
-				1, type1);
-		MinAggregationFunction<Integer> minFunction0 = new MinAggregationFunction<Integer>(0, type2);
+				new int[]{1}, type1);
+		MinAggregationFunction<Integer> minFunction0 = new MinAggregationFunction<Integer>(new int[]{0}, type2);
 		MaxAggregationFunction<Tuple2<Integer, Integer>> maxFunction = new MaxAggregationFunction<Tuple2<Integer, Integer>>(
-				1, type1);
-		MaxAggregationFunction<Integer> maxFunction0 = new MaxAggregationFunction<Integer>(0, type2);
+				new int[]{1}, type1);
+		MaxAggregationFunction<Integer> maxFunction0 = new MaxAggregationFunction<Integer>(new int[]{0}, type2);
 
 		List<Tuple2<Integer, Integer>> sumList = MockInvokable.createAndExecute(
 				new StreamReduceInvokable<Tuple2<Integer, Integer>>(sumFunction), getInputList());
@@ -161,14 +161,14 @@ public class AggregationFunctionTest {
 		}
 
 		MaxByAggregationFunction<Tuple2<Integer, Integer>> maxByFunctionFirst = new MaxByAggregationFunction<Tuple2<Integer, Integer>>(
-				0, true, type1);
+				new int[]{0}, true, type1);
 		MaxByAggregationFunction<Tuple2<Integer, Integer>> maxByFunctionLast = new MaxByAggregationFunction<Tuple2<Integer, Integer>>(
-				0, false, type1);
+				new int[]{0}, false, type1);
 
 		MinByAggregationFunction<Tuple2<Integer, Integer>> minByFunctionFirst = new MinByAggregationFunction<Tuple2<Integer, Integer>>(
-				0, true, type1);
+				new int[]{0}, true, type1);
 		MinByAggregationFunction<Tuple2<Integer, Integer>> minByFunctionLast = new MinByAggregationFunction<Tuple2<Integer, Integer>>(
-				0, false, type1);
+				new int[]{0}, false, type1);
 
 		List<Tuple2<Integer, Integer>> maxByFirstExpected = new ArrayList<Tuple2<Integer, Integer>>();
 		maxByFirstExpected.add(new Tuple2<Integer, Integer>(0, 0));
@@ -234,14 +234,14 @@ public class AggregationFunctionTest {
 		TypeInformation<?> type1 = TypeExtractor.getForObject(new Tuple2<Integer, Integer>(0, 0));
 
 		MaxByAggregationFunction<Tuple2<Integer, Integer>> maxByFunctionFirst = new MaxByAggregationFunction<Tuple2<Integer, Integer>>(
-				0, true, type1);
+				new int[]{0}, true, type1);
 		MaxByAggregationFunction<Tuple2<Integer, Integer>> maxByFunctionLast = new MaxByAggregationFunction<Tuple2<Integer, Integer>>(
-				0, false, type1);
+				new int[]{0}, false, type1);
 
 		MinByAggregationFunction<Tuple2<Integer, Integer>> minByFunctionFirst = new MinByAggregationFunction<Tuple2<Integer, Integer>>(
-				0, true, type1);
+				new int[]{0}, true, type1);
 		MinByAggregationFunction<Tuple2<Integer, Integer>> minByFunctionLast = new MinByAggregationFunction<Tuple2<Integer, Integer>>(
-				0, false, type1);
+				new int[]{0}, false, type1);
 
 		List<Tuple2<Integer, Integer>> maxByFirstExpected = new ArrayList<Tuple2<Integer, Integer>>();
 		maxByFirstExpected.add(new Tuple2<Integer, Integer>(0, 0));

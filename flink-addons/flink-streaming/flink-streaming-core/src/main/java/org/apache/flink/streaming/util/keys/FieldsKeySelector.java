@@ -142,9 +142,11 @@ public class FieldsKeySelector<IN> implements KeySelector<IN, Object> {
 		StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 		
 		@SuppressWarnings("unchecked")
-		DataStream<Tuple2<Integer, Tuple2<Integer, Integer[]>>> d = env.fromElements(new Tuple2<Integer, Tuple2<Integer, Integer[]>> (1, new Tuple2<Integer, Integer[]> (3, new Integer[]{2,3, 4})), new Tuple2<Integer, Tuple2<Integer, Integer[]>> (2, new Tuple2<Integer, Integer[]> (3, new Integer[]{3,5,6})));
+		DataStream<Tuple2<Integer, Tuple2<Integer, Integer[]>>> d = env.fromElements(new Tuple2<Integer, Tuple2<Integer, Integer[]>> (1, new Tuple2<Integer, Integer[]> (3, new Integer[]{2,3, 4})), new Tuple2<Integer, Tuple2<Integer, Integer[]>> (2, new Tuple2<Integer, Integer[]> (2, new Integer[]{3,5,6})));
 		
-		d.min(1, 1, 0).print();
+		d.minBy(1, 1, 1).print();
+		d.max(1, 0).print();
+		d.sum(1, 1, 2).print();
 		
 		env.execute();
 	}

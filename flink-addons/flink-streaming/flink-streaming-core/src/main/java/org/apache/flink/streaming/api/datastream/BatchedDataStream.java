@@ -189,7 +189,7 @@ public class BatchedDataStream<OUT> {
 	 *            minimum value, otherwise returns the last
 	 * @return The transformed DataStream.
 	 */
-	public SingleOutputStreamOperator<OUT, ?> minBy(int positionToMinBy, boolean first) {
+	public SingleOutputStreamOperator<OUT, ?> minBy(boolean first, int... positionToMinBy) {
 		dataStream.checkFieldRange(positionToMinBy);
 		return aggregate(new MinByAggregationFunction<OUT>(positionToMinBy, first,
 				dataStream.getOutputType()));
@@ -227,7 +227,7 @@ public class BatchedDataStream<OUT> {
 	 * @return The transformed DataStream.
 	 */
 	public SingleOutputStreamOperator<OUT, ?> maxBy(int positionToMaxBy) {
-		return this.maxBy(positionToMaxBy, true);
+		return this.maxBy(true, positionToMaxBy);
 	}
 
 	/**
@@ -243,7 +243,7 @@ public class BatchedDataStream<OUT> {
 	 *            maximum value, otherwise returns the last
 	 * @return The transformed DataStream.
 	 */
-	public SingleOutputStreamOperator<OUT, ?> maxBy(int positionToMaxBy, boolean first) {
+	public SingleOutputStreamOperator<OUT, ?> maxBy(boolean first, int... positionToMaxBy) {
 		dataStream.checkFieldRange(positionToMaxBy);
 		return aggregate(new MaxByAggregationFunction<OUT>(positionToMaxBy, first,
 				dataStream.getOutputType()));

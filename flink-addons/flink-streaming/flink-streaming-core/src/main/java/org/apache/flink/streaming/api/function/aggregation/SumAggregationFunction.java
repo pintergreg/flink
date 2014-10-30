@@ -34,36 +34,9 @@ public abstract class SumAggregationFunction<T> extends AggregationFunction<T> {
 		super(pos, type);
 	}
 
-	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@Override
 	public T reduce(T value1, T value2) throws Exception {
-
-		if (isTuple) {
-			Tuple tuple1 = (Tuple) value1;
-			Tuple tuple2 = (Tuple) value2;
-
-			returnTuple = tuple2;
-			returnTuple.setField(
-					reduce((T) tuple1.getField(position[0]),
-							(T) tuple2.getField(position[0]),
-							Arrays.copyOfRange(position, 1, position.length),
-							((TupleTypeInfo) typeInfo).getTypeAt(position[0])),
-					position[0]);
-
-			return (T) returnTuple;
-		} else if (isArray) {
-			Object v1 = Array.get(value1, position[0]);
-			Object v2 = Array.get(value2, position[0]);
-			Array.set(value2, position[0], reduce(
-					(T)v1, (T)v2,
-					Arrays.copyOfRange(position, 1, position.length),
-					((BasicArrayTypeInfo) typeInfo).getComponentInfo()
-				)
-			);
-			return value2;
-		} else {
-			return (T) add(value1, value2);
-		}
+		return reduce(value1, value2, position, typeInfo);
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })

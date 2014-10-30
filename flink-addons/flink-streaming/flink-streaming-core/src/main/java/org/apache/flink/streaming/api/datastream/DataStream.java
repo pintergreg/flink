@@ -196,8 +196,7 @@ public class DataStream<OUT> {
 		TypeInformation<OUT> outTypeInfo = outTypeWrapper.getTypeInfo();
 		
 		if (positions.length == 0) {
-			// TODO hiba
-			return null;
+			throw new IndexOutOfBoundsException();
 		} else if (positions.length == 1) {
 			return getClassAtPos(positions, outTypeInfo);
 		} else {
@@ -208,8 +207,7 @@ public class DataStream<OUT> {
 				return getClassAtPos(Arrays.copyOfRange(positions, 1, positions.length), 
 									((BasicArrayTypeInfo) outTypeInfo).getComponentInfo());
 			} else {
-				// TODO hiba
-				return null;
+				throw new IndexOutOfBoundsException();
 			}
 		}
 	}
@@ -222,7 +220,6 @@ public class DataStream<OUT> {
 				type = ((TupleTypeInfo) outTypeInfo).getTypeAt(positions[0]).getTypeClass();
 
 			} else if (outTypeInfo instanceof BasicArrayTypeInfo) {
-
 				type = ((BasicArrayTypeInfo) outTypeInfo).getComponentTypeClass();
 
 			} else if (outTypeInfo instanceof PrimitiveArrayTypeInfo) {
@@ -244,9 +241,8 @@ public class DataStream<OUT> {
 				} else {
 					throw new IndexOutOfBoundsException("Type could not be determined for array");
 				}
-
 			} else if (positions[0] == 0) {
-				type = outTypeInfo.getTypeClass();
+				return outTypeInfo.getClass();
 			} else {
 				throw new IndexOutOfBoundsException("Position is out of range");
 			}
@@ -259,8 +255,7 @@ public class DataStream<OUT> {
 				return getClassAtPos(Arrays.copyOfRange(positions, 1, positions.length), 
 									((BasicArrayTypeInfo) outTypeInfo).getComponentInfo());
 			} else {
-				// TODO hiba
-				return null;
+				throw new IndexOutOfBoundsException();
 			}			
 		}
 	}
