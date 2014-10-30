@@ -15,30 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.flink.streaming.api.ft.layer;
+package org.apache.flink.streaming.api.ft.layer.util;
 
-import java.io.Serializable;
-import java.util.Iterator;
+public class RecordWithId<T> {
 
-import org.apache.flink.streaming.api.ft.layer.util.RecordWithId;
+	private T record;
+	private long id;
 
-public abstract class AbstractFaultToleranceLayerIterator<T> implements Iterator<T>, Serializable {
-
-	private static final long serialVersionUID = 1L;
-
-	public abstract void reset(long offset);
-	public abstract RecordWithId<T> nextWithId();
-	
-	public abstract void initializeFromBeginning();
-	public abstract void initializeFromCurrent();
-	public abstract void initializeFromOffset(long offset);
-
-	@Override
-	public void remove() {
-		throw new RuntimeException("Cannot remove message from queue.");
+	public RecordWithId(T record, long id) {
+		this.record = record;
+		this.id = id;
 	}
-	
-	public abstract long getLastOffset();
 
-	public abstract long currentOffset();
+	public T getRecord() {
+		return record;
+	}
+
+	public long getId() {
+		return id;
+	}
+
 }

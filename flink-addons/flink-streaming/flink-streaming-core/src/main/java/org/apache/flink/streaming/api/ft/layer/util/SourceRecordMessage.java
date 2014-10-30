@@ -15,30 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.flink.streaming.api.ft.layer;
+package org.apache.flink.streaming.api.ft.layer.util;
 
-public class MessageWithOffset<T> {
-	private long offset;
-	private T message;
+import java.io.Serializable;
 
-	public MessageWithOffset(long offset, T message) {
-		this.offset = offset;
-		this.message = message;
+public class SourceRecordMessage implements Serializable {
+
+	private static final long serialVersionUID = 1L;
+
+	private long sourceRecordId;
+
+	public SourceRecordMessage(long sourceRecordId) {
+		this.sourceRecordId = sourceRecordId;
 	}
 
-	public long getOffset() {
-		return offset;
+	public long getSourceRecordId() {
+		return sourceRecordId;
 	}
 
-	public void setOffset(long offset) {
-		this.offset = offset;
+	public void setSourceRecordId(long sourceRecordId) {
+		this.sourceRecordId = sourceRecordId;
 	}
 
-	public T getMessage() {
-		return message;
-	}
-
-	public void setMessage(T message) {
-		this.message = message;
-	}
 }

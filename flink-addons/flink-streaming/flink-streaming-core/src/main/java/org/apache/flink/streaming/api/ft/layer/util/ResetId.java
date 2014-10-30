@@ -15,46 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.flink.streaming.api.ft.layer;
+package org.apache.flink.streaming.api.ft.layer.util;
 
-import java.io.Serializable;
+public class ResetId {
 
-import org.apache.commons.lang.SerializationUtils;
-
-public class FaultToleranceLayerCollector<OUT> implements AbstractFaultToleranceLayerCollector<OUT> {
-
-	private static final long serialVersionUID = 1L;
-
-	private AbstractFaultToleranceLayer ftLayer;
 	private int sourceId;
+	private long offset;
 
-	public FaultToleranceLayerCollector(AbstractFaultToleranceLayer ftLayer, int sourceId) {
-		this.ftLayer = ftLayer;
+	public ResetId(int sourceId, long offset) {
 		this.sourceId = sourceId;
-		initialize();
+		this.offset = offset;
 	}
-
-	public void initialize() {
-		ftLayer.createNewSource(sourceId);
+	
+	public int getSourceId() {
+		return sourceId;
 	}
-
-	@Override
-	public void collect(OUT record) {
-		byte[] out = serialize(record);
-		ftLayer.push(sourceId, out);
+	
+	public long getOffset() {
+		return offset;
 	}
-
-	@Override
-	public void close() {
-
-	}
-
-	public void remove() {
-		ftLayer.removeSource(sourceId);
-	}
-
-	@Override
-	public byte[] serialize(OUT record) {
-		return SerializationUtils.serialize((Serializable) record);
-	}
+	
 }

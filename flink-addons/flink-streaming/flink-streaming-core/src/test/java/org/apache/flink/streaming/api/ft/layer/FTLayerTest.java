@@ -22,10 +22,7 @@ import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
 
-import org.apache.flink.streaming.api.ft.layer.FaultToleranceLayer;
-import org.apache.flink.streaming.api.ft.layer.FaultToleranceLayerCollector;
-import org.apache.flink.streaming.api.ft.layer.FaultToleranceLayerIterator;
-import org.apache.flink.streaming.api.ft.layer.MessageWithOffset;
+import org.apache.flink.streaming.api.ft.layer.util.RecordWithId;
 import org.junit.Test;
 
 public class FTLayerTest {
@@ -73,10 +70,10 @@ public class FTLayerTest {
 		assertEquals(expectedResult, actualResult);
 		
 		iter.reset(2);
-		MessageWithOffset<String> msg = iter.nextWithOffset();
+		RecordWithId<String> msg = iter.nextWithId();
 		
-		assertEquals(2, msg.getOffset());
-		assertEquals("three", msg.getMessage());
+//		assertEquals(2, msg.getOffset());
+		assertEquals("three", msg.getRecord());
 
 		coll2.collect(2);
 

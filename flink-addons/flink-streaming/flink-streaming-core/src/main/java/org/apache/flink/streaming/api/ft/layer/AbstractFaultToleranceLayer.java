@@ -21,12 +21,12 @@ import java.io.Serializable;
 
 public interface AbstractFaultToleranceLayer extends Serializable {
 
-	public void createNewTopic(long topicId);
+	public void createNewSource(int sourceId);
 
-	public void consume(long topicId, byte[] out);
+	public void push(int sourceId, byte[] out);
 
-	public void remove(long topicId);
+	public void removeSource(int sourceId);
 
-	public <T> AbstractFaultToleranceLayerIterator<T> iterator(long topicId);
+	public <T> AbstractFaultToleranceLayerIterator<T> iterator(int sourceId);
 
 }

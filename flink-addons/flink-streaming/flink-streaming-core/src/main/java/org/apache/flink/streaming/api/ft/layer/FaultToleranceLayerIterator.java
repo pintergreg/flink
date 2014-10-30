@@ -17,35 +17,37 @@
 
 package org.apache.flink.streaming.api.ft.layer;
 
-import java.util.ArrayList;
-
 import org.apache.commons.lang.SerializationUtils;
+import org.apache.flink.streaming.api.ft.layer.util.PersistentStorage;
+import org.apache.flink.streaming.api.ft.layer.util.RecordWithId;
+import org.apache.flink.streaming.api.ft.layer.util.SerializedRecordWithId;
 
 public class FaultToleranceLayerIterator<T> extends AbstractFaultToleranceLayerIterator<T> {
 
 	private static final long serialVersionUID = 1L;
 
-	private ArrayList<byte[]> list;
-	int offset;
+	private PersistentStorage list;
+	long offset;
 
-	public FaultToleranceLayerIterator(ArrayList<byte[]> list) {
+	FaultToleranceLayerIterator(PersistentStorage list) {
 		this.list = list;
 		this.offset = 0;
 	}
 
 	@Override
 	public boolean hasNext() {
-		return offset < list.size();
+		return offset <= list.lastOffset();
 	}
 
 	@Override
 	public T next() {
-		return deserialize(list.get(offset++));
+		return deserialize(list.get(offset++).getRecord());
 	}
 
 	@Override
-	public MessageWithOffset<T> nextWithOffset() {
-		return new MessageWithOffset<T>(offset, deserialize(list.get(offset++)));
+	public RecordWithId<T> nextWithId() {
+		SerializedRecordWithId serializedRecord = list.get(offset++);
+		return new RecordWithId<T>(deserialize(serializedRecord.getRecord()), serializedRecord.getId());
 	}
 
 	@SuppressWarnings("unchecked")
@@ -58,13 +60,13 @@ public class FaultToleranceLayerIterator<T> extends AbstractFaultToleranceLayerI
 		if (offset < 0 || offset > list.size()) {
 			throw new RuntimeException("Offset is out of bound!");
 		} else {
-			this.offset = (int) offset;
+			this.offset = offset;
 		}
 	}
 
 	@Override
 	public void initializeFromBeginning() {
-		offset = 0;
+		offset = list.eldestOffset();
 	}
 
 	@Override

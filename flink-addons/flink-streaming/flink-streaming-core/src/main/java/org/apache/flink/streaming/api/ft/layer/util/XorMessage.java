@@ -15,46 +15,36 @@
  * limitations under the License.
  */
 
-package org.apache.flink.streaming.api.ft.layer;
+package org.apache.flink.streaming.api.ft.layer.util;
 
 import java.io.Serializable;
 
-import org.apache.commons.lang.SerializationUtils;
-
-public class FaultToleranceLayerCollector<OUT> implements AbstractFaultToleranceLayerCollector<OUT> {
+public class XorMessage implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 
-	private AbstractFaultToleranceLayer ftLayer;
-	private int sourceId;
+	private long recordId;
+	private long sourceRecordId;
 
-	public FaultToleranceLayerCollector(AbstractFaultToleranceLayer ftLayer, int sourceId) {
-		this.ftLayer = ftLayer;
-		this.sourceId = sourceId;
-		initialize();
+	public XorMessage(long recordId, long sourceRecordId) {
+		this.recordId = recordId;
+		this.sourceRecordId = sourceRecordId;
 	}
 
-	public void initialize() {
-		ftLayer.createNewSource(sourceId);
+	public long getRecordId() {
+		return recordId;
 	}
 
-	@Override
-	public void collect(OUT record) {
-		byte[] out = serialize(record);
-		ftLayer.push(sourceId, out);
+	public void setRecordId(long recordId) {
+		this.recordId = recordId;
 	}
 
-	@Override
-	public void close() {
-
+	public long getSourceRecordId() {
+		return sourceRecordId;
 	}
 
-	public void remove() {
-		ftLayer.removeSource(sourceId);
+	public void setSourceRecordId(long sourceRecordId) {
+		this.sourceRecordId = sourceRecordId;
 	}
 
-	@Override
-	public byte[] serialize(OUT record) {
-		return SerializationUtils.serialize((Serializable) record);
-	}
 }
