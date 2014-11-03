@@ -22,6 +22,7 @@ import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.common.functions.RichGroupReduceFunction;
 import org.apache.flink.api.common.functions.RichReduceFunction;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.streaming.api.function.aggregation.AggregationFunction;
 import org.apache.flink.streaming.api.function.aggregation.MaxAggregationFunction;
 import org.apache.flink.streaming.api.function.aggregation.MaxByAggregationFunction;
@@ -48,14 +49,14 @@ public class BatchedDataStream<OUT> {
 
 	protected DataStream<OUT> dataStream;
 	protected boolean isGrouped;
-	protected int keyPosition;
+	protected KeySelector<OUT, ?> keySelector;
 	protected long batchSize;
 	protected long slideSize;
 
 	protected BatchedDataStream(DataStream<OUT> dataStream, long batchSize, long slideSize) {
 		if (dataStream instanceof GroupedDataStream) {
 			this.isGrouped = true;
-			this.keyPosition = ((GroupedDataStream<OUT>) dataStream).keyPosition;
+			this.keySelector = ((GroupedDataStream<OUT>) dataStream).keySelector;
 		} else {
 			this.isGrouped = false;
 		}
@@ -67,7 +68,7 @@ public class BatchedDataStream<OUT> {
 	protected BatchedDataStream(BatchedDataStream<OUT> batchedDataStream) {
 		this.dataStream = batchedDataStream.dataStream.copy();
 		this.isGrouped = batchedDataStream.isGrouped;
-		this.keyPosition = batchedDataStream.keyPosition;
+		this.keySelector = batchedDataStream.keySelector;
 		this.batchSize = batchedDataStream.batchSize;
 		this.slideSize = batchedDataStream.slideSize;
 	}
@@ -136,7 +137,7 @@ public class BatchedDataStream<OUT> {
 	public SingleOutputStreamOperator<OUT, ?> sum(int positionToSum) {
 		dataStream.checkFieldRange(positionToSum);
 		return aggregate((AggregationFunction<OUT>) SumAggregationFunction.getSumFunction(
-				positionToSum, dataStream.getClassAtPos(positionToSum)));
+				positionToSum, dataStream.getClassAtPos(positionToSum), dataStream.getOutputType()));
 	}
 
 	/**
@@ -158,7 +159,7 @@ public class BatchedDataStream<OUT> {
 	 */
 	public SingleOutputStreamOperator<OUT, ?> min(int positionToMin) {
 		dataStream.checkFieldRange(positionToMin);
-		return aggregate(new MinAggregationFunction<OUT>(positionToMin));
+		return aggregate(new MinAggregationFunction<OUT>(positionToMin, dataStream.getOutputType()));
 	}
 
 	/**
@@ -190,7 +191,8 @@ public class BatchedDataStream<OUT> {
 	 */
 	public SingleOutputStreamOperator<OUT, ?> minBy(int positionToMinBy, boolean first) {
 		dataStream.checkFieldRange(positionToMinBy);
-		return aggregate(new MinByAggregationFunction<OUT>(positionToMinBy, first));
+		return aggregate(new MinByAggregationFunction<OUT>(positionToMinBy, first,
+				dataStream.getOutputType()));
 	}
 
 	/**
@@ -212,7 +214,7 @@ public class BatchedDataStream<OUT> {
 	 */
 	public SingleOutputStreamOperator<OUT, ?> max(int positionToMax) {
 		dataStream.checkFieldRange(positionToMax);
-		return aggregate(new MaxAggregationFunction<OUT>(positionToMax));
+		return aggregate(new MaxAggregationFunction<OUT>(positionToMax, dataStream.getOutputType()));
 	}
 
 	/**
@@ -243,7 +245,8 @@ public class BatchedDataStream<OUT> {
 	 */
 	public SingleOutputStreamOperator<OUT, ?> maxBy(int positionToMaxBy, boolean first) {
 		dataStream.checkFieldRange(positionToMaxBy);
-		return aggregate(new MaxByAggregationFunction<OUT>(positionToMaxBy, first));
+		return aggregate(new MaxByAggregationFunction<OUT>(positionToMaxBy, first,
+				dataStream.getOutputType()));
 	}
 
 	/**
@@ -277,7 +280,7 @@ public class BatchedDataStream<OUT> {
 		BatchReduceInvokable<OUT> invokable;
 		if (isGrouped) {
 			invokable = new GroupedBatchReduceInvokable<OUT>(reducer, batchSize, slideSize,
-					keyPosition);
+					keySelector);
 		} else {
 			invokable = new BatchReduceInvokable<OUT>(reducer, batchSize, slideSize);
 		}
@@ -289,7 +292,7 @@ public class BatchedDataStream<OUT> {
 		BatchGroupReduceInvokable<OUT, R> invokable;
 		if (isGrouped) {
 			invokable = new GroupedBatchGroupReduceInvokable<OUT, R>(reducer, batchSize, slideSize,
-					keyPosition);
+					keySelector);
 		} else {
 			invokable = new BatchGroupReduceInvokable<OUT, R>(reducer, batchSize, slideSize);
 		}

@@ -29,6 +29,7 @@ import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.common.io.FileOutputFormat;
 import org.apache.flink.api.common.io.OutputFormat;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.operators.base.JoinOperatorBase.JoinHint;
 import org.apache.flink.api.common.operators.base.PartitionOperatorBase.PartitionMethod;
 import org.apache.flink.api.java.aggregation.Aggregations;
 import org.apache.flink.api.java.functions.FormattingMapper;
@@ -52,7 +53,6 @@ import org.apache.flink.api.java.functions.FirstReducer;
 import org.apache.flink.api.java.operators.FlatMapOperator;
 import org.apache.flink.api.java.operators.GroupReduceOperator;
 import org.apache.flink.api.java.operators.IterativeDataSet;
-import org.apache.flink.api.java.operators.JoinOperator.JoinHint;
 import org.apache.flink.api.java.operators.JoinOperator.JoinOperatorSets;
 import org.apache.flink.api.java.operators.Keys;
 import org.apache.flink.api.java.operators.MapOperator;
@@ -554,9 +554,8 @@ public abstract class DataSet<T> {
 	 *   {@link DataSet DataSets} on key equality and provides multiple ways to combine 
 	 *   joining elements into one DataSet.</br>
 	 * 
-	 * This method returns a {@link JoinOperatorSets} on which 
-	 *   {@link JoinOperatorSets#where()} needs to be called to define the join key of the first 
-	 *   joining (i.e., this) DataSet.
+	 * This method returns a {@link JoinOperatorSets} on which one of the {@code where} methods
+	 * can be called to define the join key of the first joining (i.e., this) DataSet.
 	 *  
 	 * @param other The other DataSet with which this DataSet is joined.
 	 * @return A JoinOperatorSets to continue the definition of the Join transformation.
@@ -567,6 +566,27 @@ public abstract class DataSet<T> {
 	public <R> JoinOperatorSets<T, R> join(DataSet<R> other) {
 		return new JoinOperatorSets<T, R>(this, other);
 	}
+	
+	/**
+	 * Initiates a Join transformation. <br/>
+	 * A Join transformation joins the elements of two 
+	 *   {@link DataSet DataSets} on key equality and provides multiple ways to combine 
+	 *   joining elements into one DataSet.</br>
+	 * 
+	 * This method returns a {@link JoinOperatorSets} on which one of the {@code where} methods
+	 * can be called to define the join key of the first joining (i.e., this) DataSet.
+	 *  
+	 * @param other The other DataSet with which this DataSet is joined.
+	 * @param strategy The strategy that should be used execute the join. If {@code null} is give, then the
+	 *                 optimizer will pick the join strategy.
+	 * @return A JoinOperatorSets to continue the definition of the Join transformation.
+	 * 
+	 * @see JoinOperatorSets
+	 * @see DataSet
+	 */
+	public <R> JoinOperatorSets<T, R> join(DataSet<R> other, JoinHint strategy) {
+		return new JoinOperatorSets<T, R>(this, other, strategy);
+	}
 
 	/**
 	 * Initiates a Join transformation. <br/>
@@ -576,7 +596,7 @@ public abstract class DataSet<T> {
 	 * This method also gives the hint to the optimizer that the second DataSet to join is much
 	 *   smaller than the first one.</br>
 	 * This method returns a {@link JoinOperatorSets} on which 
-	 *   {@link JoinOperatorSets#where()} needs to be called to define the join key of the first 
+	 *   {@link JoinOperatorSets#where(String...)} needs to be called to define the join key of the first 
 	 *   joining (i.e., this) DataSet.
 	 *  
 	 * @param other The other DataSet with which this DataSet is joined.
@@ -596,9 +616,8 @@ public abstract class DataSet<T> {
 	 *   joining elements into one DataSet.</br>
 	 * This method also gives the hint to the optimizer that the second DataSet to join is much
 	 *   larger than the first one.</br>
-	 * This method returns a {@link JoinOperatorSets JoinOperatorSet} on which 
-	 *   {@link JoinOperatorSets#where()} needs to be called to define the join key of the first 
-	 *   joining (i.e., this) DataSet.
+	 * This method returns a {@link JoinOperatorSets} on which one of the {@code where} methods
+	 * can be called to define the join key of the first joining (i.e., this) DataSet.
 	 *  
 	 * @param other The other DataSet with which this DataSet is joined.
 	 * @return A JoinOperatorSet to continue the definition of the Join transformation.
@@ -623,9 +642,8 @@ public abstract class DataSet<T> {
 	 *   is called with an empty group for the non-existing group.</br>
 	 * The CoGroupFunction can iterate over the elements of both groups and return any number 
 	 *   of elements including none.</br>
-	 * This method returns a {@link CoGroupOperatorSets} on which 
-	 *   {@link CoGroupOperatorSets#where()} needs to be called to define the grouping key of the first 
-	 *   (i.e., this) DataSet.
+	 * This method returns a {@link CoGroupOperatorSets} on which one of the {@code where} methods
+	 * can be called to define the join key of the first joining (i.e., this) DataSet.
 	 * 
 	 * @param other The other DataSet of the CoGroup transformation.
 	 * @return A CoGroupOperatorSets to continue the definition of the CoGroup transformation.
@@ -1003,6 +1021,24 @@ public abstract class DataSet<T> {
 	}
 	
 	/**
+	 * Writes a {@link Tuple} DataSet as a CSV file to the specified location.<br/>
+	 * <b>Note: Only a Tuple DataSet can written as a CSV file.</b><br/>
+	 * For each Tuple field the result of {@link Object#toString()} is written.
+	 * Tuple fields are separated by the default field delimiter {@code "comma" (,)}.<br/>
+	 * Tuples are are separated by the newline character ({@code \n}).
+	 * 
+	 * @param filePath The path pointing to the location the CSV file is written to.
+	 * @param writeMode The behavior regarding existing files. Options are NO_OVERWRITE and OVERWRITE.
+	 * @return The DataSink that writes the DataSet.
+	 * 
+	 * @see Tuple
+	 * @see CsvOutputFormat
+	 */
+	public DataSink<T> writeAsCsv(String filePath, WriteMode writeMode) {
+		return internalWriteAsCsv(new Path(filePath),CsvOutputFormat.DEFAULT_LINE_DELIMITER, CsvOutputFormat.DEFAULT_FIELD_DELIMITER, writeMode);
+	}
+	
+	/**
 	 * Writes a {@link Tuple} DataSet as a CSV file to the specified location with the specified field and line delimiters.<br/>
 	 * <b>Note: Only a Tuple DataSet can written as a CSV file.</b><br/>
 	 * For each Tuple field the result of {@link Object#toString()} is written.
@@ -1026,7 +1062,7 @@ public abstract class DataSet<T> {
 	 * @param filePath The path pointing to the location the CSV file is written to.
 	 * @param rowDelimiter The row delimiter to separate Tuples.
 	 * @param fieldDelimiter The field delimiter to separate Tuple fields.
-	 * @param writeMode Control the behavior for existing files. Options are NO_OVERWRITE and OVERWRITE.
+	 * @param writeMode The behavior regarding existing files. Options are NO_OVERWRITE and OVERWRITE.
 	 * 
 	 * @see Tuple
 	 * @see CsvOutputFormat

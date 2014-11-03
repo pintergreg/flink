@@ -16,7 +16,6 @@
  * limitations under the License.
  */
 
-
 package org.apache.flink.compiler.dag;
 
 import java.util.ArrayList;
@@ -68,6 +67,8 @@ public class WorksetIterationNode extends TwoInputNode implements IterationNode 
 	
 	private final GlobalProperties partitionedProperties;
 	
+	private final List<OperatorDescriptorDual> dataProperties;
+	
 	private SolutionSetNode solutionSetNode;
 	
 	private WorksetNode worksetNode;
@@ -112,7 +113,7 @@ public class WorksetIterationNode extends TwoInputNode implements IterationNode 
 		}
 		this.costWeight = weight; 
 		
-		this.possibleProperties.add(new WorksetOpDescriptor(this.solutionSetKeyFields));
+		this.dataProperties = Collections.<OperatorDescriptorDual>singletonList(new WorksetOpDescriptor(this.solutionSetKeyFields));
 	}
 
 	// --------------------------------------------------------------------------------------------
@@ -155,6 +156,19 @@ public class WorksetIterationNode extends TwoInputNode implements IterationNode 
 			{
 				this.solutionDeltaImmediatelyAfterSolutionJoin = true;
 			}
+		}
+		
+		// there needs to be at least one node in the workset path, so
+		// if the next workset is equal to the workset, we need to inject a no-op node
+		if (nextWorkset == worksetNode || nextWorkset instanceof BinaryUnionNode) {
+			NoOpNode noop = new NoOpNode();
+			noop.setDegreeOfParallelism(getDegreeOfParallelism());
+
+			PactConnection noOpConn = new PactConnection(nextWorkset, noop);
+			noop.setIncomingConnection(noOpConn);
+			nextWorkset.addOutgoingConnection(noOpConn);
+			
+			nextWorkset = noop;
 		}
 		
 		// attach an extra node to the solution set delta for the cases where we need to repartition
@@ -224,7 +238,7 @@ public class WorksetIterationNode extends TwoInputNode implements IterationNode 
 	
 	@Override
 	protected List<OperatorDescriptorDual> getPossibleProperties() {
-		return new ArrayList<OperatorDescriptorDual>(1);
+		return this.dataProperties;
 	}
 	
 	@Override
@@ -366,7 +380,7 @@ public class WorksetIterationNode extends TwoInputNode implements IterationNode 
 			return;
 		}
 		
-		// sanity check the solution set delta and cancel out the delta node, if it is not needed
+		// sanity check the solution set delta
 		for (Iterator<PlanNode> deltaPlans = solutionSetDeltaCandidates.iterator(); deltaPlans.hasNext(); ) {
 			SingleInputPlanNode candidate = (SingleInputPlanNode) deltaPlans.next();
 			GlobalProperties gp = candidate.getGlobalProperties();

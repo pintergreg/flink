@@ -32,8 +32,12 @@ import org.apache.flink.api.common.functions.RichFilterFunction;
 import org.apache.flink.api.common.functions.RichFlatMapFunction;
 import org.apache.flink.api.common.functions.RichMapFunction;
 import org.apache.flink.api.common.functions.RichReduceFunction;
+import org.apache.flink.api.common.typeinfo.BasicArrayTypeInfo;
+import org.apache.flink.api.common.typeinfo.PrimitiveArrayTypeInfo;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.typeutils.TupleTypeInfo;
 import org.apache.flink.streaming.api.JobGraphBuilder;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
@@ -64,6 +68,7 @@ import org.apache.flink.streaming.partitioner.FieldsPartitioner;
 import org.apache.flink.streaming.partitioner.ForwardPartitioner;
 import org.apache.flink.streaming.partitioner.ShufflePartitioner;
 import org.apache.flink.streaming.partitioner.StreamPartitioner;
+import org.apache.flink.streaming.util.keys.FieldsKeySelector;
 import org.apache.flink.streaming.util.serialization.FunctionTypeWrapper;
 import org.apache.flink.streaming.util.serialization.ObjectTypeWrapper;
 import org.apache.flink.streaming.util.serialization.TypeWrapper;
@@ -75,7 +80,7 @@ import org.apache.flink.streaming.util.serialization.TypeWrapper;
  * <ul>
  * <li>{@link DataStream#map},</li>
  * <li>{@link DataStream#filter}, or</li>
- * <li>{@link DataStream#batchReduce}.</li>
+ * <li>{@link DataStream#aggregate}.</li>
  * </ul>
  * 
  * @param <OUT>
@@ -198,6 +203,31 @@ public class DataStream<OUT> {
 		TypeInformation<OUT> outTypeInfo = outTypeWrapper.getTypeInfo();
 		if (outTypeInfo.isTupleType()) {
 			type = ((TupleTypeInfo) outTypeInfo).getTypeAt(pos).getTypeClass();
+
+		} else if (outTypeInfo instanceof BasicArrayTypeInfo) {
+
+			type = ((BasicArrayTypeInfo) outTypeInfo).getComponentTypeClass();
+
+		} else if (outTypeInfo instanceof PrimitiveArrayTypeInfo) {
+			Class<?> clazz = outTypeInfo.getTypeClass();
+			if (clazz == boolean[].class) {
+				type = Boolean.class;
+			} else if (clazz == short[].class) {
+				type = Short.class;
+			} else if (clazz == int[].class) {
+				type = Integer.class;
+			} else if (clazz == long[].class) {
+				type = Long.class;
+			} else if (clazz == float[].class) {
+				type = Float.class;
+			} else if (clazz == double[].class) {
+				type = Double.class;
+			} else if (clazz == char[].class) {
+				type = Character.class;
+			} else {
+				throw new IndexOutOfBoundsException("Type could not be determined for array");
+			}
+
 		} else if (pos == 0) {
 			type = outTypeInfo.getTypeClass();
 		} else {
@@ -222,9 +252,9 @@ public class DataStream<OUT> {
 	}
 
 	/**
-	 * Creates a new {@link DataStream} by merging {@link DataStream}
-	 * outputs of the same type with each other. The DataStreams merged using
-	 * this operator will be transformed simultaneously.
+	 * Creates a new {@link DataStream} by merging {@link DataStream} outputs of
+	 * the same type with each other. The DataStreams merged using this operator
+	 * will be transformed simultaneously.
 	 * 
 	 * @param streams
 	 *            The DataStreams to merge output with.
@@ -264,19 +294,66 @@ public class DataStream<OUT> {
 	}
 
 	/**
-	 * Sets the partitioning of the {@link DataStream} so that the output tuples
-	 * are partitioned by their hashcode and are sent to only one component.
+	 * Creates a cross (Cartesian product) of a data stream window. The user can
+	 * implement their own time stamps or use the system time by default.
 	 * 
-	 * @param keyPosition
-	 *            The field used to compute the hashcode.
-	 * @return The DataStream with field partitioning set.
+	 * @param windowSize
+	 *            Size of the windows that will be aligned for both streams in
+	 *            milliseconds.
+	 * @param slideInterval
+	 *            After every function call the windows will be slid by this
+	 *            interval.
+	 * @param dataStreamToCross
+	 * @param windowSize
+	 * @param slideInterval
+	 * @return The transformed {@link DataStream}.
 	 */
-	public DataStream<OUT> partitionBy(int keyPosition) {
-		if (keyPosition < 0) {
-			throw new IllegalArgumentException("The position of the field must be non-negative");
-		}
+	public <IN2> SingleOutputStreamOperator<Tuple2<OUT, IN2>, ?> windowCross(
+			DataStream<IN2> dataStreamToCross, long windowSize, long slideInterval) {
+		return this.windowCross(dataStreamToCross, windowSize, slideInterval,
+				new DefaultTimeStamp<OUT>(), new DefaultTimeStamp<IN2>());
+	}
 
-		return setConnectionType(new FieldsPartitioner<OUT>(keyPosition));
+	/**
+	 * Creates a cross (Cartesian product) of a data stream window.
+	 * 
+	 * @param dataStreamToCross
+	 *            {@link DataStream} to cross with
+	 * @param windowSize
+	 *            Size of the windows that will be aligned for both streams in
+	 *            milliseconds.
+	 * @param slideInterval
+	 *            After every function call the windows will be slid by this
+	 *            interval.
+	 * @param timestamp1
+	 *            User defined time stamps for the first input.
+	 * @param timestamp2
+	 *            User defined time stamps for the second input.
+	 * @return The transformed {@link DataStream}.
+	 */
+	public <IN2> SingleOutputStreamOperator<Tuple2<OUT, IN2>, ?> windowCross(
+			DataStream<IN2> dataStreamToCross, long windowSize, long slideInterval,
+			TimeStamp<OUT> timestamp1, TimeStamp<IN2> timestamp2) {
+		return this.connect(dataStreamToCross).windowCross(windowSize, slideInterval, timestamp1,
+				timestamp2);
+	}
+
+	/**
+	 * Sets the partitioning of the {@link DataStream} so that the output tuples
+	 * are partitioned by the hashcodes of the selected fields.
+	 * 
+	 * @param fields
+	 *            The fields to partition by.
+	 * @return The DataStream with fields partitioning set.
+	 */
+	public DataStream<OUT> partitionBy(int... fields) {
+
+		return setConnectionType(new FieldsPartitioner<OUT>(new FieldsKeySelector<OUT>(
+				getOutputType(), fields)));
+	}
+
+	public DataStream<OUT> partitionBy(KeySelector<OUT, ?> keySelector) {
+		return setConnectionType(new FieldsPartitioner<OUT>(keySelector));
 	}
 
 	/**
@@ -325,7 +402,7 @@ public class DataStream<OUT> {
 	 * calls a {@link MapFunction} for each element of the DataStream. Each
 	 * MapFunction call returns exactly one element. The user can also extend
 	 * {@link RichMapFunction} to gain access to other features provided by the
-	 * {@link RichFuntion} interface.
+	 * {@link org.apache.flink.api.common.functions.RichFunction} interface.
 	 * 
 	 * @param mapper
 	 *            The MapFunction that is called for each element of the
@@ -349,8 +426,8 @@ public class DataStream<OUT> {
 	 * transformation calls a {@link FlatMapFunction} for each element of the
 	 * DataStream. Each FlatMapFunction call can return any number of elements
 	 * including none. The user can also extend {@link RichFlatMapFunction} to
-	 * gain access to other features provided by the {@link RichFuntion}
-	 * interface.
+	 * gain access to other features provided by the
+	 * {@link org.apache.flink.api.common.functions.RichFunction} interface.
 	 * 
 	 * @param flatMapper
 	 *            The FlatMapFunction that is called for each element of the
@@ -373,7 +450,8 @@ public class DataStream<OUT> {
 	/**
 	 * Applies a reduce transformation on the data stream. The user can also
 	 * extend the {@link RichReduceFunction} to gain access to other features
-	 * provided by the {@link RichFuntion} interface.
+	 * provided by the
+	 * {@link org.apache.flink.api.common.functions.RichFunction} interface.
 	 * 
 	 * @param reducer
 	 *            The {@link ReduceFunction} that will be called for every
@@ -410,17 +488,31 @@ public class DataStream<OUT> {
 	}
 
 	/**
-	 * Groups the elements of a {@link DataStream} by the given key position to
+	 * Groups the elements of a {@link DataStream} by the given key positions to
 	 * be used with grouped operators like
 	 * {@link GroupedDataStream#reduce(ReduceFunction)}
 	 * 
-	 * @param keyPosition
-	 *            The position of the field on which the {@link DataStream} will
-	 *            be grouped.
+	 * @param fields
+	 *            The position of the fields on which the {@link DataStream}
+	 *            will be grouped.
 	 * @return The transformed {@link DataStream}
 	 */
-	public GroupedDataStream<OUT> groupBy(int keyPosition) {
-		return new GroupedDataStream<OUT>(this, keyPosition);
+	public GroupedDataStream<OUT> groupBy(int... fields) {
+		return groupBy(new FieldsKeySelector<OUT>(getOutputType(), fields));
+	}
+
+	/**
+	 * Groups the elements of a {@link DataStream} by the key extracted by the
+	 * {@link KeySelector} to be used with grouped operators like
+	 * {@link GroupedDataStream#reduce(ReduceFunction)}
+	 * 
+	 * @param keySelector
+	 *            The {@link KeySelector} that will be used to extract keys for
+	 *            the values
+	 * @return The transformed {@link DataStream}
+	 */
+	public GroupedDataStream<OUT> groupBy(KeySelector<OUT, ?> keySelector) {
+		return new GroupedDataStream<OUT>(this, keySelector);
 	}
 
 	/**
@@ -529,7 +621,7 @@ public class DataStream<OUT> {
 	public SingleOutputStreamOperator<OUT, ?> sum(int positionToSum) {
 		checkFieldRange(positionToSum);
 		return aggregate((AggregationFunction<OUT>) SumAggregationFunction.getSumFunction(
-				positionToSum, getClassAtPos(positionToSum)));
+				positionToSum, getClassAtPos(positionToSum), getOutputType()));
 	}
 
 	/**
@@ -551,7 +643,7 @@ public class DataStream<OUT> {
 	 */
 	public SingleOutputStreamOperator<OUT, ?> min(int positionToMin) {
 		checkFieldRange(positionToMin);
-		return aggregate(new MinAggregationFunction<OUT>(positionToMin));
+		return aggregate(new MinAggregationFunction<OUT>(positionToMin, getOutputType()));
 	}
 
 	/**
@@ -583,7 +675,7 @@ public class DataStream<OUT> {
 	 */
 	public SingleOutputStreamOperator<OUT, ?> minBy(int positionToMinBy, boolean first) {
 		checkFieldRange(positionToMinBy);
-		return aggregate(new MinByAggregationFunction<OUT>(positionToMinBy, first));
+		return aggregate(new MinByAggregationFunction<OUT>(positionToMinBy, first, getOutputType()));
 	}
 
 	/**
@@ -605,7 +697,7 @@ public class DataStream<OUT> {
 	 */
 	public SingleOutputStreamOperator<OUT, ?> max(int positionToMax) {
 		checkFieldRange(positionToMax);
-		return aggregate(new MaxAggregationFunction<OUT>(positionToMax));
+		return aggregate(new MaxAggregationFunction<OUT>(positionToMax, getOutputType()));
 	}
 
 	/**
@@ -637,7 +729,7 @@ public class DataStream<OUT> {
 	 */
 	public SingleOutputStreamOperator<OUT, ?> maxBy(int positionToMaxBy, boolean first) {
 		checkFieldRange(positionToMaxBy);
-		return aggregate(new MaxByAggregationFunction<OUT>(positionToMaxBy, first));
+		return aggregate(new MaxByAggregationFunction<OUT>(positionToMaxBy, first, getOutputType()));
 	}
 
 	/**
@@ -678,7 +770,8 @@ public class DataStream<OUT> {
 	 * DataStream and retains only those element for which the function returns
 	 * true. Elements for which the function returns false are filtered. The
 	 * user can also extend {@link RichFilterFunction} to gain access to other
-	 * features provided by the {@link RichFuntion} interface.
+	 * features provided by the
+	 * {@link org.apache.flink.api.common.functions.RichFunction} interface.
 	 * 
 	 * @param filter
 	 *            The FilterFunction that is called for each element of the

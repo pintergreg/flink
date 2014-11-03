@@ -197,15 +197,17 @@ public class ChannelManager implements EnvelopeDispatcher, BufferProviderBroker 
 	 */
 	public void unregister(ExecutionAttemptID executionId, Task task) {
 		final Environment environment = task.getEnvironment();
+		if (environment == null) {
+			return;
+		}
 
 		// destroy and remove OUTPUT channels from registered channels and cache
 		for (ChannelID id : environment.getOutputChannelIDs()) {
 			Channel channel = this.channels.remove(id);
 			if (channel != null) {
 				channel.destroy();
+				this.receiverCache.remove(channel);
 			}
-
-			this.receiverCache.remove(channel);
 		}
 
 		// destroy and remove INPUT channels from registered channels and cache
@@ -213,9 +215,8 @@ public class ChannelManager implements EnvelopeDispatcher, BufferProviderBroker 
 			Channel channel = this.channels.remove(id);
 			if (channel != null) {
 				channel.destroy();
+				this.receiverCache.remove(channel);
 			}
-
-			this.receiverCache.remove(channel);
 		}
 
 		// clear and remove INPUT side buffer pools
@@ -256,7 +257,7 @@ public class ChannelManager implements EnvelopeDispatcher, BufferProviderBroker 
 		// need at least one buffer per channel
 		if (numChannels > 0 && numBuffers / numChannels < 1) {
 			String msg = String.format("%s has not enough buffers to safely execute %s (%d buffers missing)",
-					this.connectionInfo.hostname(), env.getTaskName(), numChannels - numBuffers);
+					this.connectionInfo.getFQDNHostname(), env.getTaskName(), numChannels - numBuffers);
 
 			throw new InsufficientResourcesException(msg);
 		}

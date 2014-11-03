@@ -25,7 +25,10 @@ import java.net.UnknownHostException;
 import org.apache.flink.core.io.IOReadableWritable;
 import org.apache.flink.core.memory.DataInputView;
 import org.apache.flink.core.memory.DataOutputView;
+import org.apache.flink.util.NetUtils;
 import org.apache.flink.util.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This class encapsulates all connection information necessary to connect to the instance's task manager.
@@ -33,6 +36,9 @@ import org.apache.flink.util.StringUtils;
 public class InstanceConnectionInfo implements IOReadableWritable, Comparable<InstanceConnectionInfo>, java.io.Serializable {
 
 	private static final long serialVersionUID = -8254407801276350716L;
+	
+	private static final Logger LOG = LoggerFactory.getLogger(InstanceConnectionInfo.class);
+	
 
 	/**
 	 * The network address the instance's task manager binds its sockets to.
@@ -50,9 +56,20 @@ public class InstanceConnectionInfo implements IOReadableWritable, Comparable<In
 	private int dataPort;
 
 	/**
-	 * The host name of the instance.
+	 * The fully qualified host name of the instance.
+	 */
+	private String fqdnHostName;
+	
+	/**
+	 * The hostname
 	 */
 	private String hostName;
+	
+	/**
+	 * This flag indicates if the FQDN hostname cound not be resolved and is represented
+	 * as an IP address (string).
+	 */
+	private boolean fqdnHostNameIsIP = false;
 
 
 	/**
@@ -83,6 +100,19 @@ public class InstanceConnectionInfo implements IOReadableWritable, Comparable<In
 		this.ipcPort = ipcPort;
 		this.dataPort = dataPort;
 		this.inetAddress = inetAddress;
+		
+		// get FQDN hostname on this TaskManager.
+		try {
+			this.fqdnHostName = this.inetAddress.getCanonicalHostName();
+		} catch (Throwable t) {
+			LOG.warn("Unable to determine hostname for TaskManager. The performance might be degraded since HDFS input split assignment is not possible");
+			if(LOG.isDebugEnabled()) {
+				LOG.debug("getCanonicalHostName() Exception", t);
+			}
+			// could not determine host name, so take IP textual representation
+			this.fqdnHostName = inetAddress.getHostAddress();
+			this.fqdnHostNameIsIP = true;
+		}
 	}
 
 	/**
@@ -123,19 +153,22 @@ public class InstanceConnectionInfo implements IOReadableWritable, Comparable<In
 	 * 
 	 * @return the host name of the instance
 	 */
-	public String hostname() {
-		if (this.hostName == null) {
-			try {
-				this.hostName = this.inetAddress.getCanonicalHostName();
-			} catch (Throwable t) {
-				// could not determine host name, so take IP textual representation
-				this.hostName = inetAddress.getHostAddress();
+	public String getFQDNHostname() {
+		return this.fqdnHostName;
+	}
+	
+	public String getHostname() {
+		if(hostName == null) {
+			String fqdn = getFQDNHostname();
+			if(this.fqdnHostNameIsIP) { // fqdn to hostname translation is pointless if FQDN is an ip address.
+				hostName = fqdn;
+			} else {
+				hostName = NetUtils.getHostnameFromFQDN(fqdn);
 			}
 		}
-		return this.hostName;
+		return hostName;
 	}
 
-	
 	public String getInetAdress() {
 		return this.inetAddress.toString();
 	}
@@ -154,7 +187,9 @@ public class InstanceConnectionInfo implements IOReadableWritable, Comparable<In
 		this.ipcPort = in.readInt();
 		this.dataPort = in.readInt();
 		
+		this.fqdnHostName = StringUtils.readNullableString(in);
 		this.hostName = StringUtils.readNullableString(in);
+		this.fqdnHostNameIsIP = in.readBoolean();
 
 		try {
 			this.inetAddress = InetAddress.getByAddress(address);
@@ -172,7 +207,9 @@ public class InstanceConnectionInfo implements IOReadableWritable, Comparable<In
 		out.writeInt(this.ipcPort);
 		out.writeInt(this.dataPort);
 		
+		StringUtils.writeNullableString(fqdnHostName, out);
 		StringUtils.writeNullableString(hostName, out);
+		out.writeBoolean(fqdnHostNameIsIP);
 	}
 
 	// --------------------------------------------------------------------------------------------
@@ -181,7 +218,7 @@ public class InstanceConnectionInfo implements IOReadableWritable, Comparable<In
 
 	@Override
 	public String toString() {
-		return hostname() + " (ipcPort=" + ipcPort + ", dataPort=" + dataPort + ")";
+		return getFQDNHostname() + " (ipcPort=" + ipcPort + ", dataPort=" + dataPort + ")";
 	}
 
 	@Override

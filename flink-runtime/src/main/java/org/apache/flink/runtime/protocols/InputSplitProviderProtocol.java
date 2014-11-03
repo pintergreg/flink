@@ -22,6 +22,7 @@ import java.io.IOException;
 
 import org.apache.flink.core.io.InputSplit;
 import org.apache.flink.core.protocols.VersionedProtocol;
+import org.apache.flink.runtime.executiongraph.ExecutionAttemptID;
 import org.apache.flink.runtime.jobgraph.JobID;
 import org.apache.flink.runtime.jobgraph.JobVertexID;
 
@@ -30,5 +31,5 @@ import org.apache.flink.runtime.jobgraph.JobVertexID;
  */
 public interface InputSplitProviderProtocol extends VersionedProtocol {
 
-	InputSplit requestNextInputSplit(JobID jobID, JobVertexID vertex) throws IOException;
+	InputSplit requestNextInputSplit(JobID jobID, JobVertexID vertex, ExecutionAttemptID executionAttempt) throws IOException;
 }

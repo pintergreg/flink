@@ -61,6 +61,7 @@ import org.apache.flink.core.protocols.VersionedProtocol;
 import org.apache.flink.runtime.ExecutionMode;
 import org.apache.flink.runtime.blob.BlobCache;
 import org.apache.flink.runtime.deployment.TaskDeploymentDescriptor;
+import org.apache.flink.runtime.execution.CancelTaskException;
 import org.apache.flink.runtime.execution.ExecutionState;
 import org.apache.flink.runtime.execution.RuntimeEnvironment;
 import org.apache.flink.runtime.execution.librarycache.BlobLibraryCacheManager;
@@ -570,86 +571,86 @@ public class TaskManager implements TaskOperationProtocol {
 		final int taskIndex = tdd.getIndexInSubtaskGroup();
 		final int numSubtasks = tdd.getCurrentNumberOfSubtasks();
 		
+		Task task = null;
 		boolean jarsRegistered = false;
 		
 		try {
 			// Now register data with the library manager
 			libraryCacheManager.register(jobID, tdd.getRequiredJarFiles());
-
-			// library and classloader issues first
 			jarsRegistered = true;
-
+			
+			// library and classloader issues first
 			final ClassLoader userCodeClassLoader = libraryCacheManager.getClassLoader(jobID);
 			if (userCodeClassLoader == null) {
 				throw new Exception("No user code ClassLoader available.");
 			}
 			
-			final Task task = new Task(jobID, vertexId, taskIndex, numSubtasks, executionId, tdd.getTaskName(), this);
+			task = new Task(jobID, vertexId, taskIndex, numSubtasks, executionId, tdd.getTaskName(), this);
 			if (this.runningTasks.putIfAbsent(executionId, task) != null) {
 				throw new Exception("TaskManager contains already a task with executionId " + executionId);
 			}
 			
-			// another try/finally-success block to ensure that the tasks are removed properly in case of an exception
-			boolean success = false;
-			try {
-				final InputSplitProvider splitProvider = new TaskInputSplitProvider(this.globalInputSplitProvider, jobID, vertexId);
-				final RuntimeEnvironment env = new RuntimeEnvironment(task, tdd, userCodeClassLoader, this.memoryManager, this.ioManager, splitProvider, this.accumulatorProtocolProxy);
-				task.setEnvironment(env);
-				
-				// register the task with the network stack and profilers
-				this.channelManager.register(task);
-				
-				final Configuration jobConfig = tdd.getJobConfiguration();
-	
-				boolean enableProfiling = this.profiler != null && jobConfig.getBoolean(ProfilingUtils.PROFILE_JOB_KEY, true);
-	
-				// Register environment, input, and output gates for profiling
-				if (enableProfiling) {
-					task.registerProfiler(this.profiler, jobConfig);
-				}
-				
-				// now that the task is successfully created and registered, we can start copying the
-				// distributed cache temp files
-				Map<String, FutureTask<Path>> cpTasks = new HashMap<String, FutureTask<Path>>();
-				for (Entry<String, DistributedCacheEntry> e : DistributedCache.readFileInfoFromConfig(tdd.getJobConfiguration())) {
-					FutureTask<Path> cp = this.fileCache.createTmpFile(e.getKey(), e.getValue(), jobID);
-					cpTasks.put(e.getKey(), cp);
-				}
-				env.addCopyTasksForCacheFile(cpTasks);
-				
-				if (!task.startExecution()) {
-					throw new Exception("Cannot start task. Task was canceled or failed.");
-				}
+			final InputSplitProvider splitProvider = new TaskInputSplitProvider(this.globalInputSplitProvider, jobID, vertexId, executionId);
+			final RuntimeEnvironment env = new RuntimeEnvironment(task, tdd, userCodeClassLoader, this.memoryManager, this.ioManager, splitProvider, this.accumulatorProtocolProxy);
+			task.setEnvironment(env);
 			
-				// final check that we can go (we do this after the registration, so the the "happen's before"
-				// relationship ensures that either the shutdown removes this task, or we are aware of the shutdown
-				if (shutdownStarted.get()) {
-					throw new Exception("Task Manager is shut down.");
-				}
-				
-				success = true;
-				return new TaskOperationResult(executionId, true);
+			// register the task with the network stack and profilers
+			this.channelManager.register(task);
+			
+			final Configuration jobConfig = tdd.getJobConfiguration();
+
+			boolean enableProfiling = this.profiler != null && jobConfig.getBoolean(ProfilingUtils.PROFILE_JOB_KEY, true);
+
+			// Register environment, input, and output gates for profiling
+			if (enableProfiling) {
+				task.registerProfiler(this.profiler, jobConfig);
 			}
-			finally {
-				if (!success) {
-					// remove task 
-					this.runningTasks.remove(executionId);
-					
-					// delete distributed cache files
-					for (Entry<String, DistributedCacheEntry> e : DistributedCache.readFileInfoFromConfig(tdd.getJobConfiguration())) {
-						this.fileCache.deleteTmpFile(e.getKey(), e.getValue(), jobID);
-					}
-				}
+			
+			// now that the task is successfully created and registered, we can start copying the
+			// distributed cache temp files
+			Map<String, FutureTask<Path>> cpTasks = new HashMap<String, FutureTask<Path>>();
+			for (Entry<String, DistributedCacheEntry> e : DistributedCache.readFileInfoFromConfig(tdd.getJobConfiguration())) {
+				FutureTask<Path> cp = this.fileCache.createTmpFile(e.getKey(), e.getValue(), jobID);
+				cpTasks.put(e.getKey(), cp);
 			}
+			env.addCopyTasksForCacheFile(cpTasks);
+			
+			if (!task.startExecution()) {
+				throw new CancelTaskException();
+			}
+		
+			// final check that we can go (we do this after the registration, so the the "happen's before"
+			// relationship ensures that either the shutdown removes this task, or we are aware of the shutdown
+			if (shutdownStarted.get()) {
+				throw new Exception("Task Manager is shut down.");
+			}
+
+			return new TaskOperationResult(executionId, true);
 		}
 		catch (Throwable t) {
-			LOG.error("Could not instantiate task", t);
-			
-			if (jarsRegistered) {
-				libraryCacheManager.unregister(jobID);
+			String message;
+			if (t instanceof CancelTaskException) {
+				message = "Task was canceled";
+			} else {
+				LOG.error("Could not instantiate task", t);
+				message = ExceptionUtils.stringifyException(t);
 			}
 			
-			return new TaskOperationResult(executionId, false, ExceptionUtils.stringifyException(t));
+			try {
+				this.runningTasks.remove(executionId);
+				
+				if (task != null) {
+					removeAllTaskResources(task);
+				}
+				if (jarsRegistered) {
+					libraryCacheManager.unregister(jobID);
+				}
+			}
+			catch (Throwable t2) {
+				LOG.error("Error during cleanup of task deployment", t2);
+			}
+			
+			return new TaskOperationResult(executionId, false, message);
 		}
 	}
 
@@ -660,7 +661,6 @@ public class TaskManager implements TaskOperationProtocol {
 	 *        the ID of the task to be unregistered
 	 */
 	private void unregisterTask(ExecutionAttemptID executionId) {
-
 		// Task de-registration must be atomic
 		final Task task = this.runningTasks.remove(executionId);
 		if (task == null) {
@@ -670,22 +670,34 @@ public class TaskManager implements TaskOperationProtocol {
 			return;
 		}
 
-		// remove the local tmp file for unregistered tasks.
-		for (Entry<String, DistributedCacheEntry> e: DistributedCache.readFileInfoFromConfig(task.getEnvironment().getJobConfiguration())) {
-			this.fileCache.deleteTmpFile(e.getKey(), e.getValue(), task.getJobID());
-		}
-		
+		removeAllTaskResources(task);
+
+		// Unregister task from library cache manager
+		libraryCacheManager.unregister(task.getJobID());
+	}
+	
+	private void removeAllTaskResources(Task task) {
 		// Unregister task from the byte buffered channel manager
-		this.channelManager.unregister(executionId, task);
+		this.channelManager.unregister(task.getExecutionId(), task);
 
 		// Unregister task from profiling
 		task.unregisterProfiler(this.profiler);
 
 		// Unregister task from memory manager
 		task.unregisterMemoryManager(this.memoryManager);
-
-		// Unregister task from library cache manager
-		libraryCacheManager.unregister(task.getJobID());
+		
+		// remove the local tmp file for unregistered tasks.
+		try {
+			RuntimeEnvironment re = task.getEnvironment();
+			if (re != null) {
+				for (Entry<String, DistributedCacheEntry> e: DistributedCache.readFileInfoFromConfig(task.getEnvironment().getJobConfiguration())) {
+					this.fileCache.deleteTmpFile(e.getKey(), e.getValue(), task.getJobID());
+				}
+			}
+		}
+		catch (Throwable t) {
+			LOG.error("Error cleaning up local files from the distributed cache.", t);
+		}
 	}
 
 	public void notifyExecutionStateChange(JobID jobID, ExecutionAttemptID executionId, ExecutionState newExecutionState, Throwable optionalError) {
