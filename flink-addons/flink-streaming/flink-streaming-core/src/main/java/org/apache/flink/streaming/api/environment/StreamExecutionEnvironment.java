@@ -19,11 +19,13 @@ package org.apache.flink.streaming.api.environment;
 
 import java.io.File;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
 
 import org.apache.commons.lang3.SerializationException;
 import org.apache.commons.lang3.SerializationUtils;
 import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.streaming.api.JobGraphBuilder;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
@@ -62,6 +64,10 @@ public abstract class StreamExecutionEnvironment {
 	private long buffertimeout = 0;;
 
 	protected JobGraphBuilder jobGraphBuilder;
+	
+	private ArrayList<String> positions = new ArrayList<String>();
+	
+	private int nthElem;
 
 	// --------------------------------------------------------------------------------------------
 	// Constructor and Properties
@@ -224,9 +230,16 @@ public abstract class StreamExecutionEnvironment {
 					"fromElements needs at least one element as argument");
 		}
 
-		TypeWrapper<OUT> outTypeWrapper = new ObjectTypeWrapper<OUT>(data[0]);
+		TypeWrapper<OUT> outTypeWrapper = new ObjectTypeWrapper<OUT>(data[0]);		
+
+		// calculate sizes
+		for (int i=0; i<data.length; ++i) {
+			nthElem = 0;
+			setInnerPositions("", data[i], i);
+		}
+		
 		DataStreamSource<OUT> returnStream = new DataStreamSource<OUT>(this, "elements",
-				outTypeWrapper);
+				outTypeWrapper, positions);
 
 		try {
 			SourceFunction<OUT> function = new FromElementsFunction<OUT>(data);
@@ -237,6 +250,34 @@ public abstract class StreamExecutionEnvironment {
 			throw new RuntimeException("Cannot serialize elements");
 		}
 		return returnStream;
+	}
+	
+	private void setInnerPositions(String result, Object obj, int round) {
+		if (obj instanceof Object[]) {
+			for (int i=0; i<((Object[])obj).length; ++i) {
+				setInnerPositions(result + Integer.toString(i), ((Object[])obj)[i], round);
+			}
+		} else if (obj instanceof Tuple) {
+			for (int i=0; i<((Tuple)obj).getArity(); ++i) {
+				setInnerPositions(result + Integer.toString(i), ((Tuple)obj).getField(i), round);
+			}
+		} else {
+			if (round == 0) {
+				positions.add(result);
+			} else {
+				try {
+					if (positions.get(nthElem).compareTo(result) >= 0) {
+						nthElem++;
+					}
+					else  {
+						while (positions.get(nthElem).compareTo(result) < 0) {
+							positions.remove(nthElem);
+						}
+						nthElem++;
+					}
+				} catch (Exception e) { }
+			}
+		}
 	}
 
 	/**
@@ -261,8 +302,15 @@ public abstract class StreamExecutionEnvironment {
 		}
 
 		TypeWrapper<OUT> outTypeWrapper = new ObjectTypeWrapper<OUT>(data.iterator().next());
+		
+		// calculate sizes
+		for (int i=0; i<data.size(); ++i) {
+			nthElem = 0;
+			setInnerPositions("", data.toArray()[i], i);
+		}
+		
 		DataStreamSource<OUT> returnStream = new DataStreamSource<OUT>(this, "elements",
-				outTypeWrapper);
+				outTypeWrapper, positions);
 
 		try {
 			SourceFunction<OUT> function = new FromElementsFunction<OUT>(data);

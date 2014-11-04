@@ -18,6 +18,7 @@
 package org.apache.flink.streaming.util.keys;
 
 import java.lang.reflect.Array;
+import java.util.ArrayList;
 
 import org.apache.flink.api.common.typeinfo.BasicArrayTypeInfo;
 import org.apache.flink.api.common.typeinfo.PrimitiveArrayTypeInfo;
@@ -51,6 +52,8 @@ import org.apache.flink.api.java.tuple.Tuple8;
 import org.apache.flink.api.java.tuple.Tuple9;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.reducefunction.NestedAggregate;
+import org.apache.flink.streaming.api.reducefunction.NestedAggregate.Aggregation;
 
 public class FieldsKeySelector<IN> implements KeySelector<IN, Object> {
 
@@ -142,11 +145,24 @@ public class FieldsKeySelector<IN> implements KeySelector<IN, Object> {
 		StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 		
 		@SuppressWarnings("unchecked")
-		DataStream<Tuple2<Integer, Tuple2<Integer, Integer[]>>> d = env.fromElements(new Tuple2<Integer, Tuple2<Integer, Integer[]>> (1, new Tuple2<Integer, Integer[]> (3, new Integer[]{2,3, 4})), new Tuple2<Integer, Tuple2<Integer, Integer[]>> (2, new Tuple2<Integer, Integer[]> (2, new Integer[]{3,5,6})));
+		DataStream<Tuple3<Integer, Tuple2<Integer[], Integer[]>, Integer>> d = env.fromElements(new Tuple3<Integer, Tuple2<Integer[], Integer[]>, Integer> (1, new Tuple2<Integer[], Integer[]> (new Integer[]{2,3}, new Integer[]{4,5, 6}), 7), new Tuple3<Integer, Tuple2<Integer[], Integer[]>, Integer> (8, new Tuple2<Integer[], Integer[]> (new Integer[]{9}, new Integer[]{10,11,12}), 13));
 		
-		d.minBy(1, 1, 1).print();
-		d.max(1, 0).print();
-		d.sum(1, 1, 2).print();
+		d.reduce(new NestedAggregate(Aggregation.minBy, 1, 1, 1)).print();
+		d.reduce(new NestedAggregate(Aggregation.max, 1, 1, 0)).print();
+		d.reduce(new NestedAggregate(Aggregation.sum, 1, 1, 2)).print();
+		
+		ArrayList<Tuple2<Integer, Integer[]>> aList = new ArrayList<Tuple2<Integer, Integer[]>>();
+		aList.add(new Tuple2<Integer, Integer[]>(1, new Integer[]{5,3}));
+		aList.add(new Tuple2<Integer, Integer[]>(2, new Integer[]{4,2}));
+		aList.add(new Tuple2<Integer, Integer[]>(3, new Integer[]{3,5}));
+		aList.add(new Tuple2<Integer, Integer[]>(4, new Integer[]{2,1}));
+		aList.add(new Tuple2<Integer, Integer[]>(5, new Integer[]{1,4}));
+		
+		DataStream<Tuple2<Integer, Integer[]>> d2 = env.fromCollection(aList);
+		
+		d2.reduce(new NestedAggregate(Aggregation.minBy, 1, 1)).print();
+		d2.reduce(new NestedAggregate(Aggregation.max, 0)).print();
+		d2.reduce(new NestedAggregate(Aggregation.sum, 1, 0)).print();
 		
 		env.execute();
 	}

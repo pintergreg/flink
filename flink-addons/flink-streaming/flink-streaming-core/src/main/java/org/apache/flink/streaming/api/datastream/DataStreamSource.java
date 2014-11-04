@@ -17,6 +17,8 @@
 
 package org.apache.flink.streaming.api.datastream;
 
+import java.util.ArrayList;
+
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.util.serialization.TypeWrapper;
 
@@ -30,6 +32,10 @@ public class DataStreamSource<OUT> extends SingleOutputStreamOperator<OUT, DataS
 
 	public DataStreamSource(StreamExecutionEnvironment environment, String operatorType, TypeWrapper<OUT> outTypeWrapper) {
 		super(environment, operatorType, outTypeWrapper);
+	}
+	
+	public DataStreamSource(StreamExecutionEnvironment environment, String operatorType, TypeWrapper<OUT> outTypeWrapper, ArrayList<String> positions) {
+		super(environment, operatorType, outTypeWrapper, positions);
 	}
 
 	public DataStreamSource(DataStream<OUT> dataStream) {

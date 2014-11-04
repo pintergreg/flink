@@ -17,6 +17,7 @@
 
 package org.apache.flink.streaming.api.datastream;
 
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -44,6 +45,12 @@ public class SingleOutputStreamOperator<OUT, O extends SingleOutputStreamOperato
 	protected SingleOutputStreamOperator(StreamExecutionEnvironment environment,
 			String operatorType, TypeWrapper<OUT> outTypeWrapper) {
 		super(environment, operatorType, outTypeWrapper);
+		setBufferTimeout(environment.getBufferTimeout());
+	}
+	
+	protected SingleOutputStreamOperator(StreamExecutionEnvironment environment,
+			String operatorType, TypeWrapper<OUT> outTypeWrapper, ArrayList<String> positions) {
+		super(environment, operatorType, outTypeWrapper, positions);
 		setBufferTimeout(environment.getBufferTimeout());
 	}
 

@@ -77,7 +77,7 @@ public class GroupedDataStream<OUT> extends DataStream<OUT> {
 	 * @return The transformed DataStream.
 	 */
 	@Override
-	public SingleOutputStreamOperator<OUT, ?> sum(final int... positionToSum) {
+	public SingleOutputStreamOperator<OUT, ?> sum(final int positionToSum) {
 		return super.sum(positionToSum);
 	}
 
@@ -91,7 +91,7 @@ public class GroupedDataStream<OUT> extends DataStream<OUT> {
 	 * @return The transformed DataStream.
 	 */
 	@Override
-	public SingleOutputStreamOperator<OUT, ?> min(final int... positionToMin) {
+	public SingleOutputStreamOperator<OUT, ?> min(final int positionToMin) {
 		return super.min(positionToMin);
 	}
 
@@ -106,7 +106,7 @@ public class GroupedDataStream<OUT> extends DataStream<OUT> {
 	 * @return The transformed DataStream.
 	 */
 	@Override
-	public SingleOutputStreamOperator<OUT, ?> minBy(int... positionToMinBy) {
+	public SingleOutputStreamOperator<OUT, ?> minBy(int positionToMinBy) {
 		return super.minBy(positionToMinBy);
 	}
 
@@ -125,8 +125,8 @@ public class GroupedDataStream<OUT> extends DataStream<OUT> {
 	 * @return The transformed DataStream.
 	 */
 	@Override
-	public SingleOutputStreamOperator<OUT, ?> minBy(boolean first, int... positionToMinBy) {
-		return super.minBy(first, positionToMinBy);
+	public SingleOutputStreamOperator<OUT, ?> minBy(int positionToMinBy, boolean first) {
+		return super.minBy(positionToMinBy, first);
 	}
 
 	/**
@@ -139,7 +139,7 @@ public class GroupedDataStream<OUT> extends DataStream<OUT> {
 	 * @return The transformed DataStream.
 	 */
 	@Override
-	public SingleOutputStreamOperator<OUT, ?> max(final int... positionToMax) {
+	public SingleOutputStreamOperator<OUT, ?> max(final int positionToMax) {
 		return super.max(positionToMax);
 	}
 
@@ -154,7 +154,7 @@ public class GroupedDataStream<OUT> extends DataStream<OUT> {
 	 * @return The transformed DataStream.
 	 */
 	@Override
-	public SingleOutputStreamOperator<OUT, ?> maxBy(int... positionToMaxBy) {
+	public SingleOutputStreamOperator<OUT, ?> maxBy(int positionToMaxBy) {
 		return super.maxBy(positionToMaxBy);
 	}
 
@@ -173,8 +173,8 @@ public class GroupedDataStream<OUT> extends DataStream<OUT> {
 	 * @return The transformed DataStream.
 	 */
 	@Override
-	public SingleOutputStreamOperator<OUT, ?> maxBy(boolean first, int... positionToMaxBy) {
-		return super.maxBy(first, positionToMaxBy);
+	public SingleOutputStreamOperator<OUT, ?> maxBy(int positionToMaxBy, boolean first) {
+		return super.maxBy(positionToMaxBy, first);
 	}
 
 	@Override
