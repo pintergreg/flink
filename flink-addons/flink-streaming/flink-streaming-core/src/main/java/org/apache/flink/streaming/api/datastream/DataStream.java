@@ -134,6 +134,19 @@ public class DataStream<OUT> {
 		this.mergedStreams.add(this);
 	}
 	
+	/**
+	 * Create a new {@link DataStream} in the given execution environment with
+	 * partitioning set to forward by default.
+	 * 
+	 * @param environment
+	 *            StreamExecutionEnvironment
+	 * @param operatorType
+	 *            The type of the operator in the component
+	 * @param outTypeWrapper
+	 *            Type of the output
+	 * @param positions
+	 * 			  Possible indexes for aggregations 
+	 */
 	public DataStream(StreamExecutionEnvironment environment, String operatorType,
 			TypeWrapper<OUT> outTypeWrapper, ArrayList<String> positions) {
 		if (environment == null) {
@@ -213,6 +226,14 @@ public class DataStream<OUT> {
 		return this.outTypeWrapper.getTypeInfo();
 	}
 
+	/**
+	 * 
+	 * Gets the class at position if it is valid.
+	 * 
+	 * @param pos
+	 * 			nested positions to check
+	 * @return The class at the position
+	 */
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	protected Class<?> getClassAtPos(int[] pos) {
 		if (positions != null) {
@@ -243,6 +264,16 @@ public class DataStream<OUT> {
 		}
 	}
 
+	/**
+	 * 
+	 * Gets the class at position if it is valid.
+	 * 
+	 * @param pos
+	 * 			nested positions to check
+	 * @param outTypeInfo
+	 * 			the output type
+	 * @return The class at the position
+	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	protected Class<?> getClassAtPos(int[] pos, TypeInformation<OUT> outTypeInfo) {
 		if (pos.length == 1) {
