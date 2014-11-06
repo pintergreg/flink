@@ -119,6 +119,21 @@ public abstract class MessagingFunction<VertexKey extends Comparable<VertexKey>,
 	}
 	
 	/**
+	 * Sends the given message to the vertices enumerated in targets. 
+	 * 
+	 * @param reciients The keys (ids) of the target vertices.
+	 * @param m The message.
+	 */
+	public void sendMessageToMultipleRecipients(MultipleRecipients<VertexKey> reciients, Message m) {
+		for (VertexKey target:reciients) {
+			outValue.f0 = target;
+			outValue.f1 = m;
+			out.collect(outValue);
+		}
+	}
+	
+	
+	/**
 	 * Sends the given message to the vertex identified by the given key. If the target vertex does not exist,
 	 * the next superstep will cause an exception due to a non-deliverable message.
 	 * 
@@ -131,6 +146,8 @@ public abstract class MessagingFunction<VertexKey extends Comparable<VertexKey>,
 		out.collect(outValue);
 	}
 
+	
+	
 	// --------------------------------------------------------------------------------------------
 	
 	/**

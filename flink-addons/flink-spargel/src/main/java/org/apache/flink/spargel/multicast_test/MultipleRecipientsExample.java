@@ -1,35 +1,22 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-package org.apache.flink.spargel.java.examples;
+package org.apache.flink.spargel.multicast_test;
 
 import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.api.java.DataSet;
+import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.spargel.java.MessageIterator;
 import org.apache.flink.spargel.java.MessagingFunction;
+import org.apache.flink.spargel.java.MultipleRecipients;
+import org.apache.flink.spargel.java.OutgoingEdge;
 import org.apache.flink.spargel.java.VertexCentricIteration;
 import org.apache.flink.spargel.java.VertexUpdateFunction;
 import org.apache.flink.types.NullValue;
-import org.apache.flink.api.java.DataSet;
-import org.apache.flink.api.java.ExecutionEnvironment;
+
 
 @SuppressWarnings({"serial", "unchecked"})
-public class SpargelConnectedComponents {
+//@SuppressWarnings({"serial"})
+//@SuppressWarnings({"unchecked"})
+public class MultipleRecipientsExample {
 
 	public static void main(String[] args) throws Exception {
 		ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
@@ -63,7 +50,12 @@ public class SpargelConnectedComponents {
 	public static final class CCMessager extends MessagingFunction<Long, Long, Long, NullValue> {
 		@Override
 		public void sendMessages(Long vertexId, Long componentId) {
-			sendMessageToAllNeighbors(componentId);
+			MultipleRecipients<Long> recipients = new MultipleRecipients<Long>();
+
+			for (OutgoingEdge<Long, NullValue> edge : getOutgoingEdges()) {
+				recipients.addRecipient(edge.target());
+			}
+			sendMessageToMultipleRecipients(recipients, componentId);
 		}
 	}
 	
@@ -77,4 +69,5 @@ public class SpargelConnectedComponents {
 			return new Tuple2<Long, Long>(value, value);
 		}
 	}
+
 }
