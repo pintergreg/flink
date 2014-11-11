@@ -209,7 +209,7 @@ public class NepheleMiniCluster {
 			// force the input/output format classes to load the default values from the configuration.
 			// we need to do this here, because the format classes may have been initialized before the mini cluster was started
 			initializeIOFormatClasses();
-			
+
 			// before we start the JobManager, we need to make sure that there are no lingering IPC threads from before
 			// check that all threads are done before we return
 			Thread[] allThreads = new Thread[Thread.activeCount()];

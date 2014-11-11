@@ -24,6 +24,8 @@ import org.apache.flink.api.common.typeutils.TypeComparator;
 import org.apache.flink.runtime.io.network.api.ChannelSelector;
 import org.apache.flink.runtime.plugable.SerializationDelegate;
 
+import com.esotericsoftware.minlog.Log;
+
 public class OutputEmitter<T> implements ChannelSelector<SerializationDelegate<T>> {
 	
 	private final ShipStrategyType strategy;		// the shipping strategy used by this output emitter

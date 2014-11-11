@@ -44,7 +44,15 @@ public class RecordWriter<T extends IOReadableWritable> extends BufferWriter {
 
 	private final ChannelSelector<T> channelSelector;
 
+	public ChannelSelector<T> getChannelSelector() {
+		return channelSelector;
+	}
+
 	private int numChannels;
+
+	public int getNumChannels() {
+		return numChannels;
+	}
 
 	/** RecordSerializer per outgoing channel */
 	private RecordSerializer<T>[] serializers;

@@ -200,7 +200,7 @@ public class LocalExecutor extends PlanExecutor {
 	 */
 	public JobExecutionResult executePlan(Plan plan) throws Exception {
 		if (plan == null) {
-			throw new IllegalArgumentException("The plan may not be null.");
+			throw new IllegalArgumentException("The plan must not be null.");
 		}
 		
 		ContextChecker checker = new ContextChecker();

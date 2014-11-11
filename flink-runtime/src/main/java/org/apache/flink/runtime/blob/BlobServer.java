@@ -30,9 +30,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.flink.runtime.jobgraph.JobID;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.esotericsoftware.minlog.Log;
 
 /**
  * This class implements the BLOB server. The BLOB server is responsible for listening for incoming requests and

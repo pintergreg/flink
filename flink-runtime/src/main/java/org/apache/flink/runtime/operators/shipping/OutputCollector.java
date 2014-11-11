@@ -84,6 +84,8 @@ public class OutputCollector<T> implements Collector<T>
 	{
 		this.delegate.setInstance(record);
 		try {
+//			System.out.println("#Writers:" + writers.length);
+//			System.out.println("Record:" + record.getClass().getSimpleName());
 			for (int i = 0; i < writers.length; i++) {
 				this.writers[i].emit(this.delegate);
 			}
@@ -116,4 +118,25 @@ public class OutputCollector<T> implements Collector<T>
 	public List<RecordWriter<SerializationDelegate<T>>> getWriters() {
 		return Collections.unmodifiableList(Arrays.asList(this.writers));
 	}
+
+
+	/////////////////	
+	public int getChannel(T record) {
+		if (writers.length > 1) {
+			throw new 
+			 UnsupportedOperationException("The number of writers should be 1");
+		}
+		this.delegate.setInstance(record);
+		
+		int[] channels = this.writers[0].getChannelSelector().selectChannels(this.delegate, this.writers[0].getNumChannels());
+		if (channels.length > 1) {
+			throw new RuntimeException("Number of channels  > 1");
+		}
+		return channels[0];
+		
+		
+	}
+
+
+
 }

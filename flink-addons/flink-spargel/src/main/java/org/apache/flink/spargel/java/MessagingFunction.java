@@ -19,14 +19,21 @@
 package org.apache.flink.spargel.java;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.apache.flink.api.common.aggregators.Aggregator;
 import org.apache.flink.api.common.functions.IterationRuntimeContext;
 import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
+import org.apache.flink.runtime.operators.shipping.OutputCollector;
 import org.apache.flink.spargel.java.OutgoingEdge;
 import org.apache.flink.types.Value;
 import org.apache.flink.util.Collector;
@@ -118,18 +125,42 @@ public abstract class MessagingFunction<VertexKey extends Comparable<VertexKey>,
 		}
 	}
 	
+	private Set<Integer> channelSet = new HashSet<Integer>();
+	private Integer channel;
+	
+	private Map<Integer, List<VertexKey>> recipientsInBlock = new HashMap <Integer, List<VertexKey>>();
+	
 	/**
 	 * Sends the given message to the vertices enumerated in targets. 
 	 * 
-	 * @param reciients The keys (ids) of the target vertices.
+	 * @param recipients The keys (ids) of the target vertices.
 	 * @param m The message.
 	 */
-	public void sendMessageToMultipleRecipients(MultipleRecipients<VertexKey> reciients, Message m) {
-		for (VertexKey target:reciients) {
+	public void sendMessageToMultipleRecipients(MultipleRecipients<VertexKey> recipients, Message m) {
+		channelSet.clear();
+//		blockedRecipients.clear();
+		outValue.f1 = m;
+		for (VertexKey target: recipients) {
 			outValue.f0 = target;
-			outValue.f1 = m;
-			out.collect(outValue);
+			channel = ((OutputCollector<Tuple2<VertexKey, Message>>)out).getChannel(outValue);
+			if (!channelSet.contains(channel)){
+				channelSet.add(channel);
+				out.collect(outValue);
+				if (recipientsInBlock.get(channel) == null) {
+					recipientsInBlock.put(channel, new ArrayList<VertexKey>());
+				}
+				recipientsInBlock.get(channel).clear();
+			}
+			recipientsInBlock.get(channel).add(target);
 		}
+//		out.collect(outValue);
+//		for (int channel: recipientsInBlock.keySet()) {
+//			recipientsInBlock.get(channel);
+//			tuple2.f0 = tomb;
+//			tuple2.f1 = m;
+//			myout.collect(tuple2);
+//			
+//		}
 	}
 	
 	
