@@ -44,6 +44,11 @@ import org.apache.flink.runtime.io.network.api.MutableReader;
 import org.apache.flink.runtime.io.network.api.MutableRecordReader;
 import org.apache.flink.runtime.io.network.api.MutableUnionRecordReader;
 import org.apache.flink.runtime.io.network.api.RecordWriter;
+import org.apache.flink.runtime.io.network.multicast.MulticastChannelSelector;
+import org.apache.flink.runtime.io.network.multicast.MulticastCollector;
+import org.apache.flink.runtime.io.network.multicast.MulticastMessage;
+import org.apache.flink.runtime.io.network.multicast.MulticastOutputEmitter;
+import org.apache.flink.runtime.io.network.multicast.MulticastReaderIterator;
 import org.apache.flink.runtime.jobgraph.tasks.AbstractInvokable;
 import org.apache.flink.runtime.memorymanager.MemoryManager;
 import org.apache.flink.runtime.operators.chaining.ChainedDriver;
@@ -1017,6 +1022,13 @@ public class RegularPactTask<S extends Function, OT> extends AbstractInvokable i
 			@SuppressWarnings("unchecked")
 			MutableReader<Record> reader = (MutableReader<Record>) inputReader;
 			return new RecordReaderIterator(reader);
+		} else if(serializerFactory.getDataType().equals(MulticastMessage.class)) {
+            //NOTE: multicast refactor:
+            @SuppressWarnings("unchecked")
+            MutableReader<DeserializationDelegate<MulticastMessage>> reader = (MutableReader<DeserializationDelegate<MulticastMessage>>) inputReader;
+            @SuppressWarnings({ "unchecked", "rawtypes" })
+            final MutableObjectIterator<MulticastMessage> iter = new MulticastReaderIterator(reader, (TypeSerializer<MulticastMessage>) serializerFactory.getSerializer());
+            return iter;
 		} else {
 			// generic data type serialization
 			@SuppressWarnings("unchecked")
@@ -1261,6 +1273,36 @@ public class RegularPactTask<S extends Function, OT> extends AbstractInvokable i
 
 			@SuppressWarnings("unchecked")
 			final Collector<T> outColl = (Collector<T>) new RecordOutputCollector(writers);
+			return outColl;
+		} else if (serializerFactory.getDataType().equals(MulticastMessage.class)) {
+			// NOTE: multicast refactor!
+			final List<RecordWriter<SerializationDelegate<MulticastMessage>>> writers = new ArrayList<RecordWriter<SerializationDelegate<MulticastMessage>>>(
+					numOutputs);
+			// create a writer for each output
+			for (int i = 0; i < numOutputs; i++) {
+				// create the MulticastOutputEmitter from output ship strategy
+				final ShipStrategyType strategy = config.getOutputShipStrategy(i);
+				final TypeComparatorFactory<MulticastMessage> compFactory = config.getOutputComparator(i, cl);
+				final DataDistribution dataDist = config.getOutputDataDistribution(i, cl);
+
+				final MulticastChannelSelector oe;
+				if (compFactory == null) {
+					oe = new MulticastOutputEmitter(strategy);
+				} else if (dataDist == null) {
+					final TypeComparator<MulticastMessage> comparator = compFactory.createComparator();
+					oe = new MulticastOutputEmitter(strategy, comparator);
+				} else {
+					final TypeComparator<MulticastMessage> comparator = compFactory.createComparator();
+					oe = new MulticastOutputEmitter(strategy, comparator,dataDist);
+				}
+
+				writers.add(new RecordWriter<SerializationDelegate<MulticastMessage>>(task, oe));
+			}
+			if (eventualOutputs != null) {
+				eventualOutputs.addAll(writers);
+			}
+			final Collector<T> outColl = (Collector<T>) new MulticastCollector(
+					writers,(TypeSerializer<MulticastMessage>) serializerFactory.getSerializer());
 			return outColl;
 		}
 		else {
