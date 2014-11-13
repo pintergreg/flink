@@ -128,10 +128,10 @@ public class MultipleRecipientsTestMain {
 //				}
 				Tuple2<Long, Long> edge = new Tuple2<Long, Long>(msg.sender, vertexKey);
 				if (!messageReceivedAlready.containsKey(edge)) {
-					throw new RuntimeException("invalid message from " + msg + " to " + vertexKey);
+					throw new RuntimeException("invalid message from " + msg.sender + " to " + vertexKey);
 				} else {
 					if (messageReceivedAlready.get(edge)) {
-						throw new RuntimeException("Message from " + msg
+						throw new RuntimeException("Message from " + msg.sender
 								+ " to " + vertexKey + " sent more than once.");
 					} else {
 						messageReceivedAlready.put(edge, true);
