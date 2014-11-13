@@ -99,6 +99,23 @@ public class RecordWriter<T extends IOReadableWritable> extends BufferWriter {
 			}
 		}
 	}
+	
+	//NOTE: multicast refactor
+	public void emit(int targetChannel, final T record) throws IOException, InterruptedException {
+			// serialize with corresponding serializer and send full buffer
+			RecordSerializer<T> serializer = this.serializers[targetChannel];
+
+			RecordSerializer.SerializationResult result = serializer.addRecord(record);
+			while (result.isFullBuffer()) {
+				Buffer buffer = serializer.getCurrentBuffer();
+				if (buffer != null) {
+					sendBuffer(buffer, targetChannel);
+				}
+
+				buffer = this.bufferPool.requestBufferBlocking(this.bufferPool.getBufferSize());
+				result = serializer.setNextBuffer(buffer);
+			}
+	}	
 
 	public void flush() throws IOException, InterruptedException {
 		for (int targetChannel = 0; targetChannel < this.numChannels; targetChannel++) {

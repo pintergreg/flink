@@ -31,6 +31,8 @@ import org.apache.flink.runtime.execution.CancelTaskException;
 import org.apache.flink.runtime.io.network.api.MutableReader;
 import org.apache.flink.runtime.io.network.api.MutableRecordReader;
 import org.apache.flink.runtime.io.network.api.MutableUnionRecordReader;
+import org.apache.flink.runtime.io.network.multicast.MulticastMessage;
+import org.apache.flink.runtime.io.network.multicast.MulticastReaderIterator;
 import org.apache.flink.runtime.jobgraph.tasks.AbstractInvokable;
 import org.apache.flink.runtime.operators.chaining.ExceptionInChainedStubException;
 import org.apache.flink.runtime.operators.sort.UnilateralSortMerger;
@@ -317,6 +319,12 @@ public class DataSinkTask<IT> extends AbstractInvokable {
 			// record specific deserialization
 			MutableReader<Record> reader = (MutableReader<Record>) inputReader;
 			this.reader = (MutableObjectIterator<IT>)new RecordReaderIterator(reader);
+		} else if(this.inputTypeSerializerFactory.getDataType().equals(MulticastMessage.class)) {
+            //NOTE: multicast refactor:
+            MutableReader<DeserializationDelegate<MulticastMessage>> reader = (MutableReader<DeserializationDelegate<MulticastMessage>>) inputReader;
+            @SuppressWarnings({ "rawtypes" })
+            final MutableObjectIterator<MulticastMessage> iter = new MulticastReaderIterator(reader, (TypeSerializer<MulticastMessage>) this.inputTypeSerializerFactory.getSerializer());
+            this.reader = (MutableObjectIterator<IT>)iter;		
 		} else {
 			// generic data type serialization
 			MutableReader<DeserializationDelegate<?>> reader = (MutableReader<DeserializationDelegate<?>>) inputReader;
