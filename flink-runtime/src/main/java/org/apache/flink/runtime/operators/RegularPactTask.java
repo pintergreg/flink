@@ -1243,6 +1243,9 @@ public class RegularPactTask<S extends Function, OT> extends AbstractInvokable i
 		// get the factory for the serializer
 		final TypeSerializerFactory<T> serializerFactory = config.getOutputSerializer(cl);
 
+		//SYSO
+		System.out.println("getOutputCollector datatype: "+serializerFactory.getDataType());
+		
 		// special case the Record
 		if (serializerFactory.getDataType().equals(Record.class)) {
 			final List<RecordWriter<Record>> writers = new ArrayList<RecordWriter<Record>>(numOutputs);
@@ -1350,6 +1353,10 @@ public class RegularPactTask<S extends Function, OT> extends AbstractInvokable i
 
 		// check whether we got any chained tasks
 		final int numChained = config.getNumberOfChainedStubs();
+		
+		//SYSO:
+		System.out.println("initOutputs numChained: "+numChained);
+		
 		if (numChained > 0) {
 			// got chained stubs. that means that this one may only have a single forward connection
 			if (numOutputs != 1 || config.getOutputShipStrategy(0) != ShipStrategyType.FORWARD) {

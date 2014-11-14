@@ -58,6 +58,9 @@ public class MulticastCollector implements Collector<MulticastMessage> {
 		this.blocker = new MulticastMessageBlocker(serializer);
 		this.writers = (RecordWriter<SerializationDelegate<MulticastMessage>>[]) writers
 				.toArray(new RecordWriter[writers.size()]);
+		
+		//SYSO:
+		System.out.println("Initialize MulticastCollector.");
 	}
 
 	/**

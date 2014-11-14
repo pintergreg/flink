@@ -52,6 +52,9 @@ public final class MulticastReaderIterator implements
 		this.delegate = new DeserializationDelegate<MulticastMessage>(
 				serializer);
 		this.handler = new MulticastMessageHandler();
+		
+		//SYSO:
+		System.out.println("Initialize MulticastReaderIterator.");
 	}
 
 	public boolean updateHandler() throws IOException {
