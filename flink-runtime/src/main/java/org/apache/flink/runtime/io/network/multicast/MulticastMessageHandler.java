@@ -24,26 +24,18 @@ public class MulticastMessageHandler {
 	}
 
 	public void unblockMessage(MulticastMessage blockedMessage) {
-		if (!blockedMessage.isBlockedMessage()) {
-			// TODO: create custom exception object
-			throw new RuntimeException(
-					"A blocked MulticastMessage was expected to arrive!");
+		// TODO: check whether the value is not null needed?
+		if (blockedMessage.f0.length == 0) {
+			throw new RuntimeException("The blocked MulticastMessage is empty!");
 		} else {
-			// TODO: check whether the value is not null needed?
+			storedMessages.clear();
+			this.index = 0;
 
-			if (blockedMessage.f0.length == 0) {
-				throw new RuntimeException(
-						"The blocked MulticastMessage is empty!");
-			} else {
-				storedMessages.clear();
-				this.index = 0;
-
-				// fill up the storedMessages with the original unblocked
-				// messages
-				for (long targetId : blockedMessage.f0) {
-					storedMessages.add(new MulticastMessage(
-							new long[] { targetId }, blockedMessage.f1));
-				}
+			// fill up the storedMessages with the original unblocked
+			// messages
+			for (long targetId : blockedMessage.f0) {
+				storedMessages.add(new MulticastMessage(
+						new long[] { targetId }, blockedMessage.f1));
 			}
 		}
 	}
