@@ -36,24 +36,24 @@ public class MultiCastTest {
 					}
 				});
 		// if this print is commented then only vertex 0 gets messages! WHY?
-		// messages.print();
+		//messages.print();
 
 		// // cannot group by on array field!
 		// messages.groupBy(0).sum(1).print();
 
-//		{
-//			// Chained version: if this map block is commented then
-//			// MulticastCollector has only 1 writer, otherwise 2.
-//			messages.map(
-//					new MapFunction<MulticastMessage, Tuple2<Long, Double>>() {
-//						@Override
-//						public Tuple2<Long, Double> map(MulticastMessage value)
-//								throws Exception {
-//							return new Tuple2<Long, Double>(value.f0[0],
-//									value.f1);
-//						}
-//					}).print();
-//		}
+		{
+			// Chained version: if this map block is commented then
+			// MulticastCollector has only 1 writer, otherwise 2.
+			messages.map(
+					new MapFunction<MulticastMessage, Tuple2<Long, Double>>() {
+						@Override
+						public Tuple2<Long, Double> map(MulticastMessage value)
+								throws Exception {
+							return new Tuple2<Long, Double>(value.f0[0],
+									value.f1);
+						}
+					}).print();
+		}
 
 //		{
 //			// Unchained version: if this map block is commented then
@@ -71,32 +71,32 @@ public class MultiCastTest {
 //			formattedMessages.print();
 //		}
 
-		{
-			// Unchained version: with MulticastMessage: this way the
-			// MulticastCollector is invoked which is good!
-			DataSet<MulticastMessage> messages2 = messages
-					.map(new MapFunction<MulticastMessage, MulticastMessage>() {
-						@Override
-						public MulticastMessage map(MulticastMessage value)
-								throws Exception {
-							// System.out.println(value);
-							return new MulticastMessage(value.f0, value.f1 + 1);
-						}
-					});
-			//messages2.print();
-
-			// Chained version: if this map block is commented then
-			// MulticastCollector has only 1 writer, otherwise 2.
-			messages2.map(
-					new MapFunction<MulticastMessage, Tuple2<Long, Double>>() {
-						@Override
-						public Tuple2<Long, Double> map(MulticastMessage value)
-								throws Exception {
-							return new Tuple2<Long, Double>(value.f0[0],
-									value.f1);
-						}
-					}).print();
-		}
+//		{
+//			// Unchained version: with MulticastMessage: this way the
+//			// MulticastCollector is invoked which is good!
+//			DataSet<MulticastMessage> messages2 = messages
+//					.map(new MapFunction<MulticastMessage, MulticastMessage>() {
+//						@Override
+//						public MulticastMessage map(MulticastMessage value)
+//								throws Exception {
+//							// System.out.println(value);
+//							return new MulticastMessage(value.f0, value.f1 + 1);
+//						}
+//					});
+//			//messages2.print();
+//
+//			// Chained version: if this map block is commented then
+//			// MulticastCollector has only 1 writer, otherwise 2.
+//			messages2.map(
+//					new MapFunction<MulticastMessage, Tuple2<Long, Double>>() {
+//						@Override
+//						public Tuple2<Long, Double> map(MulticastMessage value)
+//								throws Exception {
+//							return new Tuple2<Long, Double>(value.f0[0],
+//									value.f1);
+//						}
+//					}).print();
+//		}
 
 		env.setDegreeOfParallelism(4);
 		env.execute("Multicast Test");
