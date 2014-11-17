@@ -51,12 +51,16 @@ public class MulticastCollector implements Collector<MulticastMessage> {
 	 *            List of all writers.
 	 */
 	@SuppressWarnings("unchecked")
-	public MulticastCollector(List<RecordWriter<SerializationDelegate<MulticastMessage>>> writers,
+	public MulticastCollector(
+			List<RecordWriter<SerializationDelegate<MulticastMessage>>> writers,
 			TypeSerializer<MulticastMessage> serializer) {
 		this.serializer = serializer;
 		this.blocker = new MulticastMessageBlocker(serializer);
 		this.writers = (RecordWriter<SerializationDelegate<MulticastMessage>>[]) writers
 				.toArray(new RecordWriter[writers.size()]);
+		
+		//SYSO:
+		System.out.println("Initialize MulticastCollector.");
 	}
 
 	/**
@@ -67,7 +71,8 @@ public class MulticastCollector implements Collector<MulticastMessage> {
 	 */
 
 	@SuppressWarnings("unchecked")
-	public void addWriter(RecordWriter<SerializationDelegate<MulticastMessage>> writer) {
+	public void addWriter(
+			RecordWriter<SerializationDelegate<MulticastMessage>> writer) {
 		// avoid using the array-list here to reduce one level of object
 		// indirection
 		if (this.writers == null) {
@@ -83,12 +88,13 @@ public class MulticastCollector implements Collector<MulticastMessage> {
 	/**
 	 * Collects a record and emits it to all writers.
 	 */
+
 	@Override
 	public void collect(MulticastMessage record) {
-		blocker.addMessage(record);
-	}
-
-	public void collectFinish() {
+		//SYSO:
+		System.out.println("Inside MulticastCollector collect().");
+		
+		blocker.setTargetsAndValue(record.f0, record.f1);
 		try {
 			for (int i = 0; i < writers.length; i++) {
 				// The channels are selected for each writer separetaly
@@ -99,10 +105,10 @@ public class MulticastCollector implements Collector<MulticastMessage> {
 				// Own SerialiozationDelegate is needed for each blocked message
 				SerializationDelegate<MulticastMessage> delegate;
 				for (MulticastMessageWithChannel messageWithChannel : blockedMessagesToSend) {
-					//SYSO: what does the blocked message look like?
-					System.out.println(messageWithChannel
-							.getMulticastMessage());
-					
+					// SYSO: what does the blocked message look like?
+					System.out
+							.println(messageWithChannel.getMulticastMessage());
+
 					delegate = new SerializationDelegate<MulticastMessage>(
 							this.serializer);
 					delegate.setInstance(messageWithChannel
