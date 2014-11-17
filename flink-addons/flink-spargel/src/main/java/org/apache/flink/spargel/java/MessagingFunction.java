@@ -125,38 +125,6 @@ public abstract class MessagingFunction<VertexKey extends Comparable<VertexKey>,
 		}
 	}
 
-	private MessageWithSender<VertexKey, Message> mWS = new MessageWithSender<VertexKey, Message>();
-	private Tuple2<VertexKey, MessageWithSender<VertexKey, Message>> outValue2;
-	private Collector<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>> out2;
-	
-	public void sendMessageToAllNeighbors2(VertexKey sender, Message m) {
-		if (edgesUsed) {
-			throw new IllegalStateException("Can use either 'getOutgoingEdges()' or 'sendMessageToAllTargets()' exactly once.");
-		}
-		
-		edgesUsed = true;
-		mWS.sender = sender;
-		mWS.message = m;
-				
-		outValue2.f1 = mWS;
-		channelSet.clear();
-	
-		while (edges.hasNext()) {
-			Tuple next = (Tuple) edges.next();
-			VertexKey k = next.getField(1);
-			outValue2.f0 = k;
-			channel = ((OutputCollector<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>>)out2).getChannel(outValue2);
-			if (!channelSet.contains(channel)){
-				channelSet.add(channel);
-				out2.collect(outValue2);
-			}
-		}
-	}
-
-	private Set<Integer> channelSet = new HashSet<Integer>();
-	private Integer channel;
-	
-	private Map<Integer, List<VertexKey>> recipientsInBlock = new HashMap <Integer, List<VertexKey>>();
 	
 	/**
 	 * Sends the given message to the vertices enumerated in targets. 
@@ -164,35 +132,6 @@ public abstract class MessagingFunction<VertexKey extends Comparable<VertexKey>,
 	 * @param recipients The keys (ids) of the target vertices.
 	 * @param m The message.
 	 */
-	private Tuple2<VertexKey[], Message> outValue1;
-	private Collector<Tuple2<VertexKey[], MessageWithSender<VertexKey, Message>>> out1;
-
-	public void sendMessageToMultipleRecipients(MultipleRecipients<VertexKey> recipients, Message m) {
-		channelSet.clear();
-//		blockedRecipients.clear();
-		outValue.f1 = m;
-		for (VertexKey target: recipients) {
-			outValue.f0 = target;
-			channel = ((OutputCollector<Tuple2<VertexKey, Message>>)out).getChannel(outValue);
-			if (!channelSet.contains(channel)){
-				channelSet.add(channel);
-				out.collect(outValue);
-				if (recipientsInBlock.get(channel) == null) {
-					recipientsInBlock.put(channel, new ArrayList<VertexKey>());
-				}
-				recipientsInBlock.get(channel).clear();
-			}
-			recipientsInBlock.get(channel).add(target);
-		}
-//		out.collect(outValue);
-//		for (int channel: recipientsInBlock.keySet()) {
-//			recipientsInBlock.get(channel);
-//			tuple2.f0 = tomb;
-//			tuple2.f1 = m;
-//			myout.collect(tuple2);
-//			
-//		}
-	}
 	
 	
 	/**
