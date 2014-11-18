@@ -17,6 +17,7 @@
  */
 package org.apache.flink.spargel.multicast_test;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -31,9 +32,10 @@ import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.spargel.java.MessageIterator;
 import org.apache.flink.spargel.java.MessageWithSender;
-import org.apache.flink.spargel.java.MessagingFunction2;
+import org.apache.flink.spargel.java.MessagingFunction;
 import org.apache.flink.spargel.java.MultipleRecipients;
 import org.apache.flink.spargel.java.OutgoingEdge;
+import org.apache.flink.spargel.java.VertexCentricIteration;
 import org.apache.flink.spargel.java.VertexCentricIteration2;
 import org.apache.flink.spargel.java.VertexUpdateFunction;
 import org.apache.flink.types.NullValue;
@@ -42,7 +44,7 @@ import org.apache.flink.types.NullValue;
 @SuppressWarnings({"serial", "unchecked"})
 //@SuppressWarnings({"serial"})
 //@SuppressWarnings({"unchecked"})
-public class MultipleRecipientsTestMain {
+public class MultiCastToOutneighboursTestMain {
 
 	
 	static List<Set<Long>> inNeighbours;
@@ -92,12 +94,12 @@ public class MultipleRecipientsTestMain {
 		
 
 		
-		VertexCentricIteration2<Long, Long, Message, ?> iteration = VertexCentricIteration2.withPlainEdges(edges, new CCUpdater(), new CCMessager(), 1);
+		VertexCentricIteration2<Long, Long,  Message, ?> iteration = VertexCentricIteration2.withPlainEdges(edges, new CCUpdater(), new CCMessager(), 1);
 		
 		DataSet<Tuple2<Long, Long>> result = initialVertices.runOperation(iteration);
 		
 		result.print();
-		env.setDegreeOfParallelism(1);
+		env.setDegreeOfParallelism(2);
 		env.execute("Spargel Connected Components");
 		if (numOfReceivedMEssages != 0) {
 			throw new RuntimeException("not every message was delivered (remaining: " + numOfReceivedMEssages + ")");
@@ -106,14 +108,14 @@ public class MultipleRecipientsTestMain {
 	}
 	
 	
-	public static final class Message {
-		public Long senderke;
+	public static final class Message implements Serializable{
+		public Long senderId;
 		
 		public Message() {
-			senderke = -1L;
+			senderId = -1L;
 		}
 		public Message(Long a) {
-			this.senderke = a;
+			this.senderId = a;
 		}
 	}
 
@@ -121,18 +123,18 @@ public class MultipleRecipientsTestMain {
 		@Override
 		public void updateVertex(Long vertexKey, Long vertexValue, MessageIterator<MessageWithSender<Long, Message>> inMessages) {
 			for (MessageWithSender<Long, Message> msg: inMessages) {
-				System.out.println("Message from " + msg.getSender() + " to " + vertexKey);
+				System.out.println("Message from " + msg.sender + " to " + vertexKey);
 //				if (! inNeighbours.get(vertexKey.intValue()).contains(msg.sender)) {
 //					throw new RuntimeException("invalid message from " + msg + " to " + vertexKey);
 //				} else {
 //					numOfReceivedMEssages--;
 //				}
-				Tuple2<Long, Long> edge = new Tuple2<Long, Long>(msg.getSender(), vertexKey);
+				Tuple2<Long, Long> edge = new Tuple2<Long, Long>(msg.sender, vertexKey);
 				if (!messageReceivedAlready.containsKey(edge)) {
-					throw new RuntimeException("invalid message from " + msg.getSender() + " to " + vertexKey);
+					throw new RuntimeException("invalid message from " + msg.sender + " to " + vertexKey);
 				} else {
 					if (messageReceivedAlready.get(edge)) {
-						throw new RuntimeException("Message from " + msg.getSender()
+						throw new RuntimeException("Message from " + msg.sender
 								+ " to " + vertexKey + " sent more than once.");
 					} else {
 						messageReceivedAlready.put(edge, true);
@@ -142,44 +144,15 @@ public class MultipleRecipientsTestMain {
 			}
 		}
 	}
-//	public static final class CCUpdater extends VertexUpdateFunction<Long, Long, MessageWithSender<Long, Message>> {
-//		@Override
-//		public void updateVertex(Long vertexKey, Long vertexValue, MessageIterator<MessageWithSender<Long, Message>> inMessages) {
-//			for (Message msg: inMessages) {
-//				System.out.println("Message from " + msg.sender + " to " + vertexKey);
-////				if (! inNeighbours.get(vertexKey.intValue()).contains(msg.sender)) {
-////					throw new RuntimeException("invalid message from " + msg + " to " + vertexKey);
-////				} else {
-////					numOfReceivedMEssages--;
-////				}
-//				Tuple2<Long, Long> edge = new Tuple2<Long, Long>(msg.sender, vertexKey);
-//				if (!messageReceivedAlready.containsKey(edge)) {
-//					throw new RuntimeException("invalid message from " + msg.sender + " to " + vertexKey);
-//				} else {
-//					if (messageReceivedAlready.get(edge)) {
-//						throw new RuntimeException("Message from " + msg.sender
-//								+ " to " + vertexKey + " sent more than once.");
-//					} else {
-//						messageReceivedAlready.put(edge, true);
-//						numOfReceivedMEssages--;
-//					}
-//				}
-//			}
-//		}
-//	}
 	
-	public static final class CCMessager extends MessagingFunction2<Long, Long, Message, NullValue> {
+	public static final class CCMessager extends MessagingFunction<Long, Long, MessageWithSender<Long, Message>, NullValue> {
+		Message m = new Message(-1L);
+		MessageWithSender<Long, Message> mWS = new MessageWithSender<Long, Message>();
 		@Override
 		public void sendMessages(Long vertexId, Long componentId) {
-			Message m = new Message(vertexId);
-
-			MultipleRecipients<Long> recipients = new MultipleRecipients<Long>();
-			
-			for (OutgoingEdge<Long, NullValue> edge : getOutgoingEdges()) {
-				//sendMessageTo(edge.target(), m);
-				recipients.addRecipient(edge.target());
-			}
-			sendMessageToMultipleRecipients(recipients, m);
+			m.senderId = vertexId;
+			mWS.sender = vertexId;
+			sendMessageToAllNeighbors(mWS);
 		}
 	}
 	
