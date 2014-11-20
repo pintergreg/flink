@@ -33,12 +33,13 @@ public class MulticastGroupByTest {
 
 	public static void main(String[] args) throws Exception {
 		
-		final ExecutionEnvironment env = ExecutionEnvironment
-				.getExecutionEnvironment();
-		
-//		//What is the default port? 6023?
 //		final ExecutionEnvironment env = ExecutionEnvironment
-//				.createRemoteEnvironment("127.0.0.1",6023, jarFiles);
+//				.getExecutionEnvironment();
+		
+		//Local Flink must be started from: flink-dist/target/flink-0.8-incubating-SNAPSHOT-bin/flink-0.8-incubating-SNAPSHOT/bin
+		String pathToJar="/home/fberes/sztaki/git/incubator-flink/flink-java/target/flink-java-0.8-incubating-SNAPSHOT.jar";
+		final ExecutionEnvironment env = ExecutionEnvironment
+				.createRemoteEnvironment("127.0.0.1",6123, pathToJar);
 
 		@SuppressWarnings("unchecked")
 		DataSet<Tuple3<Long, Double, long[]>> data = env
@@ -60,26 +61,26 @@ public class MulticastGroupByTest {
 					}
 				});
 		// if this print is commented then only vertex 0 gets messages! WHY?
-		//messages.print();
+		messages.print();
 
-		//NOTE: it is not an efficient exmaple, here is a collect for the original data, which we tried to avoid with multicast
-		DataSet<Tuple2<Long, Double>> originalMessage = messages.groupBy(new KeySelector<MulticastMessage, Long>() {
-			
-			@Override
-			public Long getKey(MulticastMessage value) throws Exception {
-				return value.f0[0];
-			}}).reduceGroup(new GroupReduceFunction<MulticastMessage, Tuple2<Long,Double>>() {
-
-				private Tuple2<Long,Double> record = new Tuple2<Long, Double>();
-				@Override
-				public void reduce(Iterable<MulticastMessage> values,
-						Collector<Tuple2<Long, Double>> out) throws Exception {
-					MulticastMessage value = values.iterator().next();
-					record.setFields(value.f0[0], value.f1);
-					out.collect(record);
-				}
-			});
-		originalMessage.print();
+//		//NOTE: it is not an efficient exmaple, here is a collect for the original data, which we tried to avoid with multicast
+//		DataSet<Tuple2<Long, Double>> originalMessage = messages.groupBy(new KeySelector<MulticastMessage, Long>() {
+//			
+//			@Override
+//			public Long getKey(MulticastMessage value) throws Exception {
+//				return value.f0[0];
+//			}}).reduceGroup(new GroupReduceFunction<MulticastMessage, Tuple2<Long,Double>>() {
+//
+//				private Tuple2<Long,Double> record = new Tuple2<Long, Double>();
+//				@Override
+//				public void reduce(Iterable<MulticastMessage> values,
+//						Collector<Tuple2<Long, Double>> out) throws Exception {
+//					MulticastMessage value = values.iterator().next();
+//					record.setFields(value.f0[0], value.f1);
+//					out.collect(record);
+//				}
+//			});
+//		originalMessage.print();
 
 		env.setDegreeOfParallelism(4);
 		env.execute("Multicast Test");
