@@ -20,11 +20,11 @@
 package org.apache.flink.examples.java.multicast;
 
 import org.apache.flink.api.common.functions.FlatMapFunction;
-import org.apache.flink.api.common.functions.GroupReduceFunction;
+//import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
-import org.apache.flink.api.java.functions.KeySelector;
-import org.apache.flink.api.java.tuple.Tuple2;
+//import org.apache.flink.api.java.functions.KeySelector;
+//import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.runtime.io.network.multicast.MulticastMessage;
 import org.apache.flink.util.Collector;
@@ -37,7 +37,7 @@ public class MulticastGroupByTest {
 //				.getExecutionEnvironment();
 		
 		//Local Flink must be started from: flink-dist/target/flink-0.8-incubating-SNAPSHOT-bin/flink-0.8-incubating-SNAPSHOT/bin
-		String pathToJar="/home/fberes/sztaki/git/incubator-flink/flink-java/target/flink-java-0.8-incubating-SNAPSHOT.jar";
+		String pathToJar="/home/fberes/sztaki/git/incubator-flink/flink-examples/flink-java-examples/target/original-flink-java-examples-0.8-incubating-SNAPSHOT.jar";
 		final ExecutionEnvironment env = ExecutionEnvironment
 				.createRemoteEnvironment("127.0.0.1",6123, pathToJar);
 
