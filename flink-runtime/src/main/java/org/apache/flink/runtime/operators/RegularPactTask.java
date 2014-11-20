@@ -1355,7 +1355,7 @@ public class RegularPactTask<S extends Function, OT> extends AbstractInvokable i
 		final int numChained = config.getNumberOfChainedStubs();
 		
 		//SYSO:
-		System.out.println("initOutputs numChained: "+numChained);
+		System.out.println("RegularPactTask.initOutputs() numChained: "+numChained);
 		
 		if (numChained > 0) {
 			// got chained stubs. that means that this one may only have a single forward connection
