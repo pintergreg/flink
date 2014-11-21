@@ -106,7 +106,6 @@ public class OutputEmitter<T> implements ChannelSelector<SerializationDelegate<T
 
 	@Override
 	public final int[] selectChannels(SerializationDelegate<T> record, int numberOfChannels) {
-		System.out.println("Strategy: " + strategy + ", numberOfChannels: " + numberOfChannels);
 		switch (strategy) {
 		case FORWARD:
 		case PARTITION_RANDOM:

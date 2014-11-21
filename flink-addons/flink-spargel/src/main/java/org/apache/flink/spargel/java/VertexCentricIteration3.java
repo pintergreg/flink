@@ -89,7 +89,7 @@ public class VertexCentricIteration3<VertexKey extends Comparable<VertexKey>, Ve
 	
 	private final List<Tuple2<String, DataSet<?>>> bcVarsMessaging = new ArrayList<Tuple2<String,DataSet<?>>>(4);
 	
-	private final TypeInformation<Message> messageType;
+	private final TypeInformation<MessageWithSender<VertexKey, Message>> messageType;
 	
 	private DataSet<Tuple2<VertexKey, VertexValue>> initialVertices;
 	
@@ -162,8 +162,13 @@ public class VertexCentricIteration3<VertexKey extends Comparable<VertexKey>, Ve
 		this.messageType = getMessageType(mf);
 	}
 	
-	private TypeInformation<Message> getMessageType(MessagingFunction3<VertexKey, VertexValue, Message, EdgeValue> mf) {
-		return TypeExtractor.createTypeInfo(MessagingFunction3.class, mf.getClass(), 2, null, null);
+	private TypeInformation<MessageWithSender<VertexKey, Message>> getMessageType(MessagingFunction3<VertexKey, VertexValue, Message, EdgeValue> mf) {
+		TypeInformation<VertexKey> keyType = TypeExtractor.createTypeInfo(MessagingFunction3.class, mf.getClass(), 1, null, null);
+		TypeInformation<Message> msgType = TypeExtractor.createTypeInfo(MessagingFunction3.class, mf.getClass(), 2, null, null);
+		
+		TypeInformation<MessageWithSender<VertexKey, Message>>  result = new TupleTypeInfo<MessageWithSender<VertexKey, Message>>(msgType, keyType);
+		System.out.println("type info1: " + result);
+		return result;
 	}
 	
 	/**
@@ -518,6 +523,7 @@ public class VertexCentricIteration3<VertexKey extends Comparable<VertexKey>, Ve
 			if (stateIter.hasNext()) {
 				Tuple2<VertexKey, VertexValue> newVertexState = stateIter.next();
 				messagingFunction.set((Iterator<?>) edges.iterator(), out);
+				messagingFunction.setSender(newVertexState.f0);
 				messagingFunction.sendMessages(newVertexState.f0, newVertexState.f1);
 			}
 		}

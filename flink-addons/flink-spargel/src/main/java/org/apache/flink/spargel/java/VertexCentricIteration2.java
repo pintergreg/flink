@@ -18,6 +18,7 @@
 
 package org.apache.flink.spargel.java;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -36,12 +37,17 @@ import org.apache.flink.api.java.operators.CoGroupOperator;
 import org.apache.flink.api.java.operators.CustomUnaryOperation;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
+import org.apache.flink.api.java.type.extractor.PojoTypeExtractionTest;
+import org.apache.flink.api.java.type.extractor.PojoTypeInformationTest;
+import org.apache.flink.api.java.typeutils.ObjectArrayTypeInfo;
+import org.apache.flink.api.java.typeutils.PojoField;
+import org.apache.flink.api.java.typeutils.PojoTypeInfo;
 import org.apache.flink.api.java.typeutils.ResultTypeQueryable;
 import org.apache.flink.api.java.typeutils.TupleTypeInfo;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.util.Collector;
-
+import org.apache.flink.api.java.typeutils.ObjectArrayTypeInfo;
 /**
  * This class represents iterative graph computations, programmed in a vertex-centric perspective.
  * It is a special case of <i>Bulk Synchronous Parallel<i> computation. The paradigm has also been
@@ -91,7 +97,7 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 	
 	private final List<Tuple2<String, DataSet<?>>> bcVarsMessaging = new ArrayList<Tuple2<String,DataSet<?>>>(4);
 	
-	private final TypeInformation<MessageWithSender<VertexKey, Message>> messageType;
+	private final TypeInformation<MessageWithSender> messageType;
 	
 	private DataSet<Tuple2<VertexKey, VertexValue>> initialVertices;
 	
@@ -134,17 +140,47 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 	}
 	
 	
-	private TypeInformation<MessageWithSender<VertexKey, Message>> getMessageType(MessagingFunction2<VertexKey, VertexValue, Message, EdgeValue> mf) {
+	private TypeInformation<MessageWithSender> getMessageType(MessagingFunction2<VertexKey, VertexValue, Message, EdgeValue> mf) {
 		
 //		System.out.println("type info1: " + TypeExtractor.createTypeInfo(MessagingFunction2.class, mf.getClass(), 2, null, null));
 //		
 //		MessageWithSender<VertexKey, Message> msg = new MessageWithSender<VertexKey, Message>();
 //		System.out.println("type info2: " + TypeExtractor.createTypeInfo(MessagingFunction2.class));
 //		System.out.println("type info3: " + TypeExtractor.getForObject(msg));
-		TypeInformation<MessageWithSender<VertexKey, Message>>  result = new TupleTypeInfo<MessageWithSender<VertexKey, Message>>(TypeExtractor.createTypeInfo(MessagingFunction2.class, mf.getClass(), 2, null, null), 
-				TypeExtractor.createTypeInfo(MessagingFunction2.class, mf.getClass(), 1, null, null));
-		System.out.println("type info1: " + result);
-		return result;
+		
+		
+		TypeInformation<VertexKey> keyType = TypeExtractor.createTypeInfo(MessagingFunction2.class, mf.getClass(), 1, null, null);
+		TypeInformation<Message> msgType = TypeExtractor.createTypeInfo(MessagingFunction2.class, mf.getClass(), 2, null, null);
+		
+		
+		//MessageWithSender<Long, Long> ize = new MessageWithSender<Long, Long>();
+		//System.out.println(TypeExtractor.createTypeInfo(ize.getClass()));
+		
+		//System.out.println(ObjectArrayTypeInfo.getInfoFor(keyType.getTypeClass()));
+		//System.out.println(TypeExtractor.createTypeInfo(MessageWithSender.class));
+		//TypeExtractor.createTypeInfo(MessageWithSender.class);
+		List<PojoField> fields = new ArrayList<PojoField>();
+		//PojoTypeExtractionTest
+		
+		//System.out.println(ObjectArrayTypeInfo.getInfoFor(Array.newInstance(keyType.getTypeClass(), 0).getClass()));
+		try {
+			fields.add(new PojoField(MessageWithSender.class.getField("sender"), keyType));
+			fields.add(new PojoField(MessageWithSender.class.getField("message"), msgType));
+			fields.add(new PojoField(MessageWithSender.class.getField("someRecipients"), ObjectArrayTypeInfo.getInfoFor(Array.newInstance(keyType.getTypeClass(), 0).getClass())));
+			
+		} catch (NoSuchFieldException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (SecurityException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		TypeInformation<MessageWithSender> res1 = new PojoTypeInfo<MessageWithSender>(MessageWithSender.class, fields);
+		//System.out.println(res1);
+		//Field[] fields = MessageWithSender<VertexKey, Message>.getDeclaredFields();
+//		TypeInformation<MessageWithSender<VertexKey, Message>>  result = new TupleTypeInfo<MessageWithSender<VertexKey, Message>>(msgType, keyType);
+//		System.out.println("type info1: " + result);
+		return res1;
 	}
 	
 	/**
@@ -443,6 +479,7 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 		public TypeInformation<Tuple2<VertexKey, VertexValue>> getProducedType() {
 			return this.resultType;
 		}
+
 	}
 	
 	/*
@@ -457,11 +494,11 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 		
 		private final MessagingFunction2<VertexKey, VertexValue, Message, ?> messagingFunction;
 		
-		private transient TypeInformation<Tuple2<VertexKey, MessageWithSender< VertexKey, Message>>> resultType;
+		private transient TypeInformation<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>> resultType;
 		
 		
 		private MessagingUdfNoEdgeValues(MessagingFunction2<VertexKey, VertexValue, Message, ?> messagingFunction,
-				TypeInformation<Tuple2<VertexKey, MessageWithSender< VertexKey, Message>>> resultType)
+				TypeInformation<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>> resultType)
 		{
 			this.messagingFunction = messagingFunction;
 			this.resultType = resultType;

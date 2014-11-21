@@ -143,24 +143,24 @@ public abstract class MessagingFunction2<VertexKey extends Comparable<VertexKey>
 	
 	private Collector<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>> out;
 	private Tuple2<VertexKey, MessageWithSender<VertexKey, Message>> outValue;// = new Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>();
-	private MessageWithSender<VertexKey, Message> msgWithSender = new MessageWithSender<VertexKey, Message>();
+	//private MessageWithSender<VertexKey, Message> msgWithSender = new MessageWithSender<VertexKey, Message>();
+	//private MessageWithSender<VertexKey, Message> msgWithSender = new MessageWithSender<VertexKey, Message>();
 	
 	public void setSender(VertexKey sender) {
-		msgWithSender.setSender(sender);
+		outValue.f1.sender = sender;
+		
 	}
 	
 	public void sendMessageToMultipleRecipients(MultipleRecipients<VertexKey> recipients, Message m) {
 		channelSet.clear();
 //		blockedRecipients.clear();
-		System.out.println(outValue.f1.getSender());
-		outValue.f1.setMessage(m);
+		//System.out.println(outValue.f1.getSender());
+		outValue.f1.message = m;
 		for (VertexKey target: recipients) {
 			outValue.f0 = target;
 			channel = ((OutputCollector<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>>)out).getChannel(outValue);
 			if (!channelSet.contains(channel)){
 				channelSet.add(channel);
-				System.out.println("Süsü" + outValue.f1.getClass().getName());
-				System.out.println("Süsü" + out.getClass().getName());
 				out.collect(outValue);
 				if (recipientsInBlock.get(channel) == null) {
 					recipientsInBlock.put(channel, new ArrayList<VertexKey>());
@@ -192,8 +192,8 @@ public abstract class MessagingFunction2<VertexKey extends Comparable<VertexKey>
 		
 		edgesUsed = true;
 		
-		outValue.f1.setMessage(m);
-		
+		outValue.f1.message = m;
+
 		while (edges.hasNext()) {
 			Tuple next = (Tuple) edges.next();
 			VertexKey k = next.getField(1);
@@ -250,7 +250,7 @@ public abstract class MessagingFunction2<VertexKey extends Comparable<VertexKey>
 //		outValue.f1 = m;
 //		for (VertexKey target: recipients) {
 //			outValue.f0 = target;
-//			channel = ((OutputCollector<Tuple2<VertexKey, Message>>)out).getChannel(outValue);
+//			channel = ((OutputCollector<Tuple2<VertexKey, Message>)out).getChannel(outValue);
 //			if (!channelSet.contains(channel)){
 //				channelSet.add(channel);
 //				out.collect(outValue);
@@ -283,7 +283,7 @@ public abstract class MessagingFunction2<VertexKey extends Comparable<VertexKey>
 
 	public void sendMessageTo(VertexKey target, Message m) {
 		outValue.f0 = target;
-		outValue.f1.setMessage(m);
+		outValue.f1.message = m;
 //		someRecipients.clear();
 //		someRecipients.add(target);
 //		outValue.f1.setSomeRecipients(someRecipients);
@@ -357,7 +357,7 @@ public abstract class MessagingFunction2<VertexKey extends Comparable<VertexKey>
 		this.runtimeContext = context;
 		this.outValue = new Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>();
 		//this.msgWithSender = new MessageWithSender<VertexKey, Message>();
-		this.outValue.f1 = msgWithSender;
+		this.outValue.f1 = new MessageWithSender<VertexKey, Message>();
 		
 		if (hasEdgeValue) {
 			throw new RuntimeException("Edge values not supported");

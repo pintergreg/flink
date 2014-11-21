@@ -230,6 +230,10 @@ public abstract class MessagingFunction3<VertexKey extends Comparable<VertexKey>
 		}
 	}
 	
+	public void setSender(VertexKey sender) {
+		outValue.f1.sender = sender;
+	}
+
 	void set(Iterator<?> edges, Collector<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>> out) {
 		this.edges = edges;
 		this.out = out;
