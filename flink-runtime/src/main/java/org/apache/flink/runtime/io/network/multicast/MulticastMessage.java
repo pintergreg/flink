@@ -18,6 +18,7 @@
 
 package org.apache.flink.runtime.io.network.multicast;
 
+import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple2;
 
 public class MulticastMessage extends Tuple2<long[], Double> {
@@ -28,5 +29,16 @@ public class MulticastMessage extends Tuple2<long[], Double> {
 
 	public MulticastMessage(long[] targetIds, Double value) {
 		super(targetIds, value);
+	}
+
+	public static KeySelector<MulticastMessage, Long> getKeySelector() {
+		return new KeySelector<MulticastMessage, Long>() {
+
+			@Override
+			public Long getKey(MulticastMessage value) throws Exception {
+				// System.out.println("KeySelector print: "+value);
+				return value.f0[0];
+			}
+		};
 	}
 }
