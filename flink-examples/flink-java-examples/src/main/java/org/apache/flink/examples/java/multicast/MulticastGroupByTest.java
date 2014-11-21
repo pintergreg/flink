@@ -19,6 +19,8 @@
 
 package org.apache.flink.examples.java.multicast;
 
+import java.util.Iterator;
+
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.api.java.DataSet;
@@ -72,13 +74,28 @@ public class MulticastGroupByTest {
 				return value.f0[0];
 			}}).reduceGroup(new GroupReduceFunction<MulticastMessage, Tuple2<Long,Double>>() {
 
+//				private Tuple2<Long,Double> record = new Tuple2<Long, Double>();
+//				@Override
+//				public void reduce(Iterable<MulticastMessage> values,
+//						Collector<Tuple2<Long, Double>> out) throws Exception {
+//					MulticastMessage value = values.iterator().next();		
+//					record.setFields(value.f0[0], value.f1);
+//					out.collect(record);
+//				}
+				
 				private Tuple2<Long,Double> record = new Tuple2<Long, Double>();
 				@Override
 				public void reduce(Iterable<MulticastMessage> values,
 						Collector<Tuple2<Long, Double>> out) throws Exception {
-					MulticastMessage value = values.iterator().next();
-					record.setFields(value.f0[0], value.f1);
-					out.collect(record);
+					Iterator<MulticastMessage> iter = values.iterator();
+					MulticastMessage value;
+					while(iter.hasNext()) {
+						value = iter.next();
+						System.out.println(value);
+					
+						record.setFields(value.f0[0], value.f1);
+						out.collect(record);
+					}
 				}
 			});
 		originalMessage.print();
