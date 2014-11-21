@@ -28,15 +28,16 @@ import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.runtime.io.network.multicast.MulticastMessage;
 import org.apache.flink.util.Collector;
 
-public class MulticastChainedMapDriverTest {
+public class MulticastMapTest {
 
 	public static void main(String[] args) throws Exception {
-//		final ExecutionEnvironment env = ExecutionEnvironment
-//				.getExecutionEnvironment();
-
-		String pathToJar="/home/fberes/sztaki/git/incubator-flink/flink-examples/flink-java-examples/target/original-flink-java-examples-0.8-incubating-SNAPSHOT.jar";
 		final ExecutionEnvironment env = ExecutionEnvironment
-				.createRemoteEnvironment("127.0.0.1",6123, pathToJar);
+				.getExecutionEnvironment();
+
+//		//After commenting out chaining in NepheleJobGraphGenerator.createSingleInputVertex() there is no need for RemoteEnvironment
+//		String pathToJar="/home/fberes/sztaki/git/incubator-flink/flink-examples/flink-java-examples/target/original-flink-java-examples-0.8-incubating-SNAPSHOT.jar";
+//		final ExecutionEnvironment env = ExecutionEnvironment
+//				.createRemoteEnvironment("127.0.0.1",6123, pathToJar);
 		
 		@SuppressWarnings("unchecked")
 		DataSet<Tuple3<Long, Double, long[]>> data = env
@@ -57,14 +58,10 @@ public class MulticastChainedMapDriverTest {
 						out.collect(new MulticastMessage(value.f2, value.f1));
 					}
 				});
-		// if this print is commented then only vertex 0 gets messages! WHY?
-		//messages.print();
-
-		// // cannot group by on array field!
-		// messages.groupBy(0).sum(1).print();
+//		messages.print();
 
 		{
-			// Chained version: if this map block is commented then
+			// NOTE: if this map block is commented and the former messages.print is uncommented then
 			// MulticastCollector has only 1 writer, otherwise 2.
 			messages.map(
 					new MapFunction<MulticastMessage, Tuple2<Long, Double>>() {
@@ -77,51 +74,8 @@ public class MulticastChainedMapDriverTest {
 					}).print();
 		}
 
-//		{
-//			// Unchained version: if this map block is commented then
-//			// MulticastCollector has only 1 writer, otherwise 2.
-//			DataSet<Tuple2<Long, Double>> formattedMessages = messages
-//					.map(new MapFunction<MulticastMessage, Tuple2<Long, Double>>() {
-//						@Override
-//						public Tuple2<Long, Double> map(MulticastMessage value)
-//								throws Exception {
-//							System.out.println(value);
-//							return new Tuple2<Long, Double>(value.f0[0],
-//									value.f1);
-//						}
-//					});
-//			formattedMessages.print();
-//		}
-
-//		{
-//			// Unchained version: with MulticastMessage: this way the
-//			// MulticastCollector is invoked which is good!
-//			DataSet<MulticastMessage> messages2 = messages
-//					.map(new MapFunction<MulticastMessage, MulticastMessage>() {
-//						@Override
-//						public MulticastMessage map(MulticastMessage value)
-//								throws Exception {
-//							// System.out.println(value);
-//							return new MulticastMessage(value.f0, value.f1 + 1);
-//						}
-//					});
-//			//messages2.print();
-//
-//			// Chained version: if this map block is commented then
-//			// MulticastCollector has only 1 writer, otherwise 2.
-//			messages2.map(
-//					new MapFunction<MulticastMessage, Tuple2<Long, Double>>() {
-//						@Override
-//						public Tuple2<Long, Double> map(MulticastMessage value)
-//								throws Exception {
-//							return new Tuple2<Long, Double>(value.f0[0],
-//									value.f1);
-//						}
-//					}).print();
-//		}
-
 		env.setDegreeOfParallelism(1);
-		env.execute("Multicast Test");
+		env.execute("MulticastMapTest");
 	}
 
 }

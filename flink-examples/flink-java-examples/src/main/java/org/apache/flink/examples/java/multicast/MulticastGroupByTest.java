@@ -33,13 +33,14 @@ public class MulticastGroupByTest {
 
 	public static void main(String[] args) throws Exception {
 		
-//		final ExecutionEnvironment env = ExecutionEnvironment
-//				.getExecutionEnvironment();
-		
-		//Local Flink must be started from: flink-dist/target/flink-0.8-incubating-SNAPSHOT-bin/flink-0.8-incubating-SNAPSHOT/bin
-		String pathToJar="/home/fberes/sztaki/git/incubator-flink/flink-examples/flink-java-examples/target/original-flink-java-examples-0.8-incubating-SNAPSHOT.jar";
 		final ExecutionEnvironment env = ExecutionEnvironment
-				.createRemoteEnvironment("127.0.0.1",6123, pathToJar);
+				.getExecutionEnvironment();
+		
+//		//After commenting out chaining in NepheleJobGraphGenerator.createSingleInputVertex() there is no need for RemoteEnvironment
+//		//Local Flink must be started from: flink-dist/target/flink-0.8-incubating-SNAPSHOT-bin/flink-0.8-incubating-SNAPSHOT/bin
+//		String pathToJar="/home/fberes/sztaki/git/incubator-flink/flink-examples/flink-java-examples/target/original-flink-java-examples-0.8-incubating-SNAPSHOT.jar";
+//		final ExecutionEnvironment env = ExecutionEnvironment
+//				.createRemoteEnvironment("127.0.0.1",6123, pathToJar);
 
 		@SuppressWarnings("unchecked")
 		DataSet<Tuple3<Long, Double, long[]>> data = env
@@ -82,8 +83,8 @@ public class MulticastGroupByTest {
 			});
 		originalMessage.print();
 
-		env.setDegreeOfParallelism(1);
-		env.execute("Multicast Test");
+		env.setDegreeOfParallelism(4);
+		env.execute("MulticastGroupByTest");
 	}
 
 }
