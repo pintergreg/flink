@@ -36,7 +36,7 @@ public class MulticastMessage extends Tuple2<long[], Double> {
 
 			@Override
 			public Long getKey(MulticastMessage value) throws Exception {
-				// System.out.println("KeySelector print: "+value);
+//				System.out.println("KeySelector print: "+value);
 				return value.f0[0];
 			}
 		};
