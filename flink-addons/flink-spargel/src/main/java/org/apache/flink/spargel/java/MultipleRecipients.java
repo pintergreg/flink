@@ -24,6 +24,12 @@ import java.util.List;
 public class MultipleRecipients<VertexKey extends Comparable<VertexKey>>
 		implements Iterable<VertexKey> {
 
+	@Override
+	public String toString() {
+		return "MultipleRecipients [recipients=" + recipients + "]";
+	}
+
+
 	private List<VertexKey> recipients;
 
 	public MultipleRecipients() {

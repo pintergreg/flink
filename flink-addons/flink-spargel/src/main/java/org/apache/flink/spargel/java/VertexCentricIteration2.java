@@ -109,7 +109,7 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 	
 	// ----------------------------------------------------------------------------------
 	
-	private  VertexCentricIteration2(VertexUpdateFunction<VertexKey, VertexValue, MessageWithSender<VertexKey, Message>> uf,
+	private  VertexCentricIteration2(VertexUpdateFunction<VertexKey, VertexValue,  MessageWithSender<VertexKey, Message>> uf,
 			MessagingFunction2<VertexKey, VertexValue,  Message, EdgeValue> mf,
 			DataSet<Tuple2<VertexKey, VertexKey>> edgesWithoutValue,
 			int maximumNumberOfIterations)
@@ -159,29 +159,14 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 		//System.out.println(ObjectArrayTypeInfo.getInfoFor(keyType.getTypeClass()));
 		//System.out.println(TypeExtractor.createTypeInfo(MessageWithSender.class));
 		//TypeExtractor.createTypeInfo(MessageWithSender.class);
-		List<PojoField> fields = new ArrayList<PojoField>();
-		//PojoTypeExtractionTest
-		
-		//System.out.println(ObjectArrayTypeInfo.getInfoFor(Array.newInstance(keyType.getTypeClass(), 0).getClass()));
-		try {
-			fields.add(new PojoField(MessageWithSender.class.getField("sender"), keyType));
-			fields.add(new PojoField(MessageWithSender.class.getField("message"), msgType));
-			fields.add(new PojoField(MessageWithSender.class.getField("someRecipients"), ObjectArrayTypeInfo.getInfoFor(Array.newInstance(keyType.getTypeClass(), 0).getClass())));
-			
-		} catch (NoSuchFieldException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (SecurityException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		TypeInformation<MessageWithSender> res1 = new PojoTypeInfo<MessageWithSender>(MessageWithSender.class, fields);
 		//System.out.println(res1);
 		//Field[] fields = MessageWithSender<VertexKey, Message>.getDeclaredFields();
 //		TypeInformation<MessageWithSender<VertexKey, Message>>  result = new TupleTypeInfo<MessageWithSender<VertexKey, Message>>(msgType, keyType);
 //		System.out.println("type info1: " + result);
-		return res1;
+		return MessageWithSender.getMessageWithSenderType(keyType, msgType);
 	}
+
+
 	
 	/**
 	 * Registers a new aggregator. Aggregators registered here are available during the execution of the vertex updates
@@ -355,7 +340,7 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 			messages = messages.withBroadcastSet(e.f1, e.f0);
 		}
 		
-		VertexUpdateUdf<VertexKey, VertexValue, MessageWithSender<VertexKey, Message>> updateUdf = new VertexUpdateUdf<VertexKey, VertexValue, MessageWithSender<VertexKey, Message>>(updateFunction, vertexTypes);
+		VertexUpdateUdf<VertexKey, VertexValue,  MessageWithSender<VertexKey, Message>> updateUdf = new VertexUpdateUdf<VertexKey, VertexValue,  MessageWithSender<VertexKey, Message>>(updateFunction, vertexTypes);
 		
 		// build the update function (co group)
 		CoGroupOperator<?, ?, Tuple2<VertexKey, VertexValue>> updates =
@@ -394,7 +379,7 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 	public static final <VertexKey extends Comparable<VertexKey>, VertexValue, Message>
 			VertexCentricIteration2<VertexKey, VertexValue, Message, ?> withPlainEdges(
 					DataSet<Tuple2<VertexKey, VertexKey>> edgesWithoutValue,
-						VertexUpdateFunction<VertexKey, VertexValue, MessageWithSender<VertexKey, Message>> vertexUpdateFunction,
+						VertexUpdateFunction<VertexKey, VertexValue,  MessageWithSender<VertexKey, Message>> vertexUpdateFunction,
 						MessagingFunction2<VertexKey, VertexValue, Message, ?> messagingFunction,
 						int maximumNumberOfIterations)
 	{

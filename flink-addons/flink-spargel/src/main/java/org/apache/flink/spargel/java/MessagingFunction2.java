@@ -135,7 +135,7 @@ public abstract class MessagingFunction2<VertexKey extends Comparable<VertexKey>
 //		}
 //	}
 
-	private Set<Integer> channelSet = new HashSet<Integer>();
+//	private Set<Integer> channelSet = new HashSet<Integer>();
 	private Integer channel;
 	
 	private Map<Integer, List<VertexKey>> recipientsInBlock = new HashMap <Integer, List<VertexKey>>();
@@ -151,32 +151,40 @@ public abstract class MessagingFunction2<VertexKey extends Comparable<VertexKey>
 		
 	}
 	
+	@SuppressWarnings("unchecked")
 	public void sendMessageToMultipleRecipients(MultipleRecipients<VertexKey> recipients, Message m) {
-		channelSet.clear();
-//		blockedRecipients.clear();
+		//Clear previous contents
+//		channelSet.clear();
+//		for (List<VertexKey> targets: recipientsInBlock.values()) {
+//			targets.clear();
+//		}
+		//		blockedRecipients.clear();
+		recipientsInBlock.clear();
 		//System.out.println(outValue.f1.getSender());
 		outValue.f1.message = m;
+		//outValue.f1.sender is already set
 		for (VertexKey target: recipients) {
 			outValue.f0 = target;
 			channel = ((OutputCollector<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>>)out).getChannel(outValue);
-			if (!channelSet.contains(channel)){
-				channelSet.add(channel);
-				out.collect(outValue);
-				if (recipientsInBlock.get(channel) == null) {
-					recipientsInBlock.put(channel, new ArrayList<VertexKey>());
-				}
-				recipientsInBlock.get(channel).clear();
+			if (recipientsInBlock.get(channel) == null) {
+				recipientsInBlock.put(channel, new ArrayList<VertexKey>());
+//			if (!channelSet.contains(channel)){
+//				channelSet.add(channel);
+//				//out.collect(outValue);
+//				if (recipientsInBlock.get(channel) == null) {
+//					recipientsInBlock.put(channel, new ArrayList<VertexKey>());
+//				}
+//				recipientsInBlock.get(channel).clear();
 			}
 			recipientsInBlock.get(channel).add(target);
 		}
-//		out.collect(outValue);
-//		for (int channel: recipientsInBlock.keySet()) {
-//			recipientsInBlock.get(channel);
-//			tuple2.f0 = tomb;
-//			tuple2.f1 = m;
-//			myout.collect(tuple2);
-//			
-//		}
+		for (List<VertexKey> targets: recipientsInBlock.values()) {
+			System.out.println("Sender: " + outValue.f1.sender);
+			System.out.println("Targets: " + targets);
+			outValue.f0 = targets.get(0);
+			outValue.f1.someRecipients = (VertexKey[])targets.toArray(new Comparable[0]); 
+			out.collect(outValue);
+		}
 	}
 
 	/**

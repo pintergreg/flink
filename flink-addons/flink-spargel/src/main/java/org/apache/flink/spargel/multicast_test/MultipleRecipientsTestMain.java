@@ -121,36 +121,11 @@ public class MultipleRecipientsTestMain {
 		}
 	}
 
-//	public static final class CCUpdater extends VertexUpdateFunction<Long, Long, Tuple2<Message, Long>> {
-//		@Override
-//		public void updateVertex(Long vertexKey, Long vertexValue, MessageIterator<Tuple2<Message, Long>> inMessages) {
-//			for (Tuple2<Message, Long> msg: inMessages) {
-//				System.out.println("Message from " + msg.sender + " to " + vertexKey);
-////				if (! inNeighbours.get(vertexKey.intValue()).contains(msg.sender)) {
-////					throw new RuntimeException("invalid message from " + msg + " to " + vertexKey);
-////				} else {
-////					numOfReceivedMEssages--;
-////				}
-//				Tuple2<Long, Long> edge = new Tuple2<Long, Long>(msg.sender, vertexKey);
-//				if (!messageReceivedAlready.containsKey(edge)) {
-//					throw new RuntimeException("invalid message from " + msg.sender + " to " + vertexKey);
-//				} else {
-//					if (messageReceivedAlready.get(edge)) {
-//						throw new RuntimeException("Message from " + msg.sender
-//								+ " to " + vertexKey + " sent more than once.");
-//					} else {
-//						messageReceivedAlready.put(edge, true);
-//						numOfReceivedMEssages--;
-//					}
-//				}
-//			}
-//		}
-//	}
 	public static final class CCUpdater extends VertexUpdateFunction<Long, Long, MessageWithSender<Long, Message>> {
 		@Override
 		public void updateVertex(Long vertexKey, Long vertexValue, MessageIterator<MessageWithSender<Long, Message>> inMessages) {
 			for (MessageWithSender<Long, Message> msg: inMessages) {
-				System.out.println("Message from " + msg.sender + " to " + vertexKey);
+				System.out.println("Message from " + msg.sender + " to " + vertexKey + " and " + Arrays.toString(msg.someRecipients));
 				System.out.println("Message contents " + msg.message);
 //				if (! inNeighbours.get(vertexKey.intValue()).contains(msg.sender)) {
 //					throw new RuntimeException("invalid message from " + msg + " to " + vertexKey);
@@ -179,11 +154,12 @@ public class MultipleRecipientsTestMain {
 			Message m = new Message(vertexId);
 
 			MultipleRecipients<Long> recipients = new MultipleRecipients<Long>();
-			
 			for (OutgoingEdge<Long, NullValue> edge : getOutgoingEdges()) {
 				//sendMessageTo(edge.target(), m);
 				recipients.addRecipient(edge.target());
 			}
+			System.out.println("Sending from "+ vertexId);
+			System.out.println("To "+ recipients);
 			sendMessageToMultipleRecipients(recipients, m);
 		}
 	}
