@@ -307,7 +307,7 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 		TypeInformation<Tuple2<VertexKey, VertexValue>> vertexTypes = initialVertices.getType();
 		TypeInformation<VertexKey> keyType = ((TupleTypeInfo<?>) initialVertices.getType()).getTypeAt(0);
 		TypeInformation<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>> messageTypeInfo = new TupleTypeInfo<Tuple2<VertexKey,MessageWithSender<VertexKey, Message>>>(keyType, messageType);		
-		
+
 		// set up the iteration operator
 		final String name = (this.name != null) ? this.name :
 			"Vertex-centric iteration (" + updateFunction + " | " + messagingFunction + ")";
