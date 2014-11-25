@@ -30,14 +30,14 @@ import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.spargel.java.MessageIterator;
-import org.apache.flink.spargel.java.MessageWithSender;
 import org.apache.flink.spargel.java.MessagingFunction2;
 import org.apache.flink.spargel.java.MessagingFunction3;
-import org.apache.flink.spargel.java.MultipleRecipients;
 import org.apache.flink.spargel.java.OutgoingEdge;
 import org.apache.flink.spargel.java.VertexCentricIteration2;
 import org.apache.flink.spargel.java.VertexCentricIteration3;
 import org.apache.flink.spargel.java.VertexUpdateFunction;
+import org.apache.flink.spargel.java.multicast.MessageWithSender;
+import org.apache.flink.spargel.java.multicast.MultipleRecipients;
 import org.apache.flink.types.NullValue;
 
 

@@ -1,4 +1,4 @@
-package org.apache.flink.spargel.java;
+package org.apache.flink.spargel.java.multicast;
 
 import java.io.Serializable;
 import java.lang.reflect.Array;
@@ -47,7 +47,7 @@ public class MessageWithSender<VertexKey, Message>
 	public VertexKey[] someRecipients;
 	public Message message;
 	
-	public  static TypeInformation<MessageWithSender> getMessageWithSenderType(
+	public  static TypeInformation<MessageWithSender> getTypeInfo(
 			TypeInformation<?> keyType, TypeInformation<?> msgType) {
 		List<PojoField> fields = new ArrayList<PojoField>();
 		//PojoTypeExtractionTest
@@ -67,6 +67,12 @@ public class MessageWithSender<VertexKey, Message>
 		}
 		TypeInformation<MessageWithSender> res1 = new PojoTypeInfo<MessageWithSender>(MessageWithSender.class, fields);
 		return res1;
+	}
+	@Override
+	public String toString() {
+		return "MessageWithSender [sender=" + sender + ", someRecipients="
+				+ Arrays.toString(someRecipients) + ", message=" + message
+				+ "]";
 	}
 	
 }

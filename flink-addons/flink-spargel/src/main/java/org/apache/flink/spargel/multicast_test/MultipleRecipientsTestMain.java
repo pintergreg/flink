@@ -31,12 +31,12 @@ import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.spargel.java.MessageIterator;
-import org.apache.flink.spargel.java.MessageWithSender;
 import org.apache.flink.spargel.java.MessagingFunction2;
-import org.apache.flink.spargel.java.MultipleRecipients;
 import org.apache.flink.spargel.java.OutgoingEdge;
 import org.apache.flink.spargel.java.VertexCentricIteration2;
 import org.apache.flink.spargel.java.VertexUpdateFunction;
+import org.apache.flink.spargel.java.multicast.MessageWithSender;
+import org.apache.flink.spargel.java.multicast.MultipleRecipients;
 import org.apache.flink.types.NullValue;
 
 
@@ -98,7 +98,7 @@ public class MultipleRecipientsTestMain {
 		
 		result.print();
 		env.setDegreeOfParallelism(2);
-		env.execute("Spargel Connected Components");
+		env.execute("Spargel Multiple recipients test.");
 		if (numOfReceivedMEssages != 0) {
 			throw new RuntimeException("not every message was delivered (remaining: " + numOfReceivedMEssages + ")");
 		}

@@ -19,6 +19,7 @@ package org.apache.flink.spargel.java;
 
 import static org.junit.Assert.*;
 
+import org.apache.flink.spargel.java.multicast.MultipleRecipients;
 import org.junit.Test;
 
 public class MultipleRecipientsTest {

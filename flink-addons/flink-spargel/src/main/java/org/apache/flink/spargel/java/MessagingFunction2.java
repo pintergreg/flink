@@ -36,6 +36,8 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.runtime.operators.shipping.OutputCollector;
+import org.apache.flink.spargel.java.multicast.MessageWithSender;
+import org.apache.flink.spargel.java.multicast.MultipleRecipients;
 import org.apache.flink.types.Value;
 import org.apache.flink.util.Collector;
 
