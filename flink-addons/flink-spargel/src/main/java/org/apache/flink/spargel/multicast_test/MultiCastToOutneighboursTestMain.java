@@ -32,12 +32,14 @@ import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.spargel.java.MessageIterator;
 import org.apache.flink.spargel.java.MessagingFunction;
+import org.apache.flink.spargel.java.MessagingFunction2;
 import org.apache.flink.spargel.java.OutgoingEdge;
 import org.apache.flink.spargel.java.VertexCentricIteration;
 import org.apache.flink.spargel.java.VertexCentricIteration2;
 import org.apache.flink.spargel.java.VertexUpdateFunction;
 import org.apache.flink.spargel.java.multicast.MessageWithSender;
 import org.apache.flink.spargel.java.multicast.MultipleRecipients;
+import org.apache.flink.spargel.multicast_test.MultipleRecipientsTestMain.Message;
 import org.apache.flink.types.NullValue;
 
 
@@ -145,14 +147,12 @@ public class MultiCastToOutneighboursTestMain {
 		}
 	}
 	
-	public static final class CCMessager extends MessagingFunction<Long, Long, MessageWithSender<Long, Message>, NullValue> {
+	public static final class CCMessager extends MessagingFunction2<Long, Long, Message, NullValue> {
 		Message m = new Message(-1L);
-		MessageWithSender<Long, Message> mWS = new MessageWithSender<Long, Message>();
 		@Override
 		public void sendMessages(Long vertexId, Long componentId) {
 			m.senderId = vertexId;
-			mWS.sender = vertexId;
-			sendMessageToAllNeighbors(mWS);
+			sendMessageToAllNeighbors(m);
 		}
 	}
 	
