@@ -320,11 +320,11 @@ public class DataSinkTask<IT> extends AbstractInvokable {
 			MutableReader<Record> reader = (MutableReader<Record>) inputReader;
 			this.reader = (MutableObjectIterator<IT>)new RecordReaderIterator(reader);
 		} else if(this.inputTypeSerializerFactory.getDataType().equals(MulticastMessage.class)) {
-            //NOTE: multicast refactor:
-            MutableReader<DeserializationDelegate<MulticastMessage>> reader = (MutableReader<DeserializationDelegate<MulticastMessage>>) inputReader;
-            @SuppressWarnings({ "rawtypes" })
-            final MutableObjectIterator<MulticastMessage> iter = new MulticastReaderIterator(reader, (TypeSerializer<MulticastMessage>) this.inputTypeSerializerFactory.getSerializer());
-            this.reader = (MutableObjectIterator<IT>)iter;		
+			//NOTE: multicast refactor:
+			MutableReader<DeserializationDelegate<MulticastMessage>> reader = (MutableReader<DeserializationDelegate<MulticastMessage>>) inputReader;
+			@SuppressWarnings({ "rawtypes" })
+			final MutableObjectIterator<MulticastMessage> iter = new MulticastReaderIterator(reader, (TypeSerializer<MulticastMessage>) this.inputTypeSerializerFactory.getSerializer());
+			this.reader = (MutableObjectIterator<IT>)iter;		
 		} else {
 			// generic data type serialization
 			MutableReader<DeserializationDelegate<?>> reader = (MutableReader<DeserializationDelegate<?>>) inputReader;

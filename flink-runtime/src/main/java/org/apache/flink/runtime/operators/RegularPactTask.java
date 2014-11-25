@@ -1023,12 +1023,12 @@ public class RegularPactTask<S extends Function, OT> extends AbstractInvokable i
 			MutableReader<Record> reader = (MutableReader<Record>) inputReader;
 			return new RecordReaderIterator(reader);
 		} else if(serializerFactory.getDataType().equals(MulticastMessage.class)) {
-            //NOTE: multicast refactor:
-            @SuppressWarnings("unchecked")
-            MutableReader<DeserializationDelegate<MulticastMessage>> reader = (MutableReader<DeserializationDelegate<MulticastMessage>>) inputReader;
-            @SuppressWarnings({ "unchecked", "rawtypes" })
-            final MutableObjectIterator<MulticastMessage> iter = new MulticastReaderIterator(reader, (TypeSerializer<MulticastMessage>) serializerFactory.getSerializer());
-            return iter;
+			//NOTE: multicast refactor:
+			@SuppressWarnings("unchecked")
+			MutableReader<DeserializationDelegate<MulticastMessage>> reader = (MutableReader<DeserializationDelegate<MulticastMessage>>) inputReader;
+			@SuppressWarnings({ "unchecked", "rawtypes" })
+			final MutableObjectIterator<MulticastMessage> iter = new MulticastReaderIterator(reader, (TypeSerializer<MulticastMessage>) serializerFactory.getSerializer());
+			return iter;
 		} else {
 			// generic data type serialization
 			@SuppressWarnings("unchecked")
@@ -1350,7 +1350,6 @@ public class RegularPactTask<S extends Function, OT> extends AbstractInvokable i
 
 		// check whether we got any chained tasks
 		final int numChained = config.getNumberOfChainedStubs();
-		
 		
 		if (numChained > 0) {
 			// got chained stubs. that means that this one may only have a single forward connection

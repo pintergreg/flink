@@ -124,7 +124,7 @@ public class OutputCollector<T> implements Collector<T>
 	public int getChannel(T record) {
 		if (writers.length > 1) {
 			throw new 
-			 UnsupportedOperationException("The number of writers should be 1");
+			UnsupportedOperationException("The number of writers should be 1");
 		}
 		this.delegate.setInstance(record);
 		

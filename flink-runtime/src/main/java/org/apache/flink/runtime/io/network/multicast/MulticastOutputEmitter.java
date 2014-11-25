@@ -16,12 +16,10 @@
  * limitations under the License.
  */
 
-
 package org.apache.flink.runtime.io.network.multicast;
 
 import org.apache.flink.api.common.distributions.DataDistribution;
 import org.apache.flink.api.common.typeutils.TypeComparator;
-import org.apache.flink.runtime.io.network.api.ChannelSelector;
 import org.apache.flink.runtime.operators.shipping.ShipStrategyType;
 import org.apache.flink.runtime.plugable.SerializationDelegate;
 
