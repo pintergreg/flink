@@ -32,10 +32,12 @@ import org.apache.flink.api.common.aggregators.Aggregator;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.operators.DeltaIteration;
 import org.apache.flink.api.common.functions.FlatMapFunction;
+import org.apache.flink.api.common.functions.MapPartitionFunction;
 import org.apache.flink.api.common.functions.RichCoGroupFunction;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.operators.CoGroupOperator;
 import org.apache.flink.api.java.operators.CustomUnaryOperation;
+import org.apache.flink.api.java.operators.FlatMapOperator;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.api.java.type.extractor.PojoTypeExtractionTest;
@@ -143,28 +145,10 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 	
 	
 	private TypeInformation<MessageWithSender> getMessageType(MessagingFunction2<VertexKey, VertexValue, Message, EdgeValue> mf) {
-		
-//		System.out.println("type info1: " + TypeExtractor.createTypeInfo(MessagingFunction2.class, mf.getClass(), 2, null, null));
-//		
-//		MessageWithSender<VertexKey, Message> msg = new MessageWithSender<VertexKey, Message>();
-//		System.out.println("type info2: " + TypeExtractor.createTypeInfo(MessagingFunction2.class));
-//		System.out.println("type info3: " + TypeExtractor.getForObject(msg));
-		
-		
+
 		TypeInformation<VertexKey> keyType = TypeExtractor.createTypeInfo(MessagingFunction2.class, mf.getClass(), 1, null, null);
 		TypeInformation<Message> msgType = TypeExtractor.createTypeInfo(MessagingFunction2.class, mf.getClass(), 2, null, null);
 		
-		
-		//MessageWithSender<Long, Long> ize = new MessageWithSender<Long, Long>();
-		//System.out.println(TypeExtractor.createTypeInfo(ize.getClass()));
-		
-		//System.out.println(ObjectArrayTypeInfo.getInfoFor(keyType.getTypeClass()));
-		//System.out.println(TypeExtractor.createTypeInfo(MessageWithSender.class));
-		//TypeExtractor.createTypeInfo(MessageWithSender.class);
-		//System.out.println(res1);
-		//Field[] fields = MessageWithSender<VertexKey, Message>.getDeclaredFields();
-//		TypeInformation<MessageWithSender<VertexKey, Message>>  result = new TupleTypeInfo<MessageWithSender<VertexKey, Message>>(msgType, keyType);
-//		System.out.println("type info1: " + result);
 		return MessageWithSender.getTypeInfo(keyType, msgType);
 	}
 
@@ -327,6 +311,7 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 		// build the messaging function (co group)
 		MessagingUdfNoEdgeValues<VertexKey, VertexValue, Message> messenger;
 		CoGroupOperator<?, ?, Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>> messages;
+//		DataSet<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>> messages;
 		if (edgesWithoutValue != null) {
 			messenger = new MessagingUdfNoEdgeValues<VertexKey, VertexValue, Message>(messagingFunction, messageTypeInfo);
 			messages = this.edgesWithoutValue.coGroup(iteration.getWorkset()).where(0).equalTo(0).with(messenger);
@@ -345,15 +330,23 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 		
 		VertexUpdateUdf<VertexKey, VertexValue,  Message> updateUdf = new VertexUpdateUdf<VertexKey, VertexValue,  Message>(updateFunction, vertexTypes);
 
-//		DataSet<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>> messages2 = messages
-//				.flatMap(new  Kicsom( messenger.getProducedType()));
 
-//		DataSet<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>> messages2 = messages
+//		DataSet<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>> messages1 = messages.partitionByHash(0)
 //		.flatMap(new  Kicsom( messenger.getProducedType()));
+
+		@SuppressWarnings("unchecked")
+		FlatMapOperator<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>,
+						Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>> messages1 = messages.partitionByHash(0)
+						.flatMap(new  Kicsom( messenger.getProducedType()));
+
+		messages1.withConstantSet("0");
+		
+		DataSet<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>> messages2 = messages
+		.mapPartition(new  Kicsom2( messenger.getProducedType()));
 
 		// build the update function (co group)
 		CoGroupOperator<?, ?, Tuple2<VertexKey, VertexValue>> updates =
-				messages.coGroup(iteration.getSolutionSet()).where(0).equalTo(0).with(updateUdf);
+				messages1.coGroup(iteration.getSolutionSet()).where(0).equalTo(0).with(updateUdf);
 		
 		// configure coGroup update function with name and broadcast variables
 		updates = updates.name("Vertex State Updates");
@@ -373,27 +366,65 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 	 ResultTypeQueryable<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>>{
 		
 		private transient TypeInformation<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>> resultType;
+		private MessageWithSender<VertexKey, Message> msgWS = new MessageWithSender<VertexKey, Message>();
+		private List<VertexKey> emptyList = new ArrayList<VertexKey>(); 
 		
 		private Kicsom(TypeInformation<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>> resultType)
 		{
 			this.resultType = resultType;
+			msgWS.someRecipients = (VertexKey[])emptyList.toArray(new Comparable[0]);
 		}
-
+		
 		@Override
 		public void flatMap(
 				Tuple2<VertexKey, MessageWithSender<VertexKey, Message>> value,
 				Collector<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>> out)
 				throws Exception {
 			for (VertexKey target : value.f1.someRecipients) {
+				msgWS.message = value.f1.message;
+				msgWS.sender = value.f1.sender;
 				out.collect(new Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>(
-						target, value.f1));
+						target, msgWS));
 			}
 
 		}
 
+		
 		@Override
 		public TypeInformation<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>> getProducedType() {
 			return this.resultType;
+		}
+	}
+
+	public static class Kicsom2<VertexKey extends Comparable<VertexKey>, Message>
+	implements MapPartitionFunction<Tuple2<VertexKey, MessageWithSender<VertexKey,Message>>, Tuple2<VertexKey, MessageWithSender<VertexKey,Message>>>,
+	 ResultTypeQueryable<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>>{
+		
+		private transient TypeInformation<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>> resultType;
+		
+		private Kicsom2(TypeInformation<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>> resultType)
+		{
+			this.resultType = resultType;
+		}
+		
+		@Override
+		public TypeInformation<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>> getProducedType() {
+			return this.resultType;
+		}
+
+		@Override
+		public void mapPartition(
+				Iterable<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>> values,
+				Collector<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>> out)
+				throws Exception {
+			for (Tuple2<VertexKey, MessageWithSender<VertexKey, Message>> msgWS: values) {
+				for (VertexKey target : msgWS.f1.someRecipients) {
+					out.collect(new Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>(
+							target, msgWS.f1));
+				}
+				
+			}
+			
 		}
 	}
 
@@ -441,7 +472,7 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 		
 		private final VertexUpdateFunction<VertexKey, VertexValue, MessageWithSender<VertexKey, Message>> vertexUpdateFunction;
 
-		private final MessageIterator<Message> messageIter = new MessageIterator<Message>();
+		private final MessageIterator<MessageWithSender<VertexKey, Message>> messageIter = new MessageIterator<MessageWithSender<VertexKey, Message>>();
 		
 		private transient TypeInformation<Tuple2<VertexKey, VertexValue>> resultType;
 		
@@ -466,23 +497,23 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 				Tuple2<VertexKey, VertexValue> vertexState = vertexIter.next();
 				
 					
-				//@SuppressWarnings("unchecked")
-				//Iterator<Tuple2<?, Message>> downcastIter = (Iterator<Tuple2<?, Message>>) (Iterator<?>) messages.iterator();
-				for (Tuple2<VertexKey,MessageWithSender<VertexKey, Message>> m: messages) {
-					System.out.println(m.toString());
-					for (VertexKey target: m.f1.someRecipients) {
-						if (recievedMessages.get(target) == null) {
-							recievedMessages.put(target, new ArrayList<Message>());
-						}
-						recievedMessages.get(target).add(m.f1.message);
-					}
-				}
+//				for (Tuple2<VertexKey,MessageWithSender<VertexKey, Message>> m: messages) {
+//					System.out.println(m.toString());
+//					for (VertexKey target: m.f1.someRecipients) {
+//						if (recievedMessages.get(target) == null) {
+//							recievedMessages.put(target, new ArrayList<Message>());
+//						}
+//						recievedMessages.get(target).add(m.f1.message);
+//					}
+//				}
 				
+				@SuppressWarnings("unchecked")
+				Iterator<Tuple2<?, MessageWithSender<VertexKey, Message>>> downcastIter = (Iterator<Tuple2<?, MessageWithSender<VertexKey, Message>>>) (Iterator<?>) messages.iterator();
 
-//				messageIter.setSource(downcastIter);
-//				
-//				vertexUpdateFunction.setOutput(vertexState, out);
-//				vertexUpdateFunction.updateVertex(vertexState.f0, vertexState.f1, messageIter);
+				messageIter.setSource(downcastIter);
+				
+				vertexUpdateFunction.setOutput(vertexState, out);
+				vertexUpdateFunction.updateVertex(vertexState.f0, vertexState.f1, messageIter);
 			}
 			else {
 				final Iterator<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>> messageIter = messages.iterator();

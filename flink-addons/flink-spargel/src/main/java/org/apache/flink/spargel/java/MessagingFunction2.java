@@ -22,22 +22,18 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.flink.api.common.aggregators.Aggregator;
 import org.apache.flink.api.common.functions.IterationRuntimeContext;
-import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.api.java.tuple.Tuple3;
-import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.runtime.operators.shipping.OutputCollector;
 import org.apache.flink.spargel.java.multicast.MessageWithSender;
 import org.apache.flink.spargel.java.multicast.MultipleRecipients;
+import org.apache.flink.types.NullValue;
 import org.apache.flink.types.Value;
 import org.apache.flink.util.Collector;
 
@@ -186,9 +182,11 @@ public abstract class MessagingFunction2<VertexKey extends Comparable<VertexKey>
 			outValue.f0 = targets.get(0);
 			outValue.f1.someRecipients = (VertexKey[])targets.toArray(new Comparable[0]); 
 			out.collect(outValue);
+			System.out.println(outValue);
 		}
 	}
 
+	private MultipleRecipients<VertexKey> recipients = new MultipleRecipients<VertexKey>();
 	/**
 	 * Sends the given message to all vertices that are targets of an outgoing edge of the changed vertex.
 	 * This method is mutually exclusive to the method {@link #getOutgoingEdges()} and may be called only once.
@@ -201,85 +199,18 @@ public abstract class MessagingFunction2<VertexKey extends Comparable<VertexKey>
 		}
 		
 		edgesUsed = true;
-		
-		outValue.f1.message = m;
-
+		recipients.clear();
 		while (edges.hasNext()) {
 			Tuple next = (Tuple) edges.next();
 			VertexKey k = next.getField(1);
-			outValue.f0 = k;
-			out.collect(outValue);
+			recipients.addRecipient(k);
+//
+//			outValue.f0 = k;
+//			out.collect(outValue);
 		}
+		sendMessageToMultipleRecipients(recipients, m);
 	}
 
-//	private MessageWithSender<VertexKey, Message> mWS = new MessageWithSender<VertexKey, Message>();
-//	private Tuple2<VertexKey, MessageWithSender<VertexKey, Message>> outValue2;
-//	private Collector<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>> out2;
-//	
-//	public void sendMessageToAllNeighbors2(VertexKey sender, Message m) {
-//		if (edgesUsed) {
-//			throw new IllegalStateException("Can use either 'getOutgoingEdges()' or 'sendMessageToAllTargets()' exactly once.");
-//		}
-//		
-//		edgesUsed = true;
-//		mWS.sender = sender;
-//		mWS.message = m;
-//				
-//		outValue2.f1 = mWS;
-//		channelSet.clear();
-//	
-//		while (edges.hasNext()) {
-//			Tuple next = (Tuple) edges.next();
-//			VertexKey k = next.getField(1);
-//			outValue2.f0 = k;
-//			channel = ((OutputCollector<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>>)out2).getChannel(outValue2);
-//			if (!channelSet.contains(channel)){
-//				channelSet.add(channel);
-//				out2.collect(outValue2);
-//			}
-//		}
-//	}
-
-//	private Set<Integer> channelSet = new HashSet<Integer>();
-//	private Integer channel;
-//	
-//	private Map<Integer, List<VertexKey>> recipientsInBlock = new HashMap <Integer, List<VertexKey>>();
-//	
-//	/**
-//	 * Sends the given message to the vertices enumerated in targets. 
-//	 * 
-//	 * @param recipients The keys (ids) of the target vertices.
-//	 * @param m The message.
-//	 */
-//	private Tuple2<VertexKey[], Message> outValue1;
-//	private Collector<Tuple2<VertexKey[], MessageWithSender<VertexKey, Message>>> out1;
-//
-//	public void sendMessageToMultipleRecipients(MultipleRecipients<VertexKey> recipients, Message m) {
-//		channelSet.clear();
-////		blockedRecipients.clear();
-//		outValue.f1 = m;
-//		for (VertexKey target: recipients) {
-//			outValue.f0 = target;
-//			channel = ((OutputCollector<Tuple2<VertexKey, Message>)out).getChannel(outValue);
-//			if (!channelSet.contains(channel)){
-//				channelSet.add(channel);
-//				out.collect(outValue);
-//				if (recipientsInBlock.get(channel) == null) {
-//					recipientsInBlock.put(channel, new ArrayList<VertexKey>());
-//				}
-//				recipientsInBlock.get(channel).clear();
-//			}
-//			recipientsInBlock.get(channel).add(target);
-//		}
-//		out.collect(outValue);
-//		for (int channel: recipientsInBlock.keySet()) {
-//			recipientsInBlock.get(channel);
-//			tuple2.f0 = tomb;
-//			tuple2.f1 = m;
-//			myout.collect(tuple2);
-//			
-//		}
-//	}
 	
 	
 	/**
@@ -289,16 +220,11 @@ public abstract class MessagingFunction2<VertexKey extends Comparable<VertexKey>
 	 * @param target The key (id) of the target vertex to message.
 	 * @param m The message.
 	 */
-	List<VertexKey> someRecipients = new ArrayList<VertexKey>();
 
 	public void sendMessageTo(VertexKey target, Message m) {
-		outValue.f0 = target;
-		outValue.f1.message = m;
-//		someRecipients.clear();
-//		someRecipients.add(target);
-//		outValue.f1.setSomeRecipients(someRecipients);
-		//outValue.f1.setRecipients(target);
-		out.collect(outValue);
+		recipients.clear();
+		recipients.addRecipient(target);
+		sendMessageToMultipleRecipients(recipients, m);
 	}
 
 
