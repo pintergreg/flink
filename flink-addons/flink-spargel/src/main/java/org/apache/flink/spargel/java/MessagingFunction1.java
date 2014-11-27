@@ -33,7 +33,6 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.runtime.operators.shipping.OutputCollector;
 import org.apache.flink.spargel.java.multicast.MessageWithSender;
 import org.apache.flink.spargel.java.multicast.MultipleRecipients;
-import org.apache.flink.types.NullValue;
 import org.apache.flink.types.Value;
 import org.apache.flink.util.Collector;
 
@@ -45,7 +44,7 @@ import org.apache.flink.util.Collector;
  * @param <Message> The type of the message sent between vertices along the edges.
  * @param <EdgeValue> The type of the values that are associated with the edges.
  */
-public abstract class MessagingFunction2<VertexKey extends Comparable<VertexKey>, VertexValue, 
+public abstract class MessagingFunction1<VertexKey extends Comparable<VertexKey>, VertexValue, 
 	Message , EdgeValue> implements Serializable {
 
 	private static final long serialVersionUID = 1L;
@@ -95,43 +94,8 @@ public abstract class MessagingFunction2<VertexKey extends Comparable<VertexKey>
 
 		this.edgeNoValueIter.set((Iterator<Tuple2<VertexKey, VertexKey>>) edges);
 		return this.edgeNoValueIter;
-//		
-//		if (this.edgeWithValueIter != null) {
-//			this.edgeWithValueIter.set((Iterator<Tuple3<VertexKey, VertexKey, EdgeValue>>) edges);
-//			return this.edgeWithValueIter;
-//		} else {
-//			this.edgeNoValueIter.set((Iterator<Tuple2<VertexKey, VertexKey>>) edges);
-//			return this.edgeNoValueIter;
-//		}
 	}
 	
-//	private MessageWithSender<VertexKey, Message> mWS = new MessageWithSender<VertexKey, Message>();
-//	private Tuple2<VertexKey, MessageWithSender<VertexKey, Message>> outValue2;
-//	private Collector<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>> out2;
-	
-//	public void sendMessageToAllNeighbors2(VertexKey sender, Message m) {
-//		if (edgesUsed) {
-//			throw new IllegalStateException("Can use either 'getOutgoingEdges()' or 'sendMessageToAllTargets()' exactly once.");
-//		}
-//		
-//		edgesUsed = true;
-//		mWS.sender = sender;
-//		mWS.message = m;
-//				
-//		outValue2.f1 = mWS;
-//		channelSet.clear();
-//	
-//		while (edges.hasNext()) {
-//			Tuple next = (Tuple) edges.next();
-//			VertexKey k = next.getField(1);
-//			outValue2.f0 = k;
-//			channel = ((OutputCollector<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>>)out2).getChannel(outValue2);
-//			if (!channelSet.contains(channel)){
-//				channelSet.add(channel);
-//				out2.collect(outValue2);
-//			}
-//		}
-//	}
 
 //	private Set<Integer> channelSet = new HashSet<Integer>();
 	private Integer channel;
