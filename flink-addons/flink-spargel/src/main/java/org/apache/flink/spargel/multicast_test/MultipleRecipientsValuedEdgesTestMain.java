@@ -29,17 +29,22 @@ import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.api.java.tuple.Tuple3;
+import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.spargel.java.MessageIterator;
 import org.apache.flink.spargel.java.MessagingFunction1;
 import org.apache.flink.spargel.java.OutgoingEdge;
 import org.apache.flink.spargel.java.VertexCentricIteration1;
 import org.apache.flink.spargel.java.VertexUpdateFunction;
+import org.apache.flink.spargel.java.multicast.MessageWithSender;
 import org.apache.flink.spargel.java.multicast.MultipleRecipients;
 import org.apache.flink.types.NullValue;
 
 
-@SuppressWarnings({"serial"})
-public class MultipleRecipientsTestMain {
+@SuppressWarnings({"serial", "unchecked"})
+//@SuppressWarnings({"serial"})
+//@SuppressWarnings({"unchecked"})
+public class MultipleRecipientsValuedEdgesTestMain {
 
 	
 	static List<Set<Long>> inNeighbours;
@@ -72,23 +77,23 @@ public class MultipleRecipientsTestMain {
 		numOfReceivedMEssages = 0;
 		messageReceivedAlready = new HashMap<Tuple2<Long, Long>, Boolean>();
 		
-		List<Tuple2<Long, Long>> edgeList = new ArrayList<Tuple2<Long, Long>>();
+		List<Tuple3<Long, Long, Double>> edgeList = new ArrayList<Tuple3<Long, Long, Double>>();
 		for (int i = 0; i < numOfNodes; ++i) {
 			for (long j:inNeighbours.get(i)) {
 				numOfReceivedMEssages++;
-				Tuple2<Long, Long> edge = new Tuple2<Long, Long>(j, (long)i);
+				Tuple3<Long, Long, Double> edge = new Tuple3<Long, Long, Double>(j, (long)i, 0.5);
 				edgeList.add(edge);
-				messageReceivedAlready.put(edge, false);
+				messageReceivedAlready.put(new Tuple2<Long, Long>(j, (long)i), false);
 			}
 		}
 		DataSet<Long> vertexIds = env.generateSequence(0, numOfNodes - 1);
-		DataSet<Tuple2<Long, Long>> edges = env.fromCollection(edgeList);
+		DataSet<Tuple3<Long, Long, Double>> edges = env.fromCollection(edgeList);
 		
 		DataSet<Tuple2<Long, Long>> initialVertices = vertexIds.map(new IdAssigner());
 		
 
 		
-		VertexCentricIteration1<Long, Long, Message, ?> iteration = VertexCentricIteration1.withPlainEdges(edges, new CCUpdater(), new CCMessager(), 1);
+		VertexCentricIteration1<Long, Long, Message, Double> iteration = VertexCentricIteration1.withValuedEdges(edges, new CCUpdater(), new CCMessager(), 1);
 		
 		DataSet<Tuple2<Long, Long>> result = initialVertices.runOperation(iteration);
 		
@@ -145,14 +150,14 @@ public class MultipleRecipientsTestMain {
 		}
 	}
 	
-	public static final class CCMessager extends MessagingFunction1<Long, Long, Message, NullValue> {
+	public static final class CCMessager extends MessagingFunction1<Long, Long, Message, Double> {
 		boolean multiRecipients = false;
 		@Override
 		public void sendMessages(Long vertexId, Long componentId) {
 			Message m = new Message(vertexId);
 
 			MultipleRecipients<Long> recipients = new MultipleRecipients<Long>();
-			for (OutgoingEdge<Long, NullValue> edge : getOutgoingEdges()) {
+			for (OutgoingEdge<Long, Double> edge : getOutgoingEdges()) {
 				//sendMessageTo(edge.target(), m);
 				recipients.addRecipient(edge.target());
 			}

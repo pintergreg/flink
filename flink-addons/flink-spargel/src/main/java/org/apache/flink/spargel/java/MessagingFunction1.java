@@ -30,6 +30,7 @@ import org.apache.flink.api.common.aggregators.Aggregator;
 import org.apache.flink.api.common.functions.IterationRuntimeContext;
 import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.runtime.operators.shipping.OutputCollector;
 import org.apache.flink.spargel.java.multicast.MessageWithSender;
 import org.apache.flink.spargel.java.multicast.MultipleRecipients;
@@ -78,7 +79,6 @@ public abstract class MessagingFunction1<VertexKey extends Comparable<VertexKey>
 	 */
 	public void postSuperstep() throws Exception {}
 	
-	
 	/**
 	 * Gets an {@link java.lang.Iterable} with all outgoing edges. This method is mutually exclusive with
 	 * {@link #sendMessageToAllNeighbors(Object)} and may be called only once.
@@ -91,10 +91,16 @@ public abstract class MessagingFunction1<VertexKey extends Comparable<VertexKey>
 			throw new IllegalStateException("Can use either 'getOutgoingEdges()' or 'sendMessageToAllTargets()' exactly once.");
 		}
 		edgesUsed = true;
-
-		this.edgeNoValueIter.set((Iterator<Tuple2<VertexKey, VertexKey>>) edges);
-		return this.edgeNoValueIter;
+		
+		if (this.edgeWithValueIter != null) {
+			this.edgeWithValueIter.set((Iterator<Tuple3<VertexKey, VertexKey, EdgeValue>>) edges);
+			return this.edgeWithValueIter;
+		} else {
+			this.edgeNoValueIter.set((Iterator<Tuple2<VertexKey, VertexKey>>) edges);
+			return this.edgeNoValueIter;
+		}
 	}
+
 	
 
 //	private Set<Integer> channelSet = new HashSet<Integer>();
@@ -105,22 +111,13 @@ public abstract class MessagingFunction1<VertexKey extends Comparable<VertexKey>
 	
 	private Collector<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>> out;
 	private Tuple2<VertexKey, MessageWithSender<VertexKey, Message>> outValue;// = new Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>();
-	//private MessageWithSender<VertexKey, Message> msgWithSender = new MessageWithSender<VertexKey, Message>();
-	//private MessageWithSender<VertexKey, Message> msgWithSender = new MessageWithSender<VertexKey, Message>();
 	
 	public void setSender(VertexKey sender) {
 		outValue.f1.sender = sender;
-		
 	}
 	
 	@SuppressWarnings("unchecked")
 	public void sendMessageToMultipleRecipients(MultipleRecipients<VertexKey> recipients, Message m) {
-		//Clear previous contents
-//		channelSet.clear();
-//		for (List<VertexKey> targets: recipientsInBlock.values()) {
-//			targets.clear();
-//		}
-		//		blockedRecipients.clear();
 		recipientsInBlock.clear();
 		//System.out.println(outValue.f1.getSender());
 		outValue.f1.message = m;
@@ -130,13 +127,6 @@ public abstract class MessagingFunction1<VertexKey extends Comparable<VertexKey>
 			channel = ((OutputCollector<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>>)out).getChannel(outValue);
 			if (recipientsInBlock.get(channel) == null) {
 				recipientsInBlock.put(channel, new ArrayList<VertexKey>());
-//			if (!channelSet.contains(channel)){
-//				channelSet.add(channel);
-//				//out.collect(outValue);
-//				if (recipientsInBlock.get(channel) == null) {
-//					recipientsInBlock.put(channel, new ArrayList<VertexKey>());
-//				}
-//				recipientsInBlock.get(channel).clear();
 			}
 			recipientsInBlock.get(channel).add(target);
 		}
@@ -250,6 +240,8 @@ public abstract class MessagingFunction1<VertexKey extends Comparable<VertexKey>
 	
 	private EdgesIteratorNoEdgeValue<VertexKey, EdgeValue> edgeNoValueIter;
 	
+	private EdgesIteratorWithEdgeValue<VertexKey, EdgeValue> edgeWithValueIter;
+
 	private boolean edgesUsed;
 	
 	
@@ -260,8 +252,8 @@ public abstract class MessagingFunction1<VertexKey extends Comparable<VertexKey>
 		this.outValue.f1 = new MessageWithSender<VertexKey, Message>();
 		
 		if (hasEdgeValue) {
-			throw new RuntimeException("Edge values not supported");
-			//this.edgeWithValueIter = new EdgesIteratorWithEdgeValue<VertexKey, EdgeValue>();
+			//throw new RuntimeException("Edge values not supported");
+			this.edgeWithValueIter = new EdgesIteratorWithEdgeValue<VertexKey, EdgeValue>();
 		} else {
 			this.edgeNoValueIter = new EdgesIteratorNoEdgeValue<VertexKey, EdgeValue>();
 		}
@@ -310,5 +302,37 @@ public abstract class MessagingFunction1<VertexKey extends Comparable<VertexKey>
 		}
 	}
 	
+	private static final class EdgesIteratorWithEdgeValue<VertexKey extends Comparable<VertexKey>, EdgeValue> 
+	implements Iterator<OutgoingEdge<VertexKey, EdgeValue>>, Iterable<OutgoingEdge<VertexKey, EdgeValue>>
+{
+	private Iterator<Tuple3<VertexKey, VertexKey, EdgeValue>> input;
 	
+	private OutgoingEdge<VertexKey, EdgeValue> edge = new OutgoingEdge<VertexKey, EdgeValue>();
+	
+	void set(Iterator<Tuple3<VertexKey, VertexKey, EdgeValue>> input) {
+		this.input = input;
+	}
+	
+	@Override
+	public boolean hasNext() {
+		return input.hasNext();
+	}
+
+	@Override
+	public OutgoingEdge<VertexKey, EdgeValue> next() {
+		Tuple3<VertexKey, VertexKey, EdgeValue> next = input.next();
+		edge.set(next.f1, next.f2);
+		return edge;
+	}
+
+	@Override
+	public void remove() {
+		throw new UnsupportedOperationException();
+	}
+	@Override
+	public Iterator<OutgoingEdge<VertexKey, EdgeValue>> iterator() {
+		return this;
+	}
+}
+
 }
