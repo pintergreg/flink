@@ -40,7 +40,7 @@ import org.apache.flink.api.java.typeutils.ResultTypeQueryable;
 import org.apache.flink.api.java.typeutils.TupleTypeInfo;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.configuration.Configuration;
-import org.apache.flink.spargel.java.multicast.MessageWithSender;
+import org.apache.flink.spargel.java.multicast.MessageWithHeader;
 import org.apache.flink.util.Collector;
 /**
  * This class represents iterative graph computations, programmed in a vertex-centric perspective.
@@ -92,7 +92,7 @@ public class VertexCentricIteration1<VertexKey extends Comparable<VertexKey>, Ve
 	private final List<Tuple2<String, DataSet<?>>> bcVarsMessaging = new ArrayList<Tuple2<String,DataSet<?>>>(4);
 	
 	@SuppressWarnings("rawtypes")
-	private final TypeInformation<MessageWithSender> packedMessageType;
+	private final TypeInformation<MessageWithHeader> packedMessageType;
 	private final TypeInformation<Message> unPackedMessageType;
 	
 	private DataSet<Tuple2<VertexKey, VertexValue>> initialVertices;
@@ -133,7 +133,6 @@ public class VertexCentricIteration1<VertexKey extends Comparable<VertexKey>, Ve
 		
 		this.packedMessageType = getMessageType(mf);
 		this.unPackedMessageType = TypeExtractor.createTypeInfo(MessagingFunction1.class, mf.getClass(), 2, null, null);
-		//this.messageType = mf.getMessageType();
 	}
 	
 	private VertexCentricIteration1(VertexUpdateFunction<VertexKey, VertexValue, Message> uf,
@@ -170,11 +169,11 @@ public class VertexCentricIteration1<VertexKey extends Comparable<VertexKey>, Ve
 	}
 
 	@SuppressWarnings("rawtypes")
-	private TypeInformation<MessageWithSender> getMessageType(MessagingFunction1<VertexKey, VertexValue, Message, EdgeValue> mf) {
+	private TypeInformation<MessageWithHeader> getMessageType(MessagingFunction1<VertexKey, VertexValue, Message, EdgeValue> mf) {
 
 		TypeInformation<VertexKey> keyType = TypeExtractor.createTypeInfo(MessagingFunction1.class, mf.getClass(), 1, null, null);
 		TypeInformation<Message> msgType = TypeExtractor.createTypeInfo(MessagingFunction1.class, mf.getClass(), 2, null, null);
-		return MessageWithSender.getTypeInfo(keyType, msgType);
+		return MessageWithHeader.getTypeInfo(keyType, msgType);
 	}
 
 
@@ -315,7 +314,7 @@ public class VertexCentricIteration1<VertexKey extends Comparable<VertexKey>, Ve
 		// prepare some type information
 		TypeInformation<Tuple2<VertexKey, VertexValue>> vertexTypes = initialVertices.getType();
 		TypeInformation<VertexKey> keyType = ((TupleTypeInfo<?>) initialVertices.getType()).getTypeAt(0);
-		TypeInformation<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>> packedMessageTypeInfo = new TupleTypeInfo<Tuple2<VertexKey,MessageWithSender<VertexKey, Message>>>(keyType, packedMessageType);		
+		TypeInformation<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>> packedMessageTypeInfo = new TupleTypeInfo<Tuple2<VertexKey,MessageWithHeader<VertexKey, Message>>>(keyType, packedMessageType);		
 		TypeInformation<Tuple2<VertexKey, Message>> unpackedMessageTypeInfo = new TupleTypeInfo<Tuple2<VertexKey,Message>>(keyType, unPackedMessageType);		
 
 		// set up the iteration operator
@@ -337,8 +336,7 @@ public class VertexCentricIteration1<VertexKey extends Comparable<VertexKey>, Ve
 
 		
 		// build the messaging function (co group)
-		CoGroupOperator<?, ?, Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>> messages;
-//		DataSet<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>> messages;
+		CoGroupOperator<?, ?, Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>> messages;
 		if (edgesWithoutValue != null) {
 			MessagingUdfNoEdgeValues<VertexKey, VertexValue, Message> messenger = new MessagingUdfNoEdgeValues<VertexKey, VertexValue, Message>(messagingFunction, packedMessageTypeInfo);
 			messages = this.edgesWithoutValue.coGroup(iteration.getWorkset()).where(0).equalTo(0).with(messenger);
@@ -357,17 +355,12 @@ public class VertexCentricIteration1<VertexKey extends Comparable<VertexKey>, Ve
 		VertexUpdateUdf<VertexKey, VertexValue,  Message> updateUdf = new VertexUpdateUdf<VertexKey, VertexValue,  Message>(updateFunction, vertexTypes);
 
 
-//		DataSet<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>> messages1 = messages.partitionByHash(0)
-//		.flatMap(new  Kicsom( messenger.getProducedType()));
-
-		FlatMapOperator<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>,
-						Tuple2<VertexKey,  Message>> messages1 = messages.partitionByHash(0)
+		// unpack the messages, take off header
+		FlatMapOperator<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>,
+						Tuple2<VertexKey,  Message>> messages1 = messages
+						.partitionByHash(0)
 						.flatMap(new  UnpackMessage<VertexKey,  Message>( unpackedMessageTypeInfo));
 
-		//messages1.withConstantSet("0");
-		
-//		DataSet<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>> messages2 = messages
-//		.mapPartition(new  Kicsom2( messenger.getProducedType()));
 
 		// build the update function (co group)
 		CoGroupOperator<?, ?, Tuple2<VertexKey, VertexValue>> updates =
@@ -387,7 +380,7 @@ public class VertexCentricIteration1<VertexKey extends Comparable<VertexKey>, Ve
 	}
 	
 	public static class UnpackMessage<VertexKey extends Comparable<VertexKey>, Message>
-	implements FlatMapFunction<Tuple2<VertexKey, MessageWithSender<VertexKey,Message>>, Tuple2<VertexKey, Message>>,
+	implements FlatMapFunction<Tuple2<VertexKey, MessageWithHeader<VertexKey,Message>>, Tuple2<VertexKey, Message>>,
 	 ResultTypeQueryable<Tuple2<VertexKey, Message>>{
 		
 		private static final long serialVersionUID = 1L;
@@ -400,7 +393,7 @@ public class VertexCentricIteration1<VertexKey extends Comparable<VertexKey>, Ve
 		
 		@Override
 		public void flatMap(
-				Tuple2<VertexKey, MessageWithSender<VertexKey, Message>> value,
+				Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>> value,
 				Collector<Tuple2<VertexKey, Message>> out)
 				throws Exception {
 			for (VertexKey target : value.f1.someRecipients) {
@@ -553,18 +546,18 @@ public class VertexCentricIteration1<VertexKey extends Comparable<VertexKey>, Ve
 	 */
 	private static final class MessagingUdfNoEdgeValues<VertexKey extends Comparable<VertexKey>, VertexValue, Message> 
 		extends RichCoGroupFunction<Tuple2<VertexKey, VertexKey>, Tuple2<VertexKey, VertexValue>, 
-				Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>>
-		implements ResultTypeQueryable<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>>
+				Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>>
+		implements ResultTypeQueryable<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>>
 	{
 		private static final long serialVersionUID = 1L;
 		
 		private final MessagingFunction1<VertexKey, VertexValue, Message, ?> messagingFunction;
 		
-		private transient TypeInformation<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>> resultType;
+		private transient TypeInformation<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>> resultType;
 		
 		
 		private MessagingUdfNoEdgeValues(MessagingFunction1<VertexKey, VertexValue, Message, ?> messagingFunction,
-				TypeInformation<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>> resultType)
+				TypeInformation<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>> resultType)
 		{
 			this.messagingFunction = messagingFunction;
 			this.resultType = resultType;
@@ -572,7 +565,7 @@ public class VertexCentricIteration1<VertexKey extends Comparable<VertexKey>, Ve
 		
 		@Override
 		public void coGroup(Iterable<Tuple2<VertexKey, VertexKey>> edges,
-				Iterable<Tuple2<VertexKey, VertexValue>> state, Collector<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>> out)
+				Iterable<Tuple2<VertexKey, VertexValue>> state, Collector<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>> out)
 			throws Exception
 		{
 			final Iterator<Tuple2<VertexKey, VertexValue>> stateIter = state.iterator();
@@ -601,7 +594,7 @@ public class VertexCentricIteration1<VertexKey extends Comparable<VertexKey>, Ve
 		}
 
 		@Override
-		public TypeInformation<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>> getProducedType() {
+		public TypeInformation<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>> getProducedType() {
 			return this.resultType;
 		}
 	}
@@ -611,18 +604,18 @@ public class VertexCentricIteration1<VertexKey extends Comparable<VertexKey>, Ve
 	 */
 	private static final class MessagingUdfWithEdgeValues<VertexKey extends Comparable<VertexKey>, VertexValue, Message, EdgeValue> 
 	extends RichCoGroupFunction<Tuple3<VertexKey, VertexKey, EdgeValue>, Tuple2<VertexKey, VertexValue>, 
-	Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>>
-	implements ResultTypeQueryable<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>>
+	Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>>
+	implements ResultTypeQueryable<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>>
 	{
 		private static final long serialVersionUID = 1L;
 		
 		private final MessagingFunction1<VertexKey, VertexValue, Message, EdgeValue> messagingFunction;
 		
-		private transient TypeInformation<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>> resultType;
+		private transient TypeInformation<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>> resultType;
 		
 		
 		private MessagingUdfWithEdgeValues(MessagingFunction1<VertexKey, VertexValue, Message, EdgeValue> messagingFunction,
-				TypeInformation<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>>  resultType)
+				TypeInformation<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>>  resultType)
 		{
 			this.messagingFunction = messagingFunction;
 			this.resultType = resultType;
@@ -645,14 +638,14 @@ public class VertexCentricIteration1<VertexKey extends Comparable<VertexKey>, Ve
 		}
 		
 		@Override
-		public TypeInformation<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>> getProducedType() {
+		public TypeInformation<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>> getProducedType() {
 			return this.resultType;
 		}
 		@Override
 		public void coGroup(
 				Iterable<Tuple3<VertexKey, VertexKey, EdgeValue>> edges,
 				Iterable<Tuple2<VertexKey, VertexValue>> state,
-				Collector<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>> out)
+				Collector<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>> out)
 				throws Exception {
 			final Iterator<Tuple2<VertexKey, VertexValue>> stateIter = state.iterator();
 			

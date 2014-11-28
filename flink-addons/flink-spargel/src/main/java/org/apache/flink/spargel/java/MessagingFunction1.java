@@ -32,7 +32,7 @@ import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.runtime.operators.shipping.OutputCollector;
-import org.apache.flink.spargel.java.multicast.MessageWithSender;
+import org.apache.flink.spargel.java.multicast.MessageWithHeader;
 import org.apache.flink.spargel.java.multicast.MultipleRecipients;
 import org.apache.flink.types.Value;
 import org.apache.flink.util.Collector;
@@ -102,15 +102,9 @@ public abstract class MessagingFunction1<VertexKey extends Comparable<VertexKey>
 	}
 
 	
-
-//	private Set<Integer> channelSet = new HashSet<Integer>();
-	private Integer channel;
-	
 	private Map<Integer, List<VertexKey>> recipientsInBlock = new HashMap <Integer, List<VertexKey>>();
-
-	
-	private Collector<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>> out;
-	private Tuple2<VertexKey, MessageWithSender<VertexKey, Message>> outValue;// = new Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>();
+	private Collector<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>> out;
+	private Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>> outValue;// = new Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>();
 	
 	public void setSender(VertexKey sender) {
 		outValue.f1.sender = sender;
@@ -119,24 +113,19 @@ public abstract class MessagingFunction1<VertexKey extends Comparable<VertexKey>
 	@SuppressWarnings("unchecked")
 	public void sendMessageToMultipleRecipients(MultipleRecipients<VertexKey> recipients, Message m) {
 		recipientsInBlock.clear();
-		//System.out.println(outValue.f1.getSender());
 		outValue.f1.message = m;
-		//outValue.f1.sender is already set
 		for (VertexKey target: recipients) {
 			outValue.f0 = target;
-			channel = ((OutputCollector<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>>)out).getChannel(outValue);
+			int channel = ((OutputCollector<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>>)out).getChannel(outValue);
 			if (recipientsInBlock.get(channel) == null) {
 				recipientsInBlock.put(channel, new ArrayList<VertexKey>());
 			}
 			recipientsInBlock.get(channel).add(target);
 		}
 		for (List<VertexKey> targets: recipientsInBlock.values()) {
-			System.out.println("Sender: " + outValue.f1.sender);
-			System.out.println("Targets: " + targets);
 			outValue.f0 = targets.get(0);
 			outValue.f1.someRecipients = (VertexKey[])targets.toArray(new Comparable[0]); 
 			out.collect(outValue);
-			System.out.println(outValue);
 		}
 	}
 
@@ -247,19 +236,17 @@ public abstract class MessagingFunction1<VertexKey extends Comparable<VertexKey>
 	
 	void init(IterationRuntimeContext context, boolean hasEdgeValue) {
 		this.runtimeContext = context;
-		this.outValue = new Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>();
-		//this.msgWithSender = new MessageWithSender<VertexKey, Message>();
-		this.outValue.f1 = new MessageWithSender<VertexKey, Message>();
+		this.outValue = new Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>();
+		this.outValue.f1 = new MessageWithHeader<VertexKey, Message>();
 		
 		if (hasEdgeValue) {
-			//throw new RuntimeException("Edge values not supported");
 			this.edgeWithValueIter = new EdgesIteratorWithEdgeValue<VertexKey, EdgeValue>();
 		} else {
 			this.edgeNoValueIter = new EdgesIteratorNoEdgeValue<VertexKey, EdgeValue>();
 		}
 	}
 	
-	void set(Iterator<?> edges, Collector<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>> out) {
+	void set(Iterator<?> edges, Collector<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>> out) {
 		this.edges = edges;
 		this.out = out;
 		this.edgesUsed = false;

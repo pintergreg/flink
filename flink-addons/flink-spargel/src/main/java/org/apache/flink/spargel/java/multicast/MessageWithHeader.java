@@ -12,7 +12,7 @@ import org.apache.flink.api.java.typeutils.ObjectArrayTypeInfo;
 import org.apache.flink.api.java.typeutils.PojoField;
 import org.apache.flink.api.java.typeutils.PojoTypeInfo;
 
-public class MessageWithSender<VertexKey, Message>
+public class MessageWithHeader<VertexKey, Message>
 	implements Serializable{
 	private static final long serialVersionUID = 1L;
 	
@@ -47,16 +47,16 @@ public class MessageWithSender<VertexKey, Message>
 	public VertexKey[] someRecipients;
 	public Message message;
 	
-	public  static TypeInformation<MessageWithSender> getTypeInfo(
+	public  static TypeInformation<MessageWithHeader> getTypeInfo(
 			TypeInformation<?> keyType, TypeInformation<?> msgType) {
 		List<PojoField> fields = new ArrayList<PojoField>();
 		//PojoTypeExtractionTest
 		
 		//System.out.println(ObjectArrayTypeInfo.getInfoFor(Array.newInstance(keyType.getTypeClass(), 0).getClass()));
 		try {
-			fields.add(new PojoField(MessageWithSender.class.getField("sender"), keyType));
-			fields.add(new PojoField(MessageWithSender.class.getField("message"), msgType));
-			fields.add(new PojoField(MessageWithSender.class.getField("someRecipients"), ObjectArrayTypeInfo.getInfoFor(Array.newInstance(keyType.getTypeClass(), 0).getClass())));
+			fields.add(new PojoField(MessageWithHeader.class.getField("sender"), keyType));
+			fields.add(new PojoField(MessageWithHeader.class.getField("message"), msgType));
+			fields.add(new PojoField(MessageWithHeader.class.getField("someRecipients"), ObjectArrayTypeInfo.getInfoFor(Array.newInstance(keyType.getTypeClass(), 0).getClass())));
 			
 		} catch (NoSuchFieldException e) {
 			// TODO Auto-generated catch block
@@ -65,7 +65,7 @@ public class MessageWithSender<VertexKey, Message>
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		TypeInformation<MessageWithSender> res1 = new PojoTypeInfo<MessageWithSender>(MessageWithSender.class, fields);
+		TypeInformation<MessageWithHeader> res1 = new PojoTypeInfo<MessageWithHeader>(MessageWithHeader.class, fields);
 		return res1;
 	}
 	@Override
