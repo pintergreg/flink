@@ -22,9 +22,11 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.flink.api.common.aggregators.Aggregator;
 import org.apache.flink.api.common.functions.IterationRuntimeContext;
@@ -110,27 +112,27 @@ public abstract class MessagingFunction2<VertexKey extends Comparable<VertexKey>
 		outValue.f1.sender = sender;
 	}
 	
-	@SuppressWarnings("unchecked")
-	public void sendMessageToMultipleRecipients(MultipleRecipients<VertexKey> recipients, Message m) {
-		recipientsInBlock.clear();
-		outValue.f1.message = m;
-		for (VertexKey target: recipients) {
-			outValue.f0 = target;
-			int channel = ((OutputCollector<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>>)out).getChannel(outValue);
-			if (recipientsInBlock.get(channel) == null) {
-				recipientsInBlock.put(channel, new ArrayList<VertexKey>());
-			}
-			recipientsInBlock.get(channel).add(target);
-		}
-		for (Integer channel: recipientsInBlock.keySet()) {
-			List<VertexKey> targets =  recipientsInBlock.get(channel);
-			outValue.f0 = targets.get(0);
-			outValue.f1.someRecipients = (VertexKey[])targets.toArray(new Comparable[0]);
-			outValue.f1.channelId = channel;
-			out.collect(outValue);
-			System.out.println(outValue);
-		}
-	}
+//	@SuppressWarnings("unchecked")
+//	public void sendMessageToMultipleRecipients(MultipleRecipients<VertexKey> recipients, Message m) {
+//		recipientsInBlock.clear();
+//		outValue.f1.message = m;
+//		for (VertexKey target: recipients) {
+//			outValue.f0 = target;
+//			int channel = ((OutputCollector<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>>)out).getChannel(outValue);
+//			if (recipientsInBlock.get(channel) == null) {
+//				recipientsInBlock.put(channel, new ArrayList<VertexKey>());
+//			}
+//			recipientsInBlock.get(channel).add(target);
+//		}
+//		for (Integer channel: recipientsInBlock.keySet()) {
+//			List<VertexKey> targets =  recipientsInBlock.get(channel);
+//			outValue.f0 = targets.get(0);
+//			outValue.f1.someRecipients = (VertexKey[])targets.toArray(new Comparable[0]);
+//			outValue.f1.channelId = channel;
+//			out.collect(outValue);
+//			System.out.println(outValue);
+//		}
+//	}
 
 	private MultipleRecipients<VertexKey> recipients = new MultipleRecipients<VertexKey>();
 	/**
@@ -139,22 +141,34 @@ public abstract class MessagingFunction2<VertexKey extends Comparable<VertexKey>
 	 * 
 	 * @param m The message to send.
 	 */
+	@SuppressWarnings("unchecked")
+	private VertexKey[] emptyArray = (VertexKey[])(new ArrayList<VertexKey>()).toArray(new Comparable[0]);
+	private Set<Integer> channelSet = new HashSet<Integer>();
 	public void sendMessageToAllNeighbors(Message m) {
 		if (edgesUsed) {
 			throw new IllegalStateException("Can use either 'getOutgoingEdges()' or 'sendMessageToAllTargets()' exactly once.");
 		}
 		
 		edgesUsed = true;
-		recipients.clear();
+		channelSet.clear();
 		while (edges.hasNext()) {
 			Tuple next = (Tuple) edges.next();
-			VertexKey k = next.getField(1);
-			recipients.addRecipient(k);
-//
-//			outValue.f0 = k;
-//			out.collect(outValue);
+			VertexKey target = next.getField(1);
+
+			recipients.clear();
+			outValue.f1.someRecipients = emptyArray;
+			outValue.f1.message = m;
+			outValue.f0 = target;
+			//This is a bit dodgy here
+			int channel = ((OutputCollector<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>>) out)
+					.getChannel(outValue);
+			if (!channelSet.contains(channel)) {
+				channelSet.add(channel);
+				outValue.f1.channelId = channel;
+				out.collect(outValue);
+				System.out.println(outValue);
+			}
 		}
-		sendMessageToMultipleRecipients(recipients, m);
 	}
 
 	
@@ -167,11 +181,11 @@ public abstract class MessagingFunction2<VertexKey extends Comparable<VertexKey>
 	 * @param m The message.
 	 */
 
-	public void sendMessageTo(VertexKey target, Message m) {
-		recipients.clear();
-		recipients.addRecipient(target);
-		sendMessageToMultipleRecipients(recipients, m);
-	}
+//	public void sendMessageTo(VertexKey target, Message m) {
+//		recipients.clear();
+//		recipients.addRecipient(target);
+//		sendMessageToMultipleRecipients(recipients, m);
+//	}
 
 
 	

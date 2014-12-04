@@ -32,9 +32,14 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.spargel.java.MessageIterator;
 import org.apache.flink.spargel.java.MessagingFunction2;
 import org.apache.flink.spargel.java.OutgoingEdge;
+import org.apache.flink.spargel.java.VertexCentricIteration1;
 import org.apache.flink.spargel.java.VertexCentricIteration2;
 import org.apache.flink.spargel.java.VertexUpdateFunction;
 import org.apache.flink.spargel.java.multicast.MultipleRecipients;
+import org.apache.flink.spargel.multicast_test.MultipleRecipientsTestMain.CCMessager;
+import org.apache.flink.spargel.multicast_test.MultipleRecipientsTestMain.CCUpdater;
+import org.apache.flink.spargel.multicast_test.MultipleRecipientsTestMain.IdAssigner;
+import org.apache.flink.spargel.multicast_test.MultipleRecipientsTestMain.Message;
 import org.apache.flink.types.NullValue;
 
 
@@ -43,50 +48,44 @@ public class MultipleRecipientsTestMain2 {
 
 	
 	static List<Set<Long>> inNeighbours;
-	static int numOfReceivedMEssages;
+	static int numOfMessagesToSend;
 	static Map<Tuple2<Long, Long>, Boolean>  messageReceivedAlready;
 	
 	public static void main(String[] args) throws Exception {
-//		MultipleRecipientsTestMain instance = new MultipleRecipientsTestMain();
-//
-//		instance.run();
-		ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
-//		DataSet<Long> vertexIds = env.generateSequence(0, 10);
-//		DataSet<Tuple2<Long, Long>> edges = env.fromElements(new Tuple2<Long, Long>(0L, 2L), new Tuple2<Long, Long>(2L, 4L), new Tuple2<Long, Long>(4L, 8L),
-//															new Tuple2<Long, Long>(1L, 5L), new Tuple2<Long, Long>(3L, 7L), new Tuple2<Long, Long>(3L, 9L));
-		
-//		List<Set<Integer>> inNeighbours = new ArrayList<Set<Integer>>(null); 
-//		inNeighbours[0] = new TreeSet<Integer>
-//		inNeighbours[0] = new HashSet<String>(Arrays.asList("a", "b"));
-		
-		inNeighbours  = new ArrayList<Set<Long>>();
-		
-		//inNeighbours of 0
-		inNeighbours.add(new HashSet<Long>(Arrays.asList(0L)));
-		//inNeighbours of 1
-		inNeighbours.add(new HashSet<Long>(Arrays.asList(0L)));
-		//inNeighbours of 2
-		inNeighbours.add(new HashSet<Long>(Arrays.asList(0L, 1L)));
 
-		int numOfNodes = inNeighbours.size();
-		numOfReceivedMEssages = 0;
-		messageReceivedAlready = new HashMap<Tuple2<Long, Long>, Boolean>();
+		ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 		
+		//some input data
+		int numOfNodes = 4;
 		List<Tuple2<Long, Long>> edgeList = new ArrayList<Tuple2<Long, Long>>();
-		for (int i = 0; i < numOfNodes; ++i) {
-			for (long j: inNeighbours.get(i)) {
-				numOfReceivedMEssages++;
-				Tuple2<Long, Long> edge = new Tuple2<Long, Long>(j, (long)i);
-				edgeList.add(edge);
-				messageReceivedAlready.put(edge, false);
-			}
-		}
+		messageReceivedAlready = new HashMap<Tuple2<Long, Long>, Boolean>();
+		Tuple2<Long, Long> edge;
+		edge = new Tuple2<Long, Long>(0L, 0L);
+		edgeList.add(edge);
+		messageReceivedAlready.put(edge, false);
+		edge = new Tuple2<Long, Long>(0L, 1L);
+		edgeList.add(edge);
+		messageReceivedAlready.put(edge, false);
+		edge = new Tuple2<Long, Long>(0L, 2L);
+		edgeList.add(edge);
+		messageReceivedAlready.put(edge, false);
+		edge = new Tuple2<Long, Long>(1L, 2L);
+		edgeList.add(edge);
+		messageReceivedAlready.put(edge, false);
+		edge = new Tuple2<Long, Long>(3L, 1L);
+		edgeList.add(edge);
+		messageReceivedAlready.put(edge, false);
+		edge = new Tuple2<Long, Long>(3L, 2L);
+		edgeList.add(edge);
+		messageReceivedAlready.put(edge, false);
+
+		numOfMessagesToSend = edgeList.size();
+		
 		DataSet<Long> vertexIds = env.generateSequence(0, numOfNodes - 1);
 		DataSet<Tuple2<Long, Long>> edges = env.fromCollection(edgeList);
 		
 		DataSet<Tuple2<Long, Long>> initialVertices = vertexIds.map(new IdAssigner());
 		
-
 		
 		VertexCentricIteration2<Long, Long, Message, ?> iteration = VertexCentricIteration2.withPlainEdges(edges, new CCUpdater(), new CCMessager(), 1);
 		
@@ -94,13 +93,68 @@ public class MultipleRecipientsTestMain2 {
 		
 		result.print();
 		env.setDegreeOfParallelism(2);
-		env.execute("Spargel Multicast 2 test.");
+		env.execute("Spargel Multiple recipients test.");
 		//System.out.println(env.getExecutionPlan());
+		if (numOfMessagesToSend != 0) {
+			throw new RuntimeException("Not every message was delivered (remaining: " + numOfMessagesToSend + ")");
+		}
+		
+	}
+//	public static void main(String[] args) throws Exception {
+////		MultipleRecipientsTestMain instance = new MultipleRecipientsTestMain();
+////
+////		instance.run();
+//		ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+////		DataSet<Long> vertexIds = env.generateSequence(0, 10);
+////		DataSet<Tuple2<Long, Long>> edges = env.fromElements(new Tuple2<Long, Long>(0L, 2L), new Tuple2<Long, Long>(2L, 4L), new Tuple2<Long, Long>(4L, 8L),
+////															new Tuple2<Long, Long>(1L, 5L), new Tuple2<Long, Long>(3L, 7L), new Tuple2<Long, Long>(3L, 9L));
+//		
+////		List<Set<Integer>> inNeighbours = new ArrayList<Set<Integer>>(null); 
+////		inNeighbours[0] = new TreeSet<Integer>
+////		inNeighbours[0] = new HashSet<String>(Arrays.asList("a", "b"));
+//		
+//		inNeighbours  = new ArrayList<Set<Long>>();
+//		
+//		//inNeighbours of 0
+//		inNeighbours.add(new HashSet<Long>(Arrays.asList(0L)));
+//		//inNeighbours of 1
+//		inNeighbours.add(new HashSet<Long>(Arrays.asList(0L)));
+//		//inNeighbours of 2
+//		inNeighbours.add(new HashSet<Long>(Arrays.asList(0L, 1L)));
+//
+//		int numOfNodes = inNeighbours.size();
+//		numOfReceivedMEssages = 0;
+//		messageReceivedAlready = new HashMap<Tuple2<Long, Long>, Boolean>();
+//		
+//		List<Tuple2<Long, Long>> edgeList = new ArrayList<Tuple2<Long, Long>>();
+//		for (int i = 0; i < numOfNodes; ++i) {
+//			for (long j: inNeighbours.get(i)) {
+//				numOfReceivedMEssages++;
+//				Tuple2<Long, Long> edge = new Tuple2<Long, Long>(j, (long)i);
+//				edgeList.add(edge);
+//				messageReceivedAlready.put(edge, false);
+//			}
+//		}
+//		DataSet<Long> vertexIds = env.generateSequence(0, numOfNodes - 1);
+//		DataSet<Tuple2<Long, Long>> edges = env.fromCollection(edgeList);
+//		
+//		DataSet<Tuple2<Long, Long>> initialVertices = vertexIds.map(new IdAssigner());
+//		
+//
+//		
+//		VertexCentricIteration2<Long, Long, Message, ?> iteration = VertexCentricIteration2.withPlainEdges(edges, new CCUpdater(), new CCMessager(), 1);
+//		
+//		DataSet<Tuple2<Long, Long>> result = initialVertices.runOperation(iteration);
+//		
+//		result.print();
+//		env.setDegreeOfParallelism(2);
+//		env.execute("Spargel Multicast 2 test.");
+//		//System.out.println(env.getExecutionPlan());
 //		if (numOfReceivedMEssages != 0) {
 //			throw new RuntimeException("Not every message was delivered (remaining: " + numOfReceivedMEssages + ")");
 //		}
-		
-	}
+//		
+//	}
 	
 	
 	public static final class Message {
@@ -124,11 +178,7 @@ public class MultipleRecipientsTestMain2 {
 			for (Message msg: inMessages) {
 				System.out.println("Message from " + msg.senderke + " to " + vertexKey);
 				System.out.println("Message contents " + msg);
-				if (! inNeighbours.get(vertexKey.intValue()).contains(msg.senderke)) {
-					throw new RuntimeException("invalid message from " + msg + " to " + vertexKey);
-				} else {
-					numOfReceivedMEssages--;
-				}
+
 				Tuple2<Long, Long> edge = new Tuple2<Long, Long>(msg.senderke, vertexKey);
 				if (!messageReceivedAlready.containsKey(edge)) {
 					throw new RuntimeException("invalid message from " + msg.senderke + " to " + vertexKey);
@@ -138,7 +188,7 @@ public class MultipleRecipientsTestMain2 {
 								+ " to " + vertexKey + " sent more than once.");
 					} else {
 						messageReceivedAlready.put(edge, true);
-						numOfReceivedMEssages--;
+						numOfMessagesToSend--;
 					}
 				}
 			}
@@ -150,15 +200,16 @@ public class MultipleRecipientsTestMain2 {
 		@Override
 		public void sendMessages(Long vertexId, Long componentId) {
 			Message m = new Message(vertexId);
+//			MultipleRecipients<Long> recipients = new MultipleRecipients<Long>();
+//			for (OutgoingEdge<Long, NullValue> edge : getOutgoingEdges()) {
+//				// sendMessageTo(edge.target(), m);
+//				recipients.addRecipient(edge.target());
+//			}
+//			// System.out.println("Sending from "+ vertexId);
+//			// System.out.println("To "+ recipients);
+//			sendMessageToMultipleRecipients(recipients, m);
 
-			MultipleRecipients<Long> recipients = new MultipleRecipients<Long>();
-			for (OutgoingEdge<Long, NullValue> edge : getOutgoingEdges()) {
-				//sendMessageTo(edge.target(), m);
-				recipients.addRecipient(edge.target());
-			}
-//			System.out.println("Sending from "+ vertexId);
-//			System.out.println("To "+ recipients);
-			sendMessageToMultipleRecipients(recipients, m);
+			sendMessageToAllNeighbors(m);
 		}
 	}
 	
