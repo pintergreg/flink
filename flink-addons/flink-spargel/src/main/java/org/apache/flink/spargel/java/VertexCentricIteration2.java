@@ -352,37 +352,14 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 		VertexUpdateUdf<VertexKey, VertexValue,  Message> updateUdf = new VertexUpdateUdf<VertexKey, VertexValue,  Message>(updateFunction, vertexTypes);
 
 
-//		DataSet<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>> messages1 = messages.partitionByHash(0)
-//		.flatMap(new  Kicsom( messenger.getProducedType()));
-
-//		FlatMapOperator<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>,
-//						Tuple2<VertexKey,  Message>>
-		
-//		DataSet<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>> messages1 = messages.partitionByHash(0)
-//				.map(new MapFunction<Tuple2<VertexKey,MessageWithSender<VertexKey,Message>>, 
-//						Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>>() {
-//
-//							@Override
-//							public Tuple2<VertexKey, MessageWithSender<VertexKey, Message>> map(
-//									Tuple2<VertexKey, MessageWithSender<VertexKey, Message>> value)
-//									throws Exception {
-//								messageMap.put(value.f1.sender, value.f1.message);
-//								return value;
-//							}
-//				});
 
 		DataSet<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>> messages1 = messages.partitionByHash(0);
 		
-//		edgesWithoutValue.partitionByHash(1).print();
-		
-//		DataSet<Tuple3<VertexKey, VertexKey, Integer>> edgesWithChannelId = 
-//		edgesWithoutValue.partitionByHash(1)
-//				.mapPartition(new ChannelIdAdder<VertexKey>()).print();
 
 		DataSet<Tuple3<VertexKey, VertexKey, Integer>> edgesWithChannelId = edgesWithoutValue.partitionByHash(1)
 		.map(new ChannelIdAdder2<VertexKey>());
 
-		edgesWithChannelId.print();
+		//edgesWithChannelId.print();
 		//messages1.print();
 		DataSet<Tuple2<VertexKey, Message>> messages2 = edgesWithChannelId
 				//Kell ez?
@@ -394,16 +371,6 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 				.equalTo(new SenderSelector3<VertexKey, Message>())
 				.with(new UnpackMessage2<VertexKey, Message>(unpackedMessageTypeInfo));
 				
-				
-				
-
-//				inNeighbours.partitionByHash(0)
-//				.flatMap(new MessageFlatMap(unpackedMessageTypeInfo));
-				
-		//messages1.withConstantSet("0");
-		
-//		DataSet<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>> messages2 = messages
-//		.mapPartition(new  Kicsom2( messenger.getProducedType()));
 
 		// build the update function (co group)
 		CoGroupOperator<?, ?, Tuple2<VertexKey, VertexValue>> updates =
@@ -422,50 +389,6 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 		
 	}
 
-//	public class MessagesToMemo
-//	implements MapFunction<Tuple2<VertexKey,MessageWithSender<VertexKey,Message>>, 
-//	Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>> {
-//
-//		@Override
-//		public Tuple2<VertexKey, MessageWithSender<VertexKey, Message>> map(
-//				Tuple2<VertexKey, MessageWithSender<VertexKey, Message>> value)
-//				throws Exception {
-//			messageMap.put(value.f1.sender, value.f1.message);
-//			return value;
-//		}
-//	}
-//
-//	public class MessageFlatMap 
-//	implements FlatMapFunction<Tuple2<VertexKey,VertexKey[]>, Tuple2<VertexKey, Message>>,
-//	ResultTypeQueryable<Tuple2<VertexKey, Message>> {
-//
-//		Tuple2<VertexKey, Message> reuse = new Tuple2<VertexKey, Message>();
-//		@Override
-//		public void flatMap(Tuple2<VertexKey, VertexKey[]> value,
-//				Collector<Tuple2<VertexKey, Message>> out)
-//				throws Exception {
-//			reuse.f0 = value.f0;
-//			for (VertexKey sender: value.f1) {
-//				if (messageMap.containsKey(sender)) {
-//					reuse.f1 = messageMap.get(sender);
-//					out.collect(reuse);
-//				}
-//			}
-//			
-//		}
-//		private transient TypeInformation<Tuple2<VertexKey, Message>> resultType;
-//		
-//		private MessageFlatMap(TypeInformation<Tuple2<VertexKey, Message>> resultType)
-//		{
-//			this.resultType = resultType;
-//		}
-//		
-//		@Override
-//		public TypeInformation<Tuple2<VertexKey,  Message>> getProducedType() {
-//			return this.resultType;
-//		}
-//	}
-//	
 	
 	public static class SenderSelector<VertexKey, Message>
 	implements KeySelector<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>, VertexKey>{
@@ -586,27 +509,6 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 		}
 	}
 
-//	public static class ChannelIdAdder<VertexKey extends Comparable<VertexKey>>
-//			implements
-//			MapPartitionFunction<Tuple2<VertexKey, VertexKey>, Tuple3<VertexKey, VertexKey, Integer>> {
-//		Tuple3<VertexKey, VertexKey, Integer> reuse = new Tuple3<VertexKey, VertexKey, Integer>();
-//
-//		@Override
-//		public void mapPartition(Iterable<Tuple2<VertexKey, VertexKey>> values,
-//				Collector<Tuple3<VertexKey, VertexKey, Integer>> out)
-//				throws Exception {
-//			for (Tuple2<VertexKey, VertexKey> edge : values) {
-//				reuse.f0 = edge.f0;
-//				reuse.f1 = edge.f1;
-//				reuse.f2 = 11;
-//				// System.out.println("Available processors: " +
-//				// Runtime.getRuntime().availableProcessors());
-//				reuse.f2 = ((OutputCollector<Tuple3<VertexKey, VertexKey, Integer>>) out)
-//						.getChannel(reuse);
-//				out.collect(reuse);
-//			}
-//		}
-//	}
 
 	public static class ChannelIdAdder2<VertexKey extends Comparable<VertexKey>>
 	extends RichMapFunction<Tuple2<VertexKey,VertexKey>, Tuple3<VertexKey, VertexKey, Integer>> {

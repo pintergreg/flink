@@ -128,6 +128,7 @@ public abstract class MessagingFunction1<VertexKey extends Comparable<VertexKey>
 			outValue.f1.someRecipients = (VertexKey[])targets.toArray(new Comparable[0]);
 			outValue.f1.channelId = channel;
 			out.collect(outValue);
+			System.out.println(outValue);
 		}
 	}
 
