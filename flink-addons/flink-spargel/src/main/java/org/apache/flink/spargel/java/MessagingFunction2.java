@@ -45,7 +45,7 @@ import org.apache.flink.util.Collector;
  * @param <Message> The type of the message sent between vertices along the edges.
  * @param <EdgeValue> The type of the values that are associated with the edges.
  */
-public abstract class MessagingFunction1<VertexKey extends Comparable<VertexKey>, VertexValue, 
+public abstract class MessagingFunction2<VertexKey extends Comparable<VertexKey>, VertexValue, 
 	Message , EdgeValue> implements Serializable {
 
 	private static final long serialVersionUID = 1L;
@@ -128,6 +128,7 @@ public abstract class MessagingFunction1<VertexKey extends Comparable<VertexKey>
 			outValue.f1.someRecipients = (VertexKey[])targets.toArray(new Comparable[0]);
 			outValue.f1.channelId = channel;
 			out.collect(outValue);
+			System.out.println(outValue);
 		}
 	}
 

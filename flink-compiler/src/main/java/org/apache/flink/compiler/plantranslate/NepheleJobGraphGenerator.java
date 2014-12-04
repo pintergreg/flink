@@ -711,42 +711,42 @@ public class NepheleJobGraphGenerator implements Visitor<PlanNode> {
 		
 		// check, whether chaining is possible
 		boolean chaining = false;
-//		{
-//			Channel inConn = node.getInput();
-//			PlanNode pred = inConn.getSource();
-//			chaining = ds.getPushChainDriverClass() != null &&
-//					!(pred instanceof NAryUnionPlanNode) &&	// first op after union is stand-alone, because union is merged
-//					!(pred instanceof BulkPartialSolutionPlanNode) &&	// partial solution merges anyways
-//					!(pred instanceof WorksetPlanNode) &&	// workset merges anyways
-//					!(pred instanceof IterationPlanNode) && // cannot chain with iteration heads currently
-//					inConn.getShipStrategy() == ShipStrategyType.FORWARD &&
-//					inConn.getLocalStrategy() == LocalStrategy.NONE &&
-//					pred.getOutgoingChannels().size() == 1 &&
-//					node.getDegreeOfParallelism() == pred.getDegreeOfParallelism() && 
-//					node.getBroadcastInputs().isEmpty();
-//			
-//			// cannot chain the nodes that produce the next workset or the next solution set, if they are not the
-//			// in a tail 
-//			if (this.currentIteration != null && this.currentIteration instanceof WorksetIterationPlanNode &&
-//					node.getOutgoingChannels().size() > 0)
-//			{
-//				WorksetIterationPlanNode wspn = (WorksetIterationPlanNode) this.currentIteration;
-//				if (wspn.getSolutionSetDeltaPlanNode() == pred || wspn.getNextWorkSetPlanNode() == pred) {
-//					chaining = false;
-//				}
-//			}
-//			// cannot chain the nodes that produce the next workset in a bulk iteration if a termination criterion follows
-//			if (this.currentIteration != null && this.currentIteration instanceof BulkIterationPlanNode)
-//			{
-//				BulkIterationPlanNode wspn = (BulkIterationPlanNode) this.currentIteration;
-//				if (node == wspn.getRootOfTerminationCriterion() && wspn.getRootOfStepFunction() == pred){
-//					chaining = false;
-//				}else if(node.getOutgoingChannels().size() > 0 &&(wspn.getRootOfStepFunction() == pred ||
-//						wspn.getRootOfTerminationCriterion() == pred)) {
-//					chaining = false;
-//				}
-//			}
-//		}
+		{
+			Channel inConn = node.getInput();
+			PlanNode pred = inConn.getSource();
+			chaining = ds.getPushChainDriverClass() != null &&
+					!(pred instanceof NAryUnionPlanNode) &&	// first op after union is stand-alone, because union is merged
+					!(pred instanceof BulkPartialSolutionPlanNode) &&	// partial solution merges anyways
+					!(pred instanceof WorksetPlanNode) &&	// workset merges anyways
+					!(pred instanceof IterationPlanNode) && // cannot chain with iteration heads currently
+					inConn.getShipStrategy() == ShipStrategyType.FORWARD &&
+					inConn.getLocalStrategy() == LocalStrategy.NONE &&
+					pred.getOutgoingChannels().size() == 1 &&
+					node.getDegreeOfParallelism() == pred.getDegreeOfParallelism() && 
+					node.getBroadcastInputs().isEmpty();
+			
+			// cannot chain the nodes that produce the next workset or the next solution set, if they are not the
+			// in a tail 
+			if (this.currentIteration != null && this.currentIteration instanceof WorksetIterationPlanNode &&
+					node.getOutgoingChannels().size() > 0)
+			{
+				WorksetIterationPlanNode wspn = (WorksetIterationPlanNode) this.currentIteration;
+				if (wspn.getSolutionSetDeltaPlanNode() == pred || wspn.getNextWorkSetPlanNode() == pred) {
+					chaining = false;
+				}
+			}
+			// cannot chain the nodes that produce the next workset in a bulk iteration if a termination criterion follows
+			if (this.currentIteration != null && this.currentIteration instanceof BulkIterationPlanNode)
+			{
+				BulkIterationPlanNode wspn = (BulkIterationPlanNode) this.currentIteration;
+				if (node == wspn.getRootOfTerminationCriterion() && wspn.getRootOfStepFunction() == pred){
+					chaining = false;
+				}else if(node.getOutgoingChannels().size() > 0 &&(wspn.getRootOfStepFunction() == pred ||
+						wspn.getRootOfTerminationCriterion() == pred)) {
+					chaining = false;
+				}
+			}
+		}
 		
 		final AbstractJobVertex vertex;
 		final TaskConfig config;
