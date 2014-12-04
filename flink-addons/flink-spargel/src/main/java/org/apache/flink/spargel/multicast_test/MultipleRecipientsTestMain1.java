@@ -18,12 +18,9 @@
 package org.apache.flink.spargel.multicast_test;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.DataSet;
@@ -42,61 +39,66 @@ import org.apache.flink.types.NullValue;
 public class MultipleRecipientsTestMain1 {
 
 	
-	static List<Set<Long>> inNeighbours;
 	static int numOfMessagesToSend;
-	static Map<Tuple2<Long, Long>, Boolean>  messageReceivedAlready;
+	static Map<Tuple2<Long, Long>, Boolean>  messageReceivedAlready = new HashMap<Tuple2<Long, Long>, Boolean>();
 	
 	public static void main(String[] args) throws Exception {
 
-		ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 		
 		//some input data
 		int numOfNodes = 4;
 		List<Tuple2<Long, Long>> edgeList = new ArrayList<Tuple2<Long, Long>>();
-		messageReceivedAlready = new HashMap<Tuple2<Long, Long>, Boolean>();
-		Tuple2<Long, Long> edge;
-		edge = new Tuple2<Long, Long>(0L, 0L);
-		edgeList.add(edge);
-		messageReceivedAlready.put(edge, false);
-		edge = new Tuple2<Long, Long>(0L, 1L);
-		edgeList.add(edge);
-		messageReceivedAlready.put(edge, false);
-		edge = new Tuple2<Long, Long>(0L, 2L);
-		edgeList.add(edge);
-		messageReceivedAlready.put(edge, false);
-		edge = new Tuple2<Long, Long>(1L, 2L);
-		edgeList.add(edge);
-		messageReceivedAlready.put(edge, false);
-		edge = new Tuple2<Long, Long>(3L, 1L);
-		edgeList.add(edge);
-		messageReceivedAlready.put(edge, false);
-		edge = new Tuple2<Long, Long>(3L, 2L);
-		edgeList.add(edge);
-		messageReceivedAlready.put(edge, false);
+		edgeList.add(new Tuple2<Long, Long>(0L, 0L));
+		edgeList.add(new Tuple2<Long, Long>(0L, 1L));
+		edgeList.add(new Tuple2<Long, Long>(0L, 2L));
+		edgeList.add(new Tuple2<Long, Long>(1L, 2L));
+		edgeList.add(new Tuple2<Long, Long>(3L, 1L));
+		edgeList.add(new Tuple2<Long, Long>(3L, 2L));
 
-		numOfMessagesToSend = edgeList.size();
+		//testing Multicast1 and Multicast2 in one program might result in some problem
+		//at least I had some (stochastic) issues that might have been because of that
 		
+		testMulticast1(numOfNodes, edgeList);
+		
+	}
+
+
+	private static void testMulticast1(int numOfNodes,
+			List<Tuple2<Long, Long>> edgeList) throws Exception {
+		ExecutionEnvironment env = ExecutionEnvironment
+				.getExecutionEnvironment();
+
+		messageReceivedAlready.clear();
+		for (Tuple2<Long, Long> e : edgeList) {
+			messageReceivedAlready.put(e, false);
+		}
+		numOfMessagesToSend = edgeList.size();
+
 		DataSet<Long> vertexIds = env.generateSequence(0, numOfNodes - 1);
 		DataSet<Tuple2<Long, Long>> edges = env.fromCollection(edgeList);
-		
-		DataSet<Tuple2<Long, Long>> initialVertices = vertexIds.map(new IdAssigner());
-		
 
-		
-		VertexCentricIteration1<Long, Long, Message, ?> iteration = VertexCentricIteration1.withPlainEdges(edges, new CCUpdater(), new CCMessager(), 1);
-		
-		DataSet<Tuple2<Long, Long>> result = initialVertices.runOperation(iteration);
-		
+		DataSet<Tuple2<Long, Long>> initialVertices = vertexIds
+				.map(new IdAssigner());
+
+		VertexCentricIteration1<Long, Long, Message, ?> iteration = VertexCentricIteration1
+				.withPlainEdges(edges, new CCUpdater(), new CCMessager1(), 1);
+
+		DataSet<Tuple2<Long, Long>> result = initialVertices
+				.runOperation(iteration);
+
 		result.print();
 		env.setDegreeOfParallelism(2);
 		env.execute("Spargel Multiple recipients test.");
-		//System.out.println(env.getExecutionPlan());
+		// System.out.println(env.getExecutionPlan());
 		if (numOfMessagesToSend != 0) {
-			throw new RuntimeException("Not every message was delivered (remaining: " + numOfMessagesToSend + ")");
+			throw new RuntimeException(
+					"Not every message was delivered (remaining: "
+							+ numOfMessagesToSend + ")");
+		} else {
+			System.out.println("All messages received in multicast 2");
 		}
-		
 	}
-	
+
 	
 	public static final class Message {
 		public Long senderId;
@@ -134,7 +136,7 @@ public class MultipleRecipientsTestMain1 {
 		}
 	}
 	
-	public static final class CCMessager extends MessagingFunction1<Long, Long, Message, NullValue> {
+	public static final class CCMessager1 extends MessagingFunction1<Long, Long, Message, NullValue> {
 		boolean multiRecipients = false;
 		@Override
 		public void sendMessages(Long vertexId, Long componentId) {

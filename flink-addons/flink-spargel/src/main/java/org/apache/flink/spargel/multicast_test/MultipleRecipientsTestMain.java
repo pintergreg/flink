@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.DataSet;
@@ -42,7 +41,6 @@ import org.apache.flink.types.NullValue;
 public class MultipleRecipientsTestMain {
 
 	
-	static List<Set<Long>> inNeighbours;
 	static int numOfMessagesToSend;
 	static Map<Tuple2<Long, Long>, Boolean>  messageReceivedAlready = new HashMap<Tuple2<Long, Long>, Boolean>();
 	
@@ -59,10 +57,14 @@ public class MultipleRecipientsTestMain {
 		edgeList.add(new Tuple2<Long, Long>(3L, 1L));
 		edgeList.add(new Tuple2<Long, Long>(3L, 2L));
 
+		//testing Multicast1 and Multicast2 in one program might result in some problem
+		//at least I had some (stochastic) issues that might have been because of that
 		testMulticast1(numOfNodes, edgeList);
+		
 		testMulticast2(numOfNodes, edgeList);
 		
 	}
+
 
 	private static void testMulticast1(int numOfNodes,
 			List<Tuple2<Long, Long>> edgeList) throws Exception {
@@ -90,15 +92,10 @@ public class MultipleRecipientsTestMain {
 		result.print();
 		env.setDegreeOfParallelism(2);
 		env.execute("Spargel Multiple recipients test.");
-		// System.out.println(env.getExecutionPlan());
-		if (numOfMessagesToSend != 0) {
-			throw new RuntimeException(
-					"Not every message was delivered (remaining: "
-							+ numOfMessagesToSend + ")");
-		} else {
-			System.out.println("All messages received in multicast 1");
-		}
+
+		checkMessages("multicast 1");
 	}
+
 
 	private static void testMulticast2(int numOfNodes,
 			List<Tuple2<Long, Long>> edgeList) throws Exception {
@@ -127,15 +124,34 @@ public class MultipleRecipientsTestMain {
 		env.setDegreeOfParallelism(2);
 		env.execute("Spargel Multiple recipients test.");
 		// System.out.println(env.getExecutionPlan());
-		if (numOfMessagesToSend != 0) {
-			throw new RuntimeException(
-					"Not every message was delivered (remaining: "
-							+ numOfMessagesToSend + ")");
-		} else {
-			System.out.println("All messages received in multicast 2");
-		}
+		checkMessages("multicast 2");
 	}
 
+	private static void checkMessages(String whichMulticast) {
+		if (numOfMessagesToSend != 0) {
+			int remaining = numOfMessagesToSend;
+			for (Tuple2<Long, Long> e : messageReceivedAlready.keySet()) {
+				if (!messageReceivedAlready.get(e)) {
+					System.err.println("Message for edge " + e
+							+ " was not delivered.");
+					remaining--;
+				}
+			}
+			if (remaining != 0) {
+				System.err
+						.println("numOfMessagesToSend and messageReceivedAlready are not in sync ("
+								+ remaining
+								+ " vs "
+								+ numOfMessagesToSend
+								+ ")");
+			}
+			throw new RuntimeException("Not every message was delivered in "
+					+ whichMulticast + " (remaining: " + numOfMessagesToSend
+					+ ")");
+		} else {
+			System.out.println("All messages received in " + whichMulticast);
+		}
+	}
 	
 	
 	public static final class Message {
@@ -191,6 +207,7 @@ public class MultipleRecipientsTestMain {
 			sendMessageToMultipleRecipients(recipients, m);
 		}
 	}
+
 
 	public static final class CCMessager2 extends MessagingFunction2<Long, Long, Message, NullValue> {
 		boolean multiRecipients = false;
