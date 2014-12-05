@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.DataSet;
@@ -37,28 +38,31 @@ import org.apache.flink.spargel.java.multicast.MultipleRecipients;
 import org.apache.flink.types.NullValue;
 
 
-@SuppressWarnings({"serial"})
-public class MultipleRecipientsTestMain {
+public class MulticastStressTestMain {
 
-	
-	static int numOfMessagesToSend;
+	//This AtomicInteger is needed because of the concurrent changes of this value
+	static AtomicInteger numOfMessagesToSend;
+	//Lehet, h itt is valami concurrenthashmap kéne
 	static Map<Tuple2<Long, Long>, Boolean>  messageReceivedAlready = new HashMap<Tuple2<Long, Long>, Boolean>();
 	
 	public static void main(String[] args) throws Exception {
 
 		
 		//some input data
-		int numOfNodes = 4;
+		int numOfNodes = 100;
 		List<Tuple2<Long, Long>> edgeList = new ArrayList<Tuple2<Long, Long>>();
-		edgeList.add(new Tuple2<Long, Long>(0L, 0L));
-		edgeList.add(new Tuple2<Long, Long>(0L, 1L));
-		edgeList.add(new Tuple2<Long, Long>(0L, 2L));
-		edgeList.add(new Tuple2<Long, Long>(1L, 2L));
-		edgeList.add(new Tuple2<Long, Long>(3L, 1L));
-		edgeList.add(new Tuple2<Long, Long>(3L, 2L));
+		for (int i = 0; i<numOfNodes; ++i) {
+			for (int j = 0; j<numOfNodes; ++j) {
+				if (i != j) {
+					edgeList.add(new Tuple2<Long, Long>((long)i, (long) j));
+				}
+			}
+			
+		}
 
 		//testing Multicast1 and Multicast2 in one program might result in some problem
-		//at least I had some (stochastic) issues that might have been because of that
+		//at least I had some (stochastic) issues that might have been because of that.
+		//Further investigations show that this was caused by something else.
 		testMulticast1(numOfNodes, edgeList);
 		
 		testMulticast2(numOfNodes, edgeList);
@@ -75,7 +79,9 @@ public class MultipleRecipientsTestMain {
 		for (Tuple2<Long, Long> e : edgeList) {
 			messageReceivedAlready.put(e, false);
 		}
-		numOfMessagesToSend = edgeList.size();
+
+		//numOfMessagesToSend = edgeList.size();
+		numOfMessagesToSend = new AtomicInteger(edgeList.size());
 
 		DataSet<Long> vertexIds = env.generateSequence(0, numOfNodes - 1);
 		DataSet<Tuple2<Long, Long>> edges = env.fromCollection(edgeList);
@@ -106,7 +112,8 @@ public class MultipleRecipientsTestMain {
 		for (Tuple2<Long, Long> e : edgeList) {
 			messageReceivedAlready.put(e, false);
 		}
-		numOfMessagesToSend = edgeList.size();
+		//numOfMessagesToSend = edgeList.size();
+		numOfMessagesToSend = new AtomicInteger(edgeList.size());
 
 		DataSet<Long> vertexIds = env.generateSequence(0, numOfNodes - 1);
 		DataSet<Tuple2<Long, Long>> edges = env.fromCollection(edgeList);
@@ -128,8 +135,8 @@ public class MultipleRecipientsTestMain {
 	}
 
 	private static void checkMessages(String whichMulticast) {
-		if (numOfMessagesToSend != 0) {
-			int remaining = numOfMessagesToSend;
+		if (numOfMessagesToSend.get() != 0) {
+			int remaining = numOfMessagesToSend.get();
 			for (Tuple2<Long, Long> e : messageReceivedAlready.keySet()) {
 				if (!messageReceivedAlready.get(e)) {
 					System.err.println("Message for edge " + e
@@ -172,6 +179,8 @@ public class MultipleRecipientsTestMain {
 	
 
 	public static final class CCUpdater extends VertexUpdateFunction<Long, Long, Message> {
+		private static final long serialVersionUID = 1L;
+
 		@Override
 		public void updateVertex(Long vertexKey, Long vertexValue, MessageIterator<Message> inMessages) {
 			for (Message msg: inMessages) {
@@ -187,7 +196,7 @@ public class MultipleRecipientsTestMain {
 								+ " to " + vertexKey + " sent more than once.");
 					} else {
 						messageReceivedAlready.put(edge, true);
-						numOfMessagesToSend--;
+						numOfMessagesToSend.decrementAndGet();
 					}
 				}
 			}
@@ -195,6 +204,7 @@ public class MultipleRecipientsTestMain {
 	}
 
 	public static final class CCMessager1 extends MessagingFunction1<Long, Long, Message, NullValue> {
+		private static final long serialVersionUID = 1L;
 		boolean multiRecipients = false;
 		@Override
 		public void sendMessages(Long vertexId, Long componentId) {
@@ -210,6 +220,7 @@ public class MultipleRecipientsTestMain {
 
 
 	public static final class CCMessager2 extends MessagingFunction2<Long, Long, Message, NullValue> {
+		private static final long serialVersionUID = 1L;
 		boolean multiRecipients = false;
 		@Override
 		public void sendMessages(Long vertexId, Long componentId) {
@@ -232,6 +243,8 @@ public class MultipleRecipientsTestMain {
 	 * <pre>(Long value) -> (value, value)</pre>
 	 */
 	public static final class IdAssigner implements MapFunction<Long, Tuple2<Long, Long>> {
+		private static final long serialVersionUID = 1L;
+
 		@Override
 		public Tuple2<Long, Long> map(Long value) {
 			return new Tuple2<Long, Long>(value, value);
