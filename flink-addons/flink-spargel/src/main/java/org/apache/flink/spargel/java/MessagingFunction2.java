@@ -21,11 +21,8 @@ package org.apache.flink.spargel.java;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.apache.flink.api.common.aggregators.Aggregator;
@@ -104,7 +101,6 @@ public abstract class MessagingFunction2<VertexKey extends Comparable<VertexKey>
 	}
 
 	
-	private Map<Integer, List<VertexKey>> recipientsInBlock = new HashMap <Integer, List<VertexKey>>();
 	private Collector<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>> out;
 	private Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>> outValue;// = new Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>();
 	
@@ -144,11 +140,13 @@ public abstract class MessagingFunction2<VertexKey extends Comparable<VertexKey>
 	@SuppressWarnings("unchecked")
 	private VertexKey[] emptyArray = (VertexKey[])(new ArrayList<VertexKey>()).toArray(new Comparable[0]);
 	private Set<Integer> channelSet = new HashSet<Integer>();
-	public void sendMessageToAllNeighbors(Message m) {
+	public int sendMessageToAllNeighbors(Message m) {
 		if (edgesUsed) {
 			throw new IllegalStateException("Can use either 'getOutgoingEdges()' or 'sendMessageToAllTargets()' exactly once.");
 		}
 		
+		int numOfBlockedMessages = 0;
+
 		edgesUsed = true;
 		channelSet.clear();
 		while (edges.hasNext()) {
@@ -166,9 +164,11 @@ public abstract class MessagingFunction2<VertexKey extends Comparable<VertexKey>
 				channelSet.add(channel);
 				outValue.f1.setChannelId(channel);
 				out.collect(outValue);
+				numOfBlockedMessages ++;
 				System.out.println(outValue);
 			}
 		}
+		return numOfBlockedMessages;
 	}
 
 	

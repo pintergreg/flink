@@ -31,19 +31,13 @@ import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.spargel.java.MessageIterator;
-import org.apache.flink.spargel.java.MessagingFunction;
 import org.apache.flink.spargel.java.MessagingFunction1;
-import org.apache.flink.spargel.java.OutgoingEdge;
-import org.apache.flink.spargel.java.VertexCentricIteration;
 import org.apache.flink.spargel.java.VertexCentricIteration1;
 import org.apache.flink.spargel.java.VertexUpdateFunction;
-import org.apache.flink.spargel.java.multicast.MessageWithHeader;
-import org.apache.flink.spargel.java.multicast.MultipleRecipients;
-import org.apache.flink.spargel.multicast_test.MultipleRecipientsTestMain1.Message;
 import org.apache.flink.types.NullValue;
 
 
-@SuppressWarnings({"serial", "unchecked"})
+@SuppressWarnings({"serial"})
 //@SuppressWarnings({"serial"})
 //@SuppressWarnings({"unchecked"})
 public class MultiCastToOutneighboursTestMain {

@@ -50,7 +50,6 @@ public class SpargelConnectedComponents {
 		@Override
 		public void updateVertex(Long vertexKey, Long vertexValue, MessageIterator<Long> inMessages) {
 			long min = Long.MAX_VALUE;
-			System.out.println("Superstep: " + getSuperstepNumber());
 			for (long msg : inMessages) {
 				min = Math.min(min, msg);
 			}

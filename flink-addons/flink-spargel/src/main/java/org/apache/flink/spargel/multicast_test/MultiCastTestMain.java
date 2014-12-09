@@ -46,33 +46,36 @@ public class MultiCastTestMain {
 	static AtomicInteger numOfMessagesToSend;
 	//We use ConcurrentHashMap, though there was no problem with the HashMap either
 	static Map<Tuple2<Long, Long>, Boolean>  messageReceivedAlready = new ConcurrentHashMap<Tuple2<Long, Long>, Boolean>();
+	//This AtomicInteger is needed because of the concurrent changes of this value
+	static AtomicInteger numOfBlockedMessagesToSend;
 	
 	public static void main(String[] args) throws Exception {
 
 		
 		//some input data
-		int numOfNodes = 4;
+		int numOfNodes = 3;
 		List<Tuple2<Long, Long>> edgeList = new ArrayList<Tuple2<Long, Long>>();
 		edgeList.add(new Tuple2<Long, Long>(0L, 0L));
 		edgeList.add(new Tuple2<Long, Long>(0L, 1L));
 		edgeList.add(new Tuple2<Long, Long>(0L, 2L));
-		edgeList.add(new Tuple2<Long, Long>(0L, 3L));
-		edgeList.add(new Tuple2<Long, Long>(1L, 2L));
-		edgeList.add(new Tuple2<Long, Long>(3L, 1L));
-		edgeList.add(new Tuple2<Long, Long>(3L, 2L));
+//		edgeList.add(new Tuple2<Long, Long>(0L, 3L));
+//		edgeList.add(new Tuple2<Long, Long>(1L, 2L));
+//		edgeList.add(new Tuple2<Long, Long>(3L, 1L));
+//		edgeList.add(new Tuple2<Long, Long>(3L, 2L));
 
 		//testing Multicast1 and Multicast2 in one program might result in some problem
 		//at least I had some (stochastic) issues that might have been because of that.
 		//Further investigations show that this was caused by something else.
-		testMulticast1(numOfNodes, edgeList);
+		testMulticast1(numOfNodes, edgeList, 2);
 		
-		testMulticast2(numOfNodes, edgeList);
+		testMulticast2(numOfNodes, edgeList, 2);
 		
 	}
 
-
+	// this and testMulticast2 are essentially the same
 	private static void testMulticast1(int numOfNodes,
-			List<Tuple2<Long, Long>> edgeList) throws Exception {
+			List<Tuple2<Long, Long>> edgeList, int expectedNumOfBlockedMessages
+			) throws Exception {
 		ExecutionEnvironment env = ExecutionEnvironment
 				.getExecutionEnvironment();
 
@@ -82,6 +85,7 @@ public class MultiCastTestMain {
 		}
 		//numOfMessagesToSend = edgeList.size();
 		numOfMessagesToSend = new AtomicInteger(edgeList.size());
+		numOfBlockedMessagesToSend = new AtomicInteger(expectedNumOfBlockedMessages);
 
 		DataSet<Long> vertexIds = env.generateSequence(0, numOfNodes - 1);
 		DataSet<Tuple2<Long, Long>> edges = env.fromCollection(edgeList);
@@ -101,11 +105,18 @@ public class MultiCastTestMain {
 		//System.out.println(env.getExecutionPlan());
 
 		checkMessages("multicast 1");
+		
+		if (numOfBlockedMessagesToSend.get() != 0) {
+			throw new RuntimeException("The number of blocked messages was not correct"
+					+ " (remaining: " + numOfBlockedMessagesToSend.get()
+					+ ")");
+		}
 	}
 
-
+	// this and testMulticast1 are essentially the same
 	private static void testMulticast2(int numOfNodes,
-			List<Tuple2<Long, Long>> edgeList) throws Exception {
+			List<Tuple2<Long, Long>> edgeList, int expectedNumOfBlockedMessages) 
+					throws Exception {
 		ExecutionEnvironment env = ExecutionEnvironment
 				.getExecutionEnvironment();
 
@@ -115,6 +126,7 @@ public class MultiCastTestMain {
 		}
 		//numOfMessagesToSend = edgeList.size();
 		numOfMessagesToSend = new AtomicInteger(edgeList.size());
+		numOfBlockedMessagesToSend = new AtomicInteger(expectedNumOfBlockedMessages);
 
 		DataSet<Long> vertexIds = env.generateSequence(0, numOfNodes - 1);
 		DataSet<Tuple2<Long, Long>> edges = env.fromCollection(edgeList);
@@ -133,6 +145,12 @@ public class MultiCastTestMain {
 		env.execute("Spargel Multiple recipients test.");
 		// System.out.println(env.getExecutionPlan());
 		checkMessages("multicast 2");
+
+		if (numOfBlockedMessagesToSend.get() != 0) {
+			throw new RuntimeException("The number of blocked messages was not correct"
+					+ " (remaining: " + numOfBlockedMessagesToSend.get()
+					+ ")");
+		}
 	}
 
 	private static void checkMessages(String whichMulticast) {
@@ -207,12 +225,14 @@ public class MultiCastTestMain {
 		@Override
 		public void sendMessages(Long vertexId, Long componentId) {
 			Message m = new Message(vertexId);
-
+			
 			MultipleRecipients<Long> recipients = new MultipleRecipients<Long>();
 			for (OutgoingEdge<Long, NullValue> edge : getOutgoingEdges()) {
 				recipients.addRecipient(edge.target());
 			}
-			sendMessageToMultipleRecipients(recipients, m);
+			int numOfBlockedMessages = sendMessageToMultipleRecipients(recipients, m);
+			numOfBlockedMessagesToSend.addAndGet(-numOfBlockedMessages);
+			
 		}
 	}
 
@@ -222,16 +242,11 @@ public class MultiCastTestMain {
 		@Override
 		public void sendMessages(Long vertexId, Long componentId) {
 			Message m = new Message(vertexId);
-//			MultipleRecipients<Long> recipients = new MultipleRecipients<Long>();
-//			for (OutgoingEdge<Long, NullValue> edge : getOutgoingEdges()) {
-//				// sendMessageTo(edge.target(), m);
-//				recipients.addRecipient(edge.target());
-//			}
-//			// System.out.println("Sending from "+ vertexId);
-//			// System.out.println("To "+ recipients);
-//			sendMessageToMultipleRecipients(recipients, m);
 
 			sendMessageToAllNeighbors(m);
+			int numOfBlockedMessages = sendMessageToAllNeighbors(m);
+			numOfBlockedMessagesToSend.addAndGet(-numOfBlockedMessages);
+
 		}
 	}
 	

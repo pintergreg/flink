@@ -110,8 +110,16 @@ public abstract class MessagingFunction1<VertexKey extends Comparable<VertexKey>
 		outValue.f1.setSender(sender);
 	}
 	
+
+	/**
+	 * Sends the given message to multiple recipients.
+	 * 
+	 * @return the number of blocked messages that has been sent
+	 */
+/// @return the number of koko
 	@SuppressWarnings("unchecked")
-	public void sendMessageToMultipleRecipients(MultipleRecipients<VertexKey> recipients, Message m) {
+	public int sendMessageToMultipleRecipients(MultipleRecipients<VertexKey> recipients, Message m) {
+		int numOfBlockedMessages = 0;
 		recipientsInBlock.clear();
 		outValue.f1.setMessage(m);
 		for (VertexKey target: recipients) {
@@ -128,8 +136,10 @@ public abstract class MessagingFunction1<VertexKey extends Comparable<VertexKey>
 			outValue.f1.setSomeRecipients((VertexKey[])targets.toArray(new Comparable[0]));
 			outValue.f1.setChannelId(channel);
 			out.collect(outValue);
+			numOfBlockedMessages ++;
 			System.out.println(outValue);
 		}
+		return numOfBlockedMessages;
 	}
 
 	private MultipleRecipients<VertexKey> recipients = new MultipleRecipients<VertexKey>();
@@ -139,7 +149,7 @@ public abstract class MessagingFunction1<VertexKey extends Comparable<VertexKey>
 	 * 
 	 * @param m The message to send.
 	 */
-	public void sendMessageToAllNeighbors(Message m) {
+	public int sendMessageToAllNeighbors(Message m) {
 		if (edgesUsed) {
 			throw new IllegalStateException("Can use either 'getOutgoingEdges()' or 'sendMessageToAllTargets()' exactly once.");
 		}
@@ -154,7 +164,7 @@ public abstract class MessagingFunction1<VertexKey extends Comparable<VertexKey>
 //			outValue.f0 = k;
 //			out.collect(outValue);
 		}
-		sendMessageToMultipleRecipients(recipients, m);
+		return sendMessageToMultipleRecipients(recipients, m);
 	}
 
 	

@@ -19,22 +19,14 @@
 package org.apache.flink.spargel.java;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import org.apache.flink.api.common.aggregators.Aggregator;
 import org.apache.flink.api.common.functions.IterationRuntimeContext;
 import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
-import org.apache.flink.runtime.operators.shipping.OutputCollector;
-import org.apache.flink.spargel.java.OutgoingEdge;
 import org.apache.flink.types.Value;
 import org.apache.flink.util.Collector;
 
