@@ -305,31 +305,6 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 			iteration.registerAggregator(entry.getKey(), entry.getValue());
 		}
 		
-//		DataSet<Tuple2<VertexKey, VertexKey[]>> inNeighbours = edgesWithoutValue.groupBy(1)
-//				.reduceGroup(new GroupReduceFunction<Tuple2<VertexKey,VertexKey>, Tuple2<VertexKey, VertexKey[]>>() {
-//					List<VertexKey> nodeList = new ArrayList<VertexKey>();
-//					@Override
-//					public void reduce(
-//							Iterable<Tuple2<VertexKey, VertexKey>> values,
-//							Collector<Tuple2<VertexKey, VertexKey[]>> out)
-//							throws Exception {
-//						nodeList.clear();
-//						Iterator<Tuple2<VertexKey, VertexKey>> it = values
-//								.iterator();
-//						Tuple2<VertexKey, VertexKey> n = it.next();
-//						VertexKey id = n.f1;
-//						nodeList.add(n.f0);
-//						while (it.hasNext()) {
-//							n = it.next();
-//							nodeList.add(n.f0);
-//						}
-//						// Let us copy out
-//						VertexKey[] nodeArray = null;
-//						nodeList.toArray(nodeArray);
-//						//System.arraycopy(nodeList, 0, nodeArray, 0, size);
-//						out.collect(new Tuple2<VertexKey, VertexKey[]>(id, nodeArray));
-//					}
-//		});
 		
 		// build the messaging function (co group)
 		CoGroupOperator<?, ?, Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>> messages;
@@ -365,10 +340,10 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 				//Kell ez?
 				//.joinWithTiny(messages1)
 				.join(messages1)
-				.where(new SenderSelector2<VertexKey>())
+				.where(new ChannelIdAndSenderSelectorEdge<VertexKey>())
 				//.equalTo(0)
 				//.equalTo(new SenderSelector<VertexKey, Message>())
-				.equalTo(new SenderSelector3<VertexKey, Message>())
+				.equalTo(new ChannelIdAndSenderSelectorMsg<VertexKey, Message>())
 				.with(new UnpackMessage2<VertexKey, Message>(unpackedMessageTypeInfo));
 				
 
@@ -397,29 +372,36 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 		public VertexKey getKey(
 				Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>> value)
 				throws Exception {
-			return value.f1.sender; 
+			return value.f1.getSender(); 
 		}
 	}
 	
-	public static class SenderSelector2<VertexKey>
+	public static class ChannelIdAndSenderSelectorEdge<VertexKey>
 	implements KeySelector<Tuple3<VertexKey, VertexKey, Integer>, String>{
+		private static final long serialVersionUID = 1L;
 
 		@Override
 		public String getKey(
 				Tuple3<VertexKey, VertexKey, Integer> value)
 				throws Exception {
-			return String.format("%03d", value.f2) + String.format("%10d", value.f0);
+			return MulticastUtil.getKeyFromChannelIdAndSender(value.f2, value.f0);
 		}
 	}
 
-	public static class SenderSelector3<VertexKey, Message>
+	public static class MulticastUtil {
+		static <VertexKey> String getKeyFromChannelIdAndSender(Integer channelId, VertexKey sender) {
+			return String.format("%03d", channelId) + String.format("%10d", sender);
+			
+		}
+	}
+	public static class ChannelIdAndSenderSelectorMsg<VertexKey, Message>
 	implements 	KeySelector<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>, String>{
 		private static final long serialVersionUID = 1L;
 		@Override
 		public String getKey(
 				Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>> value)
 				throws Exception {
-			return String.format("%03d", value.f1.channelId) + String.format("%10d", value.f1.sender);
+			return MulticastUtil.getKeyFromChannelIdAndSender(value.f1.getChannelId(), value.f1.getSender());
 		}
 	}
 
@@ -450,7 +432,7 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 				Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>> second)
 				throws Exception {
 			reuse.f0 = first.f1;
-			reuse.f1 = second.f1.message;
+			reuse.f1 = second.f1.getMessage();
 			return reuse;
 		}
 	}
@@ -481,7 +463,7 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 				Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>> msgWithHeader)
 				throws Exception {
 			reuse.f0 = edgeWithPartId.f1;
-			reuse.f1 = msgWithHeader.f1.message;
+			reuse.f1 = msgWithHeader.f1.getMessage();
 			return reuse;
 		}
 	}
@@ -489,6 +471,7 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 	public static class ChannelIdAdder<VertexKey extends Comparable<VertexKey>>
 			extends
 			RichMapPartitionFunction<Tuple2<VertexKey, VertexKey>, Tuple3<VertexKey, VertexKey, Integer>> {
+		private static final long serialVersionUID = 1L;
 		Tuple3<VertexKey, VertexKey, Integer> reuse = new Tuple3<VertexKey, VertexKey, Integer>();
 
 		@Override
@@ -499,11 +482,6 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 				reuse.f0 = edge.f0;
 				reuse.f1 = edge.f1;
 				reuse.f2 = getRuntimeContext().getIndexOfThisSubtask();
-				// System.out.println("Available processors: " +
-				// Runtime.getRuntime().availableProcessors());
-				// reuse.f2 = ((OutputCollector<Tuple3<VertexKey, VertexKey,
-				// Integer>>) out)
-				// .getChannel(reuse);
 				out.collect(reuse);
 			}
 		}

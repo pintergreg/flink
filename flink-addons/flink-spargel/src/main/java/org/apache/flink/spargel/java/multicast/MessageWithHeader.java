@@ -17,6 +17,7 @@ public class MessageWithHeader<VertexKey, Message>
 	implements Serializable{
 	private static final long serialVersionUID = 1L;
 	
+	// Setters, getters
 	public VertexKey getSender() {
 		return sender;
 	}
@@ -29,21 +30,34 @@ public class MessageWithHeader<VertexKey, Message>
 	public void setMessage(Message message) {
 		this.message = message;
 	}
-	
-	public VertexKey sender;
-	public VertexKey[] someRecipients;
-	public Message message;
-	public Integer channelId = -1;
+	public Integer getChannelId() {
+		return channelId;
+	}
+	public void setChannelId(Integer channelId) {
+		this.channelId = channelId;
+	}
+	public VertexKey[] getSomeRecipients() {
+		return someRecipients;
+	}
+	public void setSomeRecipients(VertexKey[] someRecipients) {
+		this.someRecipients = someRecipients;
+	}
+
+
+	private VertexKey sender;
+	private VertexKey[] someRecipients;
+	private Message message;
+	private Integer channelId = -1;
 	
 	@SuppressWarnings("rawtypes")
 	public  static TypeInformation<MessageWithHeader> getTypeInfo(
 			TypeInformation<?> keyType, TypeInformation<?> msgType) {
 		List<PojoField> fields = new ArrayList<PojoField>();
 		try {
-			fields.add(new PojoField(MessageWithHeader.class.getField("sender"), keyType));
-			fields.add(new PojoField(MessageWithHeader.class.getField("message"), msgType));
-			fields.add(new PojoField(MessageWithHeader.class.getField("someRecipients"), ObjectArrayTypeInfo.getInfoFor(Array.newInstance(keyType.getTypeClass(), 0).getClass())));
-			fields.add(new PojoField(MessageWithHeader.class.getField("channelId"), BasicTypeInfo.INT_TYPE_INFO));
+			fields.add(new PojoField(MessageWithHeader.class.getDeclaredField("sender"), keyType));
+			fields.add(new PojoField(MessageWithHeader.class.getDeclaredField("message"), msgType));
+			fields.add(new PojoField(MessageWithHeader.class.getDeclaredField("someRecipients"), ObjectArrayTypeInfo.getInfoFor(Array.newInstance(keyType.getTypeClass(), 0).getClass())));
+			fields.add(new PojoField(MessageWithHeader.class.getDeclaredField("channelId"), BasicTypeInfo.INT_TYPE_INFO));
 		} catch (NoSuchFieldException e) {
 			// TODO Auto-generated catch block
 			throw new RuntimeException("No such field!", e);

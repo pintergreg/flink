@@ -379,7 +379,7 @@ public class VertexCentricIteration1<VertexKey extends Comparable<VertexKey>, Ve
 		
 	}
 	
-	public static class UnpackMessage<VertexKey extends Comparable<VertexKey>, Message>
+	private static class UnpackMessage<VertexKey extends Comparable<VertexKey>, Message>
 	implements FlatMapFunction<Tuple2<VertexKey, MessageWithHeader<VertexKey,Message>>, Tuple2<VertexKey, Message>>,
 	 ResultTypeQueryable<Tuple2<VertexKey, Message>>{
 		
@@ -396,9 +396,9 @@ public class VertexCentricIteration1<VertexKey extends Comparable<VertexKey>, Ve
 				Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>> value,
 				Collector<Tuple2<VertexKey, Message>> out)
 				throws Exception {
-			for (VertexKey target : value.f1.someRecipients) {
+			for (VertexKey target : value.f1.getSomeRecipients()) {
 				out.collect(new Tuple2<VertexKey, Message>(
-						target, value.f1.message));
+						target, value.f1.getMessage()));
 			}
 
 		}

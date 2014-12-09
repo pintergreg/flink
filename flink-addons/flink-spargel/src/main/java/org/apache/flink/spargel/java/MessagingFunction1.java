@@ -107,13 +107,13 @@ public abstract class MessagingFunction1<VertexKey extends Comparable<VertexKey>
 	private Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>> outValue;// = new Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>();
 	
 	public void setSender(VertexKey sender) {
-		outValue.f1.sender = sender;
+		outValue.f1.setSender(sender);
 	}
 	
 	@SuppressWarnings("unchecked")
 	public void sendMessageToMultipleRecipients(MultipleRecipients<VertexKey> recipients, Message m) {
 		recipientsInBlock.clear();
-		outValue.f1.message = m;
+		outValue.f1.setMessage(m);
 		for (VertexKey target: recipients) {
 			outValue.f0 = target;
 			int channel = ((OutputCollector<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>>)out).getChannel(outValue);
@@ -125,8 +125,8 @@ public abstract class MessagingFunction1<VertexKey extends Comparable<VertexKey>
 		for (Integer channel: recipientsInBlock.keySet()) {
 			List<VertexKey> targets =  recipientsInBlock.get(channel);
 			outValue.f0 = targets.get(0);
-			outValue.f1.someRecipients = (VertexKey[])targets.toArray(new Comparable[0]);
-			outValue.f1.channelId = channel;
+			outValue.f1.setSomeRecipients((VertexKey[])targets.toArray(new Comparable[0]));
+			outValue.f1.setChannelId(channel);
 			out.collect(outValue);
 			System.out.println(outValue);
 		}

@@ -18,9 +18,9 @@
 package org.apache.flink.spargel.multicast_test;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.flink.api.common.functions.MapFunction;
@@ -44,8 +44,8 @@ public class MultiCastTestMain {
 	
 	//This AtomicInteger is needed because of the concurrent changes of this value
 	static AtomicInteger numOfMessagesToSend;
-	//Lehet, h itt is valami concurrenthashmap kéne
-	static Map<Tuple2<Long, Long>, Boolean>  messageReceivedAlready = new HashMap<Tuple2<Long, Long>, Boolean>();
+	//We use ConcurrentHashMap, though there was no problem with the HashMap either
+	static Map<Tuple2<Long, Long>, Boolean>  messageReceivedAlready = new ConcurrentHashMap<Tuple2<Long, Long>, Boolean>();
 	
 	public static void main(String[] args) throws Exception {
 
@@ -56,6 +56,7 @@ public class MultiCastTestMain {
 		edgeList.add(new Tuple2<Long, Long>(0L, 0L));
 		edgeList.add(new Tuple2<Long, Long>(0L, 1L));
 		edgeList.add(new Tuple2<Long, Long>(0L, 2L));
+		edgeList.add(new Tuple2<Long, Long>(0L, 3L));
 		edgeList.add(new Tuple2<Long, Long>(1L, 2L));
 		edgeList.add(new Tuple2<Long, Long>(3L, 1L));
 		edgeList.add(new Tuple2<Long, Long>(3L, 2L));
@@ -97,6 +98,7 @@ public class MultiCastTestMain {
 		result.print();
 		env.setDegreeOfParallelism(2);
 		env.execute("Spargel Multiple recipients test.");
+		//System.out.println(env.getExecutionPlan());
 
 		checkMessages("multicast 1");
 	}

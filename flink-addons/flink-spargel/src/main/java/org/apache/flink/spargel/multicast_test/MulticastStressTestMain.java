@@ -18,9 +18,9 @@
 package org.apache.flink.spargel.multicast_test;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.flink.api.common.functions.MapFunction;
@@ -43,7 +43,7 @@ public class MulticastStressTestMain {
 	//This AtomicInteger is needed because of the concurrent changes of this value
 	static AtomicInteger numOfMessagesToSend;
 	//Lehet, h itt is valami concurrenthashmap kéne
-	static Map<Tuple2<Long, Long>, Boolean>  messageReceivedAlready = new HashMap<Tuple2<Long, Long>, Boolean>();
+	static Map<Tuple2<Long, Long>, Boolean>  messageReceivedAlready = new ConcurrentHashMap<Tuple2<Long, Long>, Boolean>();
 	
 	public static void main(String[] args) throws Exception {
 
@@ -57,7 +57,6 @@ public class MulticastStressTestMain {
 					edgeList.add(new Tuple2<Long, Long>((long)i, (long) j));
 				}
 			}
-			
 		}
 
 		//testing Multicast1 and Multicast2 in one program might result in some problem
