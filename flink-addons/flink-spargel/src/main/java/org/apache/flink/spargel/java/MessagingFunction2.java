@@ -103,6 +103,7 @@ public abstract class MessagingFunction2<VertexKey extends Comparable<VertexKey>
 	
 	private Collector<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>> out;
 	private Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>> outValue;// = new Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>();
+
 	
 	public void setSender(VertexKey sender) {
 		outValue.f1.setSender(sender);

@@ -243,7 +243,6 @@ public class MultiCastTestMain {
 		public void sendMessages(Long vertexId, Long componentId) {
 			Message m = new Message(vertexId);
 
-			sendMessageToAllNeighbors(m);
 			int numOfBlockedMessages = sendMessageToAllNeighbors(m);
 			numOfBlockedMessagesToSend.addAndGet(-numOfBlockedMessages);
 
