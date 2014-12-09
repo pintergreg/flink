@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.flink.spargel.multicast_test;
+package org.apache.flink.spargel.java.multicast;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,10 +36,11 @@ import org.apache.flink.spargel.java.VertexCentricIteration2;
 import org.apache.flink.spargel.java.VertexUpdateFunction;
 import org.apache.flink.spargel.java.multicast.MultipleRecipients;
 import org.apache.flink.types.NullValue;
-
+import org.junit.Test;
+import static org.junit.Assert.assertEquals;
 
 @SuppressWarnings({"serial"})
-public class MultiCastTestMain {
+public class MultiCastTest {
 
 	
 	//This AtomicInteger is needed because of the concurrent changes of this value
@@ -49,7 +50,8 @@ public class MultiCastTestMain {
 	//This AtomicInteger is needed because of the concurrent changes of this value
 	static AtomicInteger numOfBlockedMessagesToSend;
 	
-	public static void main(String[] args) throws Exception {
+	@Test
+	public void testMultiCast() throws Exception {
 
 		
 		//some input data
@@ -103,6 +105,8 @@ public class MultiCastTestMain {
 		//System.out.println(env.getExecutionPlan());
 
 		checkMessages("multicast 1");
+		
+		assertEquals(0, numOfBlockedMessagesToSend.get());
 		
 		if (numOfBlockedMessagesToSend.get() != 0) {
 			throw new RuntimeException("The number of blocked messages was not correct"
