@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.flink.spargel.java.multicast;
+package org.apache.flink.spargel.multicast_test;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,129 +28,97 @@ import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.spargel.java.MessageIterator;
+import org.apache.flink.spargel.java.MessagingFunction;
 import org.apache.flink.spargel.java.MessagingFunction1;
 import org.apache.flink.spargel.java.MessagingFunction2;
 import org.apache.flink.spargel.java.OutgoingEdge;
+import org.apache.flink.spargel.java.VertexCentricIteration;
 import org.apache.flink.spargel.java.VertexCentricIteration1;
 import org.apache.flink.spargel.java.VertexCentricIteration2;
 import org.apache.flink.spargel.java.VertexUpdateFunction;
 import org.apache.flink.spargel.java.multicast.MultipleRecipients;
 import org.apache.flink.types.NullValue;
 import org.junit.Test;
-import static org.junit.Assert.assertEquals;
 
-@SuppressWarnings({"serial"})
-public class MultiCastTest {
 
-	
+public class MulticastCompleteGraphTestMain {
+
 	//This AtomicInteger is needed because of the concurrent changes of this value
 	static AtomicInteger numOfMessagesToSend;
-	//We use ConcurrentHashMap, though there was no problem with the HashMap either
+	//Lehet, h itt is valami concurrenthashmap kéne
 	static Map<Tuple2<Long, Long>, Boolean>  messageReceivedAlready = new ConcurrentHashMap<Tuple2<Long, Long>, Boolean>();
-	//This AtomicInteger is needed because of the concurrent changes of this value
-	static AtomicInteger numOfBlockedMessagesToSend;
 	
-	@Test
-	public void testMultiCast() throws Exception {
+	public static void main(String[] args) throws Exception {
+		System.out.println("Testing spargel multicast on a complete graph." );
 
-		
-		//some input data
-		int numOfNodes = 3;
-		List<Tuple2<Long, Long>> edgeList = new ArrayList<Tuple2<Long, Long>>();
-		edgeList.add(new Tuple2<Long, Long>(0L, 0L));
-		edgeList.add(new Tuple2<Long, Long>(0L, 1L));
-		edgeList.add(new Tuple2<Long, Long>(0L, 2L));
-//		edgeList.add(new Tuple2<Long, Long>(0L, 3L));
-//		edgeList.add(new Tuple2<Long, Long>(1L, 2L));
-//		edgeList.add(new Tuple2<Long, Long>(3L, 1L));
-//		edgeList.add(new Tuple2<Long, Long>(3L, 2L));
-		int expectedNumOfBlockedMessages = 2;
-		
-		testMulticast1(numOfNodes, edgeList, expectedNumOfBlockedMessages);
-		
-		testMulticast2(numOfNodes, edgeList, expectedNumOfBlockedMessages);
+		if (args.length != 3) {
+			System.out.println("Usage: <whichMulticast> <numOfNodes> <degreeOfParalellism>" );
+			System.out.println("<whichMulticast> is either 0, 1 or 2." );
+		} else {
+			
+			// some input data
+			int whichMulticast = Integer.parseInt(args[0]);
+			int numOfNodes = Integer.parseInt(args[1]);
+			int degreeOfParalellism = Integer.parseInt(args[2]);
+			
+			
+			List<Tuple2<Long, Long>> edgeList = new ArrayList<Tuple2<Long, Long>>();
+			for (int i = 0; i < numOfNodes; ++i) {
+				for (int j = 0; j < numOfNodes; ++j) {
+					if (i != j) {
+						edgeList.add(new Tuple2<Long, Long>((long) i, (long) j));
+					}
+				}
+			}
+
+			ExecutionEnvironment env = ExecutionEnvironment
+					.getExecutionEnvironment();
+
+			messageReceivedAlready.clear();
+			for (Tuple2<Long, Long> e : edgeList) {
+				messageReceivedAlready.put(e, false);
+			}
+
+			// numOfMessagesToSend = edgeList.size();
+			numOfMessagesToSend = new AtomicInteger(edgeList.size());
+
+			DataSet<Long> vertexIds = env.generateSequence(0, numOfNodes - 1);
+			DataSet<Tuple2<Long, Long>> edges = env.fromCollection(edgeList);
+
+			DataSet<Tuple2<Long, Long>> initialVertices = vertexIds
+					.map(new IdAssigner());
+
+			DataSet<Tuple2<Long, Long>> result ;
+			
+			if (whichMulticast == 0) {
+				VertexCentricIteration<Long, Long, Message, ?> iteration = VertexCentricIteration
+						.withPlainEdges(edges, new CCUpdater(),
+								new CCMessager(), 1);
+				result = initialVertices.runOperation(iteration);
+			} else if (whichMulticast == 1) {
+				VertexCentricIteration1<Long, Long, Message, ?> iteration = VertexCentricIteration1
+						.withPlainEdges(edges, new CCUpdater(),
+								new CCMessager1(), 1);
+				result = initialVertices.runOperation(iteration);
+			} else {
+				VertexCentricIteration2<Long, Long, Message, ?> iteration = VertexCentricIteration2
+						.withPlainEdges(edges, new CCUpdater(),
+								new CCMessager2(), 1);
+				result = initialVertices.runOperation(iteration);
+			}
+			
+
+			result.sum(0).print();
+			env.setDegreeOfParallelism(degreeOfParalellism);
+			env.execute("Spargel Multiple recipients test.");
+
+			checkMessages("multicast " + whichMulticast);
+
+		}
 		
 	}
 
-	// this and testMulticast2 are essentially the same
-	private static void testMulticast1(int numOfNodes,
-			List<Tuple2<Long, Long>> edgeList, int expectedNumOfBlockedMessages
-			) throws Exception {
-		ExecutionEnvironment env = ExecutionEnvironment
-				.getExecutionEnvironment();
 
-		messageReceivedAlready.clear();
-		for (Tuple2<Long, Long> e : edgeList) {
-			messageReceivedAlready.put(e, false);
-		}
-		//numOfMessagesToSend = edgeList.size();
-		numOfMessagesToSend = new AtomicInteger(edgeList.size());
-		numOfBlockedMessagesToSend = new AtomicInteger(expectedNumOfBlockedMessages);
-
-		DataSet<Long> vertexIds = env.generateSequence(0, numOfNodes - 1);
-		DataSet<Tuple2<Long, Long>> edges = env.fromCollection(edgeList);
-
-		DataSet<Tuple2<Long, Long>> initialVertices = vertexIds
-				.map(new IdAssigner());
-
-		VertexCentricIteration1<Long, Long, Message, ?> iteration = VertexCentricIteration1
-				.withPlainEdges(edges, new CCUpdater(), new CCMessager1(), 1);
-
-		DataSet<Tuple2<Long, Long>> result = initialVertices
-				.runOperation(iteration);
-
-		result.print();
-		env.setDegreeOfParallelism(2);
-		env.execute("Spargel Multiple recipients test.");
-		//System.out.println(env.getExecutionPlan());
-
-		checkMessages("multicast 1");
-		
-		
-		assertEquals("The number of blocked messages was not correct"
-					+ " (remaining: " + numOfBlockedMessagesToSend.get()
-					+ ")", 0, numOfBlockedMessagesToSend.get() );
-	}
-
-	// this and testMulticast1 are essentially the same
-	private static void testMulticast2(int numOfNodes,
-			List<Tuple2<Long, Long>> edgeList, int expectedNumOfBlockedMessages) 
-					throws Exception {
-		ExecutionEnvironment env = ExecutionEnvironment
-				.getExecutionEnvironment();
-
-		messageReceivedAlready.clear();
-		for (Tuple2<Long, Long> e : edgeList) {
-			messageReceivedAlready.put(e, false);
-		}
-		//numOfMessagesToSend = edgeList.size();
-		numOfMessagesToSend = new AtomicInteger(edgeList.size());
-		numOfBlockedMessagesToSend = new AtomicInteger(expectedNumOfBlockedMessages);
-
-		DataSet<Long> vertexIds = env.generateSequence(0, numOfNodes - 1);
-		DataSet<Tuple2<Long, Long>> edges = env.fromCollection(edgeList);
-
-		DataSet<Tuple2<Long, Long>> initialVertices = vertexIds
-				.map(new IdAssigner());
-
-		VertexCentricIteration2<Long, Long, Message, ?> iteration = VertexCentricIteration2
-				.withPlainEdges(edges, new CCUpdater(), new CCMessager2(), 1);
-
-		DataSet<Tuple2<Long, Long>> result = initialVertices
-				.runOperation(iteration);
-
-		result.print();
-		env.setDegreeOfParallelism(2);
-		env.execute("Spargel Multiple recipients test.");
-		// System.out.println(env.getExecutionPlan());
-		checkMessages("multicast 2");
-
-		if (numOfBlockedMessagesToSend.get() != 0) {
-			throw new RuntimeException("The number of blocked messages was not correct"
-					+ " (remaining: " + numOfBlockedMessagesToSend.get()
-					+ ")");
-		}
-	}
 
 	private static void checkMessages(String whichMulticast) {
 		if (numOfMessagesToSend.get() != 0) {
@@ -171,7 +139,7 @@ public class MultiCastTest {
 								+ ")");
 			}
 			throw new RuntimeException("Not every message was delivered in "
-					+ whichMulticast + " (remaining: " + numOfMessagesToSend.get()
+					+ whichMulticast + " (remaining: " + numOfMessagesToSend
 					+ ")");
 		} else {
 			System.out.println("All messages received in " + whichMulticast);
@@ -181,6 +149,7 @@ public class MultiCastTest {
 	
 	public static final class Message {
 		public Long senderId;
+		public Double[] dummy = new  Double[]{0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0};
 		
 		@Override
 		public String toString() {
@@ -197,6 +166,8 @@ public class MultiCastTest {
 	
 
 	public static final class CCUpdater extends VertexUpdateFunction<Long, Long, Message> {
+		private static final long serialVersionUID = 1L;
+
 		@Override
 		public void updateVertex(Long vertexKey, Long vertexValue, MessageIterator<Message> inMessages) {
 			for (Message msg: inMessages) {
@@ -219,32 +190,49 @@ public class MultiCastTest {
 		}
 	}
 
-	public static final class CCMessager1 extends MessagingFunction1<Long, Long, Message, NullValue> {
+	public static final class CCMessager extends MessagingFunction<Long, Long, Message, NullValue> {
+		private static final long serialVersionUID = 1L;
 		boolean multiRecipients = false;
 		@Override
 		public void sendMessages(Long vertexId, Long componentId) {
 			Message m = new Message(vertexId);
-			
+
+			sendMessageToAllNeighbors(m);
+		}
+	}
+
+	public static final class CCMessager1 extends MessagingFunction1<Long, Long, Message, NullValue> {
+		private static final long serialVersionUID = 1L;
+		boolean multiRecipients = false;
+		@Override
+		public void sendMessages(Long vertexId, Long componentId) {
+			Message m = new Message(vertexId);
+
 			MultipleRecipients<Long> recipients = new MultipleRecipients<Long>();
 			for (OutgoingEdge<Long, NullValue> edge : getOutgoingEdges()) {
 				recipients.addRecipient(edge.target());
 			}
-			int numOfBlockedMessages = sendMessageToMultipleRecipients(recipients, m);
-			numOfBlockedMessagesToSend.addAndGet(-numOfBlockedMessages);
-			
+			sendMessageToMultipleRecipients(recipients, m);
 		}
 	}
 
 
 	public static final class CCMessager2 extends MessagingFunction2<Long, Long, Message, NullValue> {
+		private static final long serialVersionUID = 1L;
 		boolean multiRecipients = false;
 		@Override
 		public void sendMessages(Long vertexId, Long componentId) {
 			Message m = new Message(vertexId);
+//			MultipleRecipients<Long> recipients = new MultipleRecipients<Long>();
+//			for (OutgoingEdge<Long, NullValue> edge : getOutgoingEdges()) {
+//				// sendMessageTo(edge.target(), m);
+//				recipients.addRecipient(edge.target());
+//			}
+//			// System.out.println("Sending from "+ vertexId);
+//			// System.out.println("To "+ recipients);
+//			sendMessageToMultipleRecipients(recipients, m);
 
-			int numOfBlockedMessages = sendMessageToAllNeighbors(m);
-			numOfBlockedMessagesToSend.addAndGet(-numOfBlockedMessages);
-
+			sendMessageToAllNeighbors(m);
 		}
 	}
 	
@@ -253,6 +241,8 @@ public class MultiCastTest {
 	 * <pre>(Long value) -> (value, value)</pre>
 	 */
 	public static final class IdAssigner implements MapFunction<Long, Tuple2<Long, Long>> {
+		private static final long serialVersionUID = 1L;
+
 		@Override
 		public Tuple2<Long, Long> map(Long value) {
 			return new Tuple2<Long, Long>(value, value);
