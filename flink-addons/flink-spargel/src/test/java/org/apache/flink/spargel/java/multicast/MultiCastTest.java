@@ -17,6 +17,8 @@
  */
 package org.apache.flink.spargel.java.multicast;
 
+import static org.junit.Assert.assertEquals;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -31,20 +33,11 @@ import org.apache.flink.spargel.java.MessageIterator;
 import org.apache.flink.spargel.java.MessagingFunction1;
 import org.apache.flink.spargel.java.MessagingFunction2;
 import org.apache.flink.spargel.java.OutgoingEdge;
-import org.apache.flink.spargel.java.VertexCentricIteration;
 import org.apache.flink.spargel.java.VertexCentricIteration1;
 import org.apache.flink.spargel.java.VertexCentricIteration2;
 import org.apache.flink.spargel.java.VertexUpdateFunction;
-import org.apache.flink.spargel.java.multicast.MultipleRecipients;
-import org.apache.flink.spargel.multicast_test.MulticastCompleteGraphTestMain1.CCMessager;
-import org.apache.flink.spargel.multicast_test.MulticastCompleteGraphTestMain1.CCMessager1;
-import org.apache.flink.spargel.multicast_test.MulticastCompleteGraphTestMain1.CCMessager2;
-import org.apache.flink.spargel.multicast_test.MulticastCompleteGraphTestMain1.CCUpdater;
-import org.apache.flink.spargel.multicast_test.MulticastCompleteGraphTestMain1.Message;
 import org.apache.flink.types.NullValue;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
 
 @SuppressWarnings({"serial"})
 public class MultiCastTest {
@@ -56,6 +49,9 @@ public class MultiCastTest {
 	static Map<Tuple2<Long, Long>, Boolean>  messageReceivedAlready = new ConcurrentHashMap<Tuple2<Long, Long>, Boolean>();
 	//This AtomicInteger is needed because of the concurrent changes of this value
 	static AtomicInteger numOfBlockedMessagesToSend;
+	
+	//Assume we have at least 2 cores
+	public static int degreeOfParalellism = 2; 
 	
 	@Test
 	public void multicastSimpleTest() throws Exception {
@@ -91,8 +87,9 @@ public class MultiCastTest {
 		// testMulticast1(numOfNodes, edgeList);
 		//
 		// testMulticast2(numOfNodes, edgeList);
-
-		int expectedNumOfBlockedMessages = 2 * numOfNodes;
+		
+		// two, because the degree of paralellism is 2
+		int expectedNumOfBlockedMessages = degreeOfParalellism * numOfNodes;
 
 		testMulticast(numOfNodes, edgeList, expectedNumOfBlockedMessages, 1);
 
@@ -138,7 +135,7 @@ public class MultiCastTest {
 		}
 
 		result.print();
-		env.setDegreeOfParallelism(2);
+		env.setDegreeOfParallelism(degreeOfParalellism);
 		env.execute("Spargel Multiple recipients test.");
 		//System.out.println(env.getExecutionPlan());
 

@@ -19,14 +19,14 @@
 package org.apache.flink.spargel.java.examples;
 
 import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.api.java.DataSet;
+import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.spargel.java.MessageIterator;
 import org.apache.flink.spargel.java.MessagingFunction;
 import org.apache.flink.spargel.java.VertexCentricIteration;
 import org.apache.flink.spargel.java.VertexUpdateFunction;
 import org.apache.flink.types.NullValue;
-import org.apache.flink.api.java.DataSet;
-import org.apache.flink.api.java.ExecutionEnvironment;
 
 @SuppressWarnings({"serial", "unchecked"})
 public class SpargelConnectedComponents {
