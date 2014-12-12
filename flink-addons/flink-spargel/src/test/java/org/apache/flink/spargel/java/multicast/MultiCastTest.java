@@ -31,12 +31,19 @@ import org.apache.flink.spargel.java.MessageIterator;
 import org.apache.flink.spargel.java.MessagingFunction1;
 import org.apache.flink.spargel.java.MessagingFunction2;
 import org.apache.flink.spargel.java.OutgoingEdge;
+import org.apache.flink.spargel.java.VertexCentricIteration;
 import org.apache.flink.spargel.java.VertexCentricIteration1;
 import org.apache.flink.spargel.java.VertexCentricIteration2;
 import org.apache.flink.spargel.java.VertexUpdateFunction;
 import org.apache.flink.spargel.java.multicast.MultipleRecipients;
+import org.apache.flink.spargel.multicast_test.MulticastCompleteGraphTestMain1.CCMessager;
+import org.apache.flink.spargel.multicast_test.MulticastCompleteGraphTestMain1.CCMessager1;
+import org.apache.flink.spargel.multicast_test.MulticastCompleteGraphTestMain1.CCMessager2;
+import org.apache.flink.spargel.multicast_test.MulticastCompleteGraphTestMain1.CCUpdater;
+import org.apache.flink.spargel.multicast_test.MulticastCompleteGraphTestMain1.Message;
 import org.apache.flink.types.NullValue;
 import org.junit.Test;
+
 import static org.junit.Assert.assertEquals;
 
 @SuppressWarnings({"serial"})
@@ -51,31 +58,52 @@ public class MultiCastTest {
 	static AtomicInteger numOfBlockedMessagesToSend;
 	
 	@Test
-	public void testMultiCast() throws Exception {
-
-		
-		//some input data
+	public void multicastSimpleTest() throws Exception {
+		// some input data
 		int numOfNodes = 3;
 		List<Tuple2<Long, Long>> edgeList = new ArrayList<Tuple2<Long, Long>>();
 		edgeList.add(new Tuple2<Long, Long>(0L, 0L));
 		edgeList.add(new Tuple2<Long, Long>(0L, 1L));
 		edgeList.add(new Tuple2<Long, Long>(0L, 2L));
-//		edgeList.add(new Tuple2<Long, Long>(0L, 3L));
-//		edgeList.add(new Tuple2<Long, Long>(1L, 2L));
-//		edgeList.add(new Tuple2<Long, Long>(3L, 1L));
-//		edgeList.add(new Tuple2<Long, Long>(3L, 2L));
+		// edgeList.add(new Tuple2<Long, Long>(0L, 3L));
+		// edgeList.add(new Tuple2<Long, Long>(1L, 2L));
+		// edgeList.add(new Tuple2<Long, Long>(3L, 1L));
+		// edgeList.add(new Tuple2<Long, Long>(3L, 2L));
 		int expectedNumOfBlockedMessages = 2;
-		
-		testMulticast1(numOfNodes, edgeList, expectedNumOfBlockedMessages);
-		
-		testMulticast2(numOfNodes, edgeList, expectedNumOfBlockedMessages);
-		
+
+		testMulticast(numOfNodes, edgeList, expectedNumOfBlockedMessages, 1);
+
+		testMulticast(numOfNodes, edgeList, expectedNumOfBlockedMessages, 2);
+	}
+
+	@Test
+	public void multicastStressTest() throws Exception {
+		int numOfNodes = 100;
+		List<Tuple2<Long, Long>> edgeList = new ArrayList<Tuple2<Long, Long>>();
+		for (int i = 0; i < numOfNodes; ++i) {
+			for (int j = 0; j < numOfNodes; ++j) {
+				if (i != j) {
+					edgeList.add(new Tuple2<Long, Long>((long) i, (long) j));
+				}
+			}
+		}
+
+		// testMulticast1(numOfNodes, edgeList);
+		//
+		// testMulticast2(numOfNodes, edgeList);
+
+		int expectedNumOfBlockedMessages = 2 * numOfNodes;
+
+		testMulticast(numOfNodes, edgeList, expectedNumOfBlockedMessages, 1);
+
+		testMulticast(numOfNodes, edgeList, expectedNumOfBlockedMessages, 2);
+
 	}
 
 	// this and testMulticast2 are essentially the same
-	private static void testMulticast1(int numOfNodes,
-			List<Tuple2<Long, Long>> edgeList, int expectedNumOfBlockedMessages
-			) throws Exception {
+	private static void testMulticast(int numOfNodes,
+			List<Tuple2<Long, Long>> edgeList, int expectedNumOfBlockedMessages,
+			int whichMulticast) throws Exception {
 		ExecutionEnvironment env = ExecutionEnvironment
 				.getExecutionEnvironment();
 
@@ -93,18 +121,28 @@ public class MultiCastTest {
 		DataSet<Tuple2<Long, Long>> initialVertices = vertexIds
 				.map(new IdAssigner());
 
-		VertexCentricIteration1<Long, Long, Message, ?> iteration = VertexCentricIteration1
-				.withPlainEdges(edges, new CCUpdater(), new CCMessager1(), 1);
 
-		DataSet<Tuple2<Long, Long>> result = initialVertices
-				.runOperation(iteration);
+		DataSet<Tuple2<Long, Long>> result = null;
+		if (whichMulticast == 1) {
+			VertexCentricIteration1<Long, Long, Message, ?> iteration = VertexCentricIteration1
+					.withPlainEdges(edges, new TestUpdater(),
+							new TestMessager1(), 1);
+			result = initialVertices.runOperation(iteration);
+		} else if (whichMulticast == 2) {
+			VertexCentricIteration2<Long, Long, Message, ?> iteration = VertexCentricIteration2
+					.withPlainEdges(edges, new TestUpdater(),
+							new TestMessager2(), 1);
+			result = initialVertices.runOperation(iteration);
+		} else {
+			throw new RuntimeException("The value of <whichMulticast>  should be 1, or 2");
+		}
 
 		result.print();
 		env.setDegreeOfParallelism(2);
 		env.execute("Spargel Multiple recipients test.");
 		//System.out.println(env.getExecutionPlan());
 
-		checkMessages("multicast 1");
+		checkMessages(whichMulticast);
 		
 		
 		assertEquals("The number of blocked messages was not correct"
@@ -112,47 +150,8 @@ public class MultiCastTest {
 					+ ")", 0, numOfBlockedMessagesToSend.get() );
 	}
 
-	// this and testMulticast1 are essentially the same
-	private static void testMulticast2(int numOfNodes,
-			List<Tuple2<Long, Long>> edgeList, int expectedNumOfBlockedMessages) 
-					throws Exception {
-		ExecutionEnvironment env = ExecutionEnvironment
-				.getExecutionEnvironment();
 
-		messageReceivedAlready.clear();
-		for (Tuple2<Long, Long> e : edgeList) {
-			messageReceivedAlready.put(e, false);
-		}
-		//numOfMessagesToSend = edgeList.size();
-		numOfMessagesToSend = new AtomicInteger(edgeList.size());
-		numOfBlockedMessagesToSend = new AtomicInteger(expectedNumOfBlockedMessages);
-
-		DataSet<Long> vertexIds = env.generateSequence(0, numOfNodes - 1);
-		DataSet<Tuple2<Long, Long>> edges = env.fromCollection(edgeList);
-
-		DataSet<Tuple2<Long, Long>> initialVertices = vertexIds
-				.map(new IdAssigner());
-
-		VertexCentricIteration2<Long, Long, Message, ?> iteration = VertexCentricIteration2
-				.withPlainEdges(edges, new CCUpdater(), new CCMessager2(), 1);
-
-		DataSet<Tuple2<Long, Long>> result = initialVertices
-				.runOperation(iteration);
-
-		result.print();
-		env.setDegreeOfParallelism(2);
-		env.execute("Spargel Multiple recipients test.");
-		// System.out.println(env.getExecutionPlan());
-		checkMessages("multicast 2");
-
-		if (numOfBlockedMessagesToSend.get() != 0) {
-			throw new RuntimeException("The number of blocked messages was not correct"
-					+ " (remaining: " + numOfBlockedMessagesToSend.get()
-					+ ")");
-		}
-	}
-
-	private static void checkMessages(String whichMulticast) {
+	private static void checkMessages(int whichMulticast) {
 		if (numOfMessagesToSend.get() != 0) {
 			int remaining = numOfMessagesToSend.get();
 			for (Tuple2<Long, Long> e : messageReceivedAlready.keySet()) {
@@ -174,7 +173,7 @@ public class MultiCastTest {
 					+ whichMulticast + " (remaining: " + numOfMessagesToSend.get()
 					+ ")");
 		} else {
-			System.out.println("All messages received in " + whichMulticast);
+			System.out.println("All messages received in multicast " + whichMulticast);
 		}
 	}
 	
@@ -196,7 +195,7 @@ public class MultiCastTest {
 
 	
 
-	public static final class CCUpdater extends VertexUpdateFunction<Long, Long, Message> {
+	public static final class TestUpdater extends VertexUpdateFunction<Long, Long, Message> {
 		@Override
 		public void updateVertex(Long vertexKey, Long vertexValue, MessageIterator<Message> inMessages) {
 			for (Message msg: inMessages) {
@@ -219,7 +218,7 @@ public class MultiCastTest {
 		}
 	}
 
-	public static final class CCMessager1 extends MessagingFunction1<Long, Long, Message, NullValue> {
+	public static final class TestMessager1 extends MessagingFunction1<Long, Long, Message, NullValue> {
 		boolean multiRecipients = false;
 		@Override
 		public void sendMessages(Long vertexId, Long componentId) {
@@ -236,7 +235,7 @@ public class MultiCastTest {
 	}
 
 
-	public static final class CCMessager2 extends MessagingFunction2<Long, Long, Message, NullValue> {
+	public static final class TestMessager2 extends MessagingFunction2<Long, Long, Message, NullValue> {
 		boolean multiRecipients = false;
 		@Override
 		public void sendMessages(Long vertexId, Long componentId) {

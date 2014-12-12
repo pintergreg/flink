@@ -19,9 +19,9 @@ package org.apache.flink.spargel.multicast_test;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.management.RuntimeErrorException;
 
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.DataSet;
@@ -38,15 +38,14 @@ import org.apache.flink.spargel.java.VertexCentricIteration2;
 import org.apache.flink.spargel.java.VertexUpdateFunction;
 import org.apache.flink.spargel.java.multicast.MultipleRecipients;
 import org.apache.flink.types.NullValue;
-import org.junit.Test;
 
 
-public class MulticastCompleteGraphTestMain {
+public class MulticastCompleteGraphTestMain1 {
 
 	//This AtomicInteger is needed because of the concurrent changes of this value
 	static AtomicInteger numOfMessagesToSend;
-	//Lehet, h itt is valami concurrenthashmap kéne
-	static Map<Tuple2<Long, Long>, Boolean>  messageReceivedAlready = new ConcurrentHashMap<Tuple2<Long, Long>, Boolean>();
+//	//Lehet, h itt is valami concurrenthashmap kéne
+//	static Map<Tuple2<Long, Long>, Boolean>  messageReceivedAlready = new ConcurrentHashMap<Tuple2<Long, Long>, Boolean>();
 	
 	public static void main(String[] args) throws Exception {
 		System.out.println("Testing spargel multicast on a complete graph." );
@@ -74,10 +73,10 @@ public class MulticastCompleteGraphTestMain {
 			ExecutionEnvironment env = ExecutionEnvironment
 					.getExecutionEnvironment();
 
-			messageReceivedAlready.clear();
-			for (Tuple2<Long, Long> e : edgeList) {
-				messageReceivedAlready.put(e, false);
-			}
+//			messageReceivedAlready.clear();
+//			for (Tuple2<Long, Long> e : edgeList) {
+//				messageReceivedAlready.put(e, false);
+//			}
 
 			// numOfMessagesToSend = edgeList.size();
 			numOfMessagesToSend = new AtomicInteger(edgeList.size());
@@ -88,7 +87,7 @@ public class MulticastCompleteGraphTestMain {
 			DataSet<Tuple2<Long, Long>> initialVertices = vertexIds
 					.map(new IdAssigner());
 
-			DataSet<Tuple2<Long, Long>> result ;
+			DataSet<Tuple2<Long, Long>> result = null;
 			
 			if (whichMulticast == 0) {
 				VertexCentricIteration<Long, Long, Message, ?> iteration = VertexCentricIteration
@@ -100,11 +99,13 @@ public class MulticastCompleteGraphTestMain {
 						.withPlainEdges(edges, new CCUpdater(),
 								new CCMessager1(), 1);
 				result = initialVertices.runOperation(iteration);
-			} else {
+			} else if (whichMulticast == 2) {
 				VertexCentricIteration2<Long, Long, Message, ?> iteration = VertexCentricIteration2
 						.withPlainEdges(edges, new CCUpdater(),
 								new CCMessager2(), 1);
 				result = initialVertices.runOperation(iteration);
+			} else {
+				throw new RuntimeException("The value of <whichMulticast>  should be 0, 1, or 2");
 			}
 			
 
@@ -112,7 +113,7 @@ public class MulticastCompleteGraphTestMain {
 			env.setDegreeOfParallelism(degreeOfParalellism);
 			env.execute("Spargel Multiple recipients test.");
 
-			checkMessages("multicast " + whichMulticast);
+			//checkMessages("multicast " + whichMulticast);
 
 		}
 		
@@ -120,31 +121,31 @@ public class MulticastCompleteGraphTestMain {
 
 
 
-	private static void checkMessages(String whichMulticast) {
-		if (numOfMessagesToSend.get() != 0) {
-			int remaining = numOfMessagesToSend.get();
-			for (Tuple2<Long, Long> e : messageReceivedAlready.keySet()) {
-				if (!messageReceivedAlready.get(e)) {
-					System.err.println("Message for edge " + e
-							+ " was not delivered.");
-					remaining--;
-				}
-			}
-			if (remaining != 0) {
-				System.err
-						.println("numOfMessagesToSend and messageReceivedAlready are not in sync ("
-								+ remaining
-								+ " vs "
-								+ numOfMessagesToSend
-								+ ")");
-			}
-			throw new RuntimeException("Not every message was delivered in "
-					+ whichMulticast + " (remaining: " + numOfMessagesToSend
-					+ ")");
-		} else {
-			System.out.println("All messages received in " + whichMulticast);
-		}
-	}
+//	private static void checkMessages(String whichMulticast) {
+//		if (numOfMessagesToSend.get() != 0) {
+//			int remaining = numOfMessagesToSend.get();
+//			for (Tuple2<Long, Long> e : messageReceivedAlready.keySet()) {
+//				if (!messageReceivedAlready.get(e)) {
+//					System.err.println("Message for edge " + e
+//							+ " was not delivered.");
+//					remaining--;
+//				}
+//			}
+//			if (remaining != 0) {
+//				System.err
+//						.println("numOfMessagesToSend and messageReceivedAlready are not in sync ("
+//								+ remaining
+//								+ " vs "
+//								+ numOfMessagesToSend
+//								+ ")");
+//			}
+//			throw new RuntimeException("Not every message was delivered in "
+//					+ whichMulticast + " (remaining: " + numOfMessagesToSend
+//					+ ")");
+//		} else {
+//			System.out.println("All messages received in " + whichMulticast);
+//		}
+//	}
 	
 	
 	public static final class Message {
@@ -171,21 +172,21 @@ public class MulticastCompleteGraphTestMain {
 		@Override
 		public void updateVertex(Long vertexKey, Long vertexValue, MessageIterator<Message> inMessages) {
 			for (Message msg: inMessages) {
-//				System.out.println("Message from " + msg.senderId + " to " + vertexKey);
+				System.out.println("Message from " + msg.senderId + " to " + vertexKey);
 //				System.out.println("Message contents " + msg);
-
-				Tuple2<Long, Long> edge = new Tuple2<Long, Long>(msg.senderId, vertexKey);
-				if (!messageReceivedAlready.containsKey(edge)) {
-					throw new RuntimeException("invalid message from " + msg.senderId + " to " + vertexKey);
-				} else {
-					if (messageReceivedAlready.get(edge)) {
-						throw new RuntimeException("Message from " + msg.senderId
-								+ " to " + vertexKey + " sent more than once.");
-					} else {
-						messageReceivedAlready.put(edge, true);
-						numOfMessagesToSend.decrementAndGet();
-					}
-				}
+				
+//				Tuple2<Long, Long> edge = new Tuple2<Long, Long>(msg.senderId, vertexKey);
+//				if (!messageReceivedAlready.containsKey(edge)) {
+//					throw new RuntimeException("invalid message from " + msg.senderId + " to " + vertexKey);
+//				} else {
+//					if (messageReceivedAlready.get(edge)) {
+//						throw new RuntimeException("Message from " + msg.senderId
+//								+ " to " + vertexKey + " sent more than once.");
+//					} else {
+//						messageReceivedAlready.put(edge, true);
+//						numOfMessagesToSend.decrementAndGet();
+//					}
+//				}
 			}
 		}
 	}
