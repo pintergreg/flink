@@ -19,7 +19,6 @@ package org.apache.flink.spargel.multicast_test;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.accumulators.LongCounter;
@@ -39,123 +38,97 @@ import org.apache.flink.spargel.java.VertexUpdateFunction;
 import org.apache.flink.spargel.java.multicast.MultipleRecipients;
 import org.apache.flink.types.NullValue;
 
-
-
-
 public class MulticastCompleteGraphTestMain1 {
 
 	public static final String NUM_OF_RECEIVED_MESSAGES = "NUM_OF_RECEIVED_MESSAGES";
 	
-	//This AtomicInteger is needed because of the concurrent changes of this value
-	static AtomicInteger numOfMessagesToSend;
-//	//Lehet, h itt is valami concurrenthashmap kéne
-//	static Map<Tuple2<Long, Long>, Boolean>  messageReceivedAlready = new ConcurrentHashMap<Tuple2<Long, Long>, Boolean>();
 	
 	
 	public static void main(String[] args) throws Exception {
 		System.out.println("Testing spargel multicast on a complete graph." );
 
-		if (args.length != 3) {
-			System.out.println("Usage: <whichMulticast> <numOfNodes> <degreeOfParalellism>" );
-			System.out.println("<whichMulticast> is either 0, 1 or 2." );
-		} else {
+		int whichMulticast = 0;
+		int numOfNodes = 0;
+		int degreeOfParalellism = 0;
+
+		if (args.length == 3) {
 			
 			// some input data
-			int whichMulticast = Integer.parseInt(args[0]);
-			int numOfNodes = Integer.parseInt(args[1]);
-			int degreeOfParalellism = Integer.parseInt(args[2]);
+			whichMulticast = Integer.parseInt(args[0]);
+			numOfNodes = Integer.parseInt(args[1]);
+			degreeOfParalellism = Integer.parseInt(args[2]);
+		} else  if (args.length == 0) {
+			// default
+			whichMulticast = 1;
+			numOfNodes = 10;
+			degreeOfParalellism = 2;
+			System.out.println(" Running spargel multicast on a complete graph with default parameters");
+		} else {
+			System.out.println("Usage: <whichMulticast> <numOfNodes> <degreeOfParalellism>" );
+			System.out.println("<whichMulticast> is either 0, 1 or 2." );
+		}
 			
-			
-			List<Tuple2<Long, Long>> edgeList = new ArrayList<Tuple2<Long, Long>>();
-			for (int i = 0; i < numOfNodes; ++i) {
-				for (int j = 0; j < numOfNodes; ++j) {
-					if (i != j) {
-						edgeList.add(new Tuple2<Long, Long>((long) i, (long) j));
-					}
+		List<Tuple2<Long, Long>> edgeList = new ArrayList<Tuple2<Long, Long>>();
+		for (int i = 0; i < numOfNodes; ++i) {
+			for (int j = 0; j < numOfNodes; ++j) {
+				if (i != j) {
+					edgeList.add(new Tuple2<Long, Long>((long) i, (long) j));
 				}
 			}
+		}
 
-			ExecutionEnvironment env = ExecutionEnvironment
-					.getExecutionEnvironment();
+		ExecutionEnvironment env = ExecutionEnvironment
+				.getExecutionEnvironment();
 
-//			messageReceivedAlready.clear();
-//			for (Tuple2<Long, Long> e : edgeList) {
-//				messageReceivedAlready.put(e, false);
-//			}
+		DataSet<Long> vertexIds = env.generateSequence(0, numOfNodes - 1);
 
-			// numOfMessagesToSend = edgeList.size();
-			numOfMessagesToSend = new AtomicInteger(edgeList.size());
+		DataSet<Tuple2<Long, Long>> edges = env.fromCollection(edgeList);
 
-			DataSet<Long> vertexIds = env.generateSequence(0, numOfNodes - 1);
-			DataSet<Tuple2<Long, Long>> edges = env.fromCollection(edgeList);
+		DataSet<Tuple2<Long, VertexVal>> initialVertices = vertexIds
+				.map(new IdAssigner());
 
-			DataSet<Tuple2<Long, Long>> initialVertices = vertexIds
-					.map(new IdAssigner());
+		DataSet<Tuple2<Long, VertexVal>> result = null;
 
-			DataSet<Tuple2<Long, Long>> result = null;
+		if (whichMulticast == 0) {
+			VertexCentricIteration<Long, VertexVal, Message, ?> iteration = VertexCentricIteration
+					.withPlainEdges(edges, new CCUpdater(), new CCMessager(), 1);
+			result = initialVertices.runOperation(iteration);
+		} else if (whichMulticast == 1) {
+			VertexCentricIteration1<Long, VertexVal, Message, ?> iteration = VertexCentricIteration1
+					.withPlainEdges(edges, new CCUpdater(), new CCMessager1(),
+							1);
+			result = initialVertices.runOperation(iteration);
+		} else if (whichMulticast == 2) {
+			VertexCentricIteration2<Long, VertexVal, Message, ?> iteration = VertexCentricIteration2
+					.withPlainEdges(edges, new CCUpdater(), new CCMessager2(),
+							1);
+			result = initialVertices.runOperation(iteration);
+		} else {
+			throw new RuntimeException(
+					"The value of <whichMulticast>  should be 0, 1, or 2");
+		}
 
-			if (whichMulticast == 0) {
-				VertexCentricIteration<Long, Long, Message, ?> iteration = VertexCentricIteration
-						.withPlainEdges(edges, new CCUpdater(),
-								new CCMessager(), 1);
-				result = initialVertices.runOperation(iteration);
-			} else if (whichMulticast == 1) {
-				VertexCentricIteration1<Long, Long, Message, ?> iteration = VertexCentricIteration1
-						.withPlainEdges(edges, new CCUpdater(),
-								new CCMessager1(), 1);
-				result = initialVertices.runOperation(iteration);
-			} else if (whichMulticast == 2) {
-				VertexCentricIteration2<Long, Long, Message, ?> iteration = VertexCentricIteration2
-						.withPlainEdges(edges, new CCUpdater(),
-								new CCMessager2(), 1);
-				result = initialVertices.runOperation(iteration);
-			} else {
-				throw new RuntimeException("The value of <whichMulticast>  should be 0, 1, or 2");
-			}
-
-
-			result.sum(0).print();
-			env.setDegreeOfParallelism(degreeOfParalellism);
-			//System.out.println(env.getExecutionPlan());
-			JobExecutionResult jobRes = env.execute("Spargel Multiple recipients test with multicast " + whichMulticast);
-			Long numOfRecMsgs = jobRes.getAccumulatorResult(NUM_OF_RECEIVED_MESSAGES);
-			if (numOfRecMsgs != edgeList.size()) {
-				throw new RuntimeException("The number of received messages was "+ numOfRecMsgs + " instead of " + edgeList.size());
-			}
-			//checkMessages("multicast " + whichMulticast);
-
+		result.sum(0).print();
+		env.setDegreeOfParallelism(degreeOfParalellism);
+		// System.out.println(env.getExecutionPlan());
+		JobExecutionResult jobRes = env
+				.execute("Spargel Multiple recipients test with multicast "
+						+ whichMulticast);
+		Long numOfRecMsgs = jobRes
+				.getAccumulatorResult(NUM_OF_RECEIVED_MESSAGES);
+		if (numOfRecMsgs != edgeList.size()) {
+			throw new RuntimeException("The number of received messages was "
+					+ numOfRecMsgs + " instead of " + edgeList.size());
 		}
 		
 	}
 
-
-
-//	private static void checkMessages(String whichMulticast) {
-//		if (numOfMessagesToSend.get() != 0) {
-//			int remaining = numOfMessagesToSend.get();
-//			for (Tuple2<Long, Long> e : messageReceivedAlready.keySet()) {
-//				if (!messageReceivedAlready.get(e)) {
-//					System.err.println("Message for edge " + e
-//							+ " was not delivered.");
-//					remaining--;
-//				}
-//			}
-//			if (remaining != 0) {
-//				System.err
-//						.println("numOfMessagesToSend and messageReceivedAlready are not in sync ("
-//								+ remaining
-//								+ " vs "
-//								+ numOfMessagesToSend
-//								+ ")");
-//			}
-//			throw new RuntimeException("Not every message was delivered in "
-//					+ whichMulticast + " (remaining: " + numOfMessagesToSend
-//					+ ")");
-//		} else {
-//			System.out.println("All messages received in " + whichMulticast);
+	public static final class VertexVal {
+		public Integer dummy = 1;
+//		public VertexVal(){
+//			dummy = new Integer(0);
 //		}
-//	}
-	
+	}
 	
 	public static final class Message {
 		public Long senderId;
@@ -175,7 +148,7 @@ public class MulticastCompleteGraphTestMain1 {
 
 	
 
-	public static final class CCUpdater extends VertexUpdateFunction<Long, Long, Message> {
+	public static final class CCUpdater extends VertexUpdateFunction<Long, VertexVal, Message> {
 		private static final long serialVersionUID = 1L;
 		
 		private LongCounter numOfRecievedMessages = new LongCounter();
@@ -186,7 +159,7 @@ public class MulticastCompleteGraphTestMain1 {
 		}
 		
 		@Override
-		public void updateVertex(Long vertexKey, Long vertexValue, MessageIterator<Message> inMessages) {
+		public void updateVertex(Long vertexKey, VertexVal vertexValue, MessageIterator<Message> inMessages) {
 			long msgcount = 0;
 			for (Message msg: inMessages) {
 				System.out.println("Message from " + msg.senderId + " to " + vertexKey);
@@ -210,22 +183,22 @@ public class MulticastCompleteGraphTestMain1 {
 		}
 	}
 
-	public static final class CCMessager extends MessagingFunction<Long, Long, Message, NullValue> {
+	public static final class CCMessager extends MessagingFunction<Long, VertexVal, Message, NullValue> {
 		private static final long serialVersionUID = 1L;
 		boolean multiRecipients = false;
 		@Override
-		public void sendMessages(Long vertexId, Long componentId) {
+		public void sendMessages(Long vertexId, VertexVal componentId) {
 			Message m = new Message(vertexId);
 
 			sendMessageToAllNeighbors(m);
 		}
 	}
 
-	public static final class CCMessager1 extends MessagingFunction1<Long, Long, Message, NullValue> {
+	public static final class CCMessager1 extends MessagingFunction1<Long, VertexVal, Message, NullValue> {
 		private static final long serialVersionUID = 1L;
 		boolean multiRecipients = false;
 		@Override
-		public void sendMessages(Long vertexId, Long componentId) {
+		public void sendMessages(Long vertexId, VertexVal componentId) {
 			Message m = new Message(vertexId);
 
 			MultipleRecipients<Long> recipients = new MultipleRecipients<Long>();
@@ -237,11 +210,11 @@ public class MulticastCompleteGraphTestMain1 {
 	}
 
 
-	public static final class CCMessager2 extends MessagingFunction2<Long, Long, Message, NullValue> {
+	public static final class CCMessager2 extends MessagingFunction2<Long, VertexVal, Message, NullValue> {
 		private static final long serialVersionUID = 1L;
 		boolean multiRecipients = false;
 		@Override
-		public void sendMessages(Long vertexId, Long componentId) {
+		public void sendMessages(Long vertexId, VertexVal componentId) {
 			Message m = new Message(vertexId);
 //			MultipleRecipients<Long> recipients = new MultipleRecipients<Long>();
 //			for (OutgoingEdge<Long, NullValue> edge : getOutgoingEdges()) {
@@ -260,12 +233,12 @@ public class MulticastCompleteGraphTestMain1 {
 	 * A map function that takes a Long value and creates a 2-tuple out of it:
 	 * <pre>(Long value) -> (value, value)</pre>
 	 */
-	public static final class IdAssigner implements MapFunction<Long, Tuple2<Long, Long>> {
+	public static final class IdAssigner implements MapFunction<Long, Tuple2<Long, VertexVal>> {
 		private static final long serialVersionUID = 1L;
 
 		@Override
-		public Tuple2<Long, Long> map(Long value) {
-			return new Tuple2<Long, Long>(value, value);
+		public Tuple2<Long, VertexVal> map(Long value) {
+			return new Tuple2<Long, VertexVal>(value, new VertexVal());
 		}
 	}
 

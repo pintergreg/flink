@@ -298,7 +298,7 @@ public class VertexCentricIteration<VertexKey extends Comparable<VertexKey>, Ver
 		if (this.initialVertices == null) {
 			throw new IllegalStateException("The input data set has not been set.");
 		}
-		
+
 		// prepare some type information
 		TypeInformation<Tuple2<VertexKey, VertexValue>> vertexTypes = initialVertices.getType();
 		TypeInformation<VertexKey> keyType = ((TupleTypeInfo<?>) initialVertices.getType()).getTypeAt(0);

@@ -161,7 +161,7 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 			MessagingFunction2<VertexKey, VertexValue, Message, EdgeValue> mf) {
 
 		TypeInformation<VertexKey> keyType = TypeExtractor.createTypeInfo(
-				MessagingFunction2.class, mf.getClass(), 1, null, null);
+				MessagingFunction2.class, mf.getClass(), 0, null, null);
 		TypeInformation<Message> msgType = TypeExtractor.createTypeInfo(
 				MessagingFunction2.class, mf.getClass(), 2, null, null);
 		return MessageWithHeader.getTypeInfo(keyType, msgType);
