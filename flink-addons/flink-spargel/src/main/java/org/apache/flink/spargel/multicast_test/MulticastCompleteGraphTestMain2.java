@@ -38,7 +38,7 @@ import org.apache.flink.spargel.java.VertexUpdateFunction;
 import org.apache.flink.spargel.java.multicast.MultipleRecipients;
 import org.apache.flink.types.NullValue;
 
-public class MulticastCompleteGraphTestMain1 {
+public class MulticastCompleteGraphTestMain2 {
 
 	public static final String NUM_OF_RECEIVED_MESSAGES = "NUM_OF_RECEIVED_MESSAGES";
 	
@@ -61,10 +61,10 @@ public class MulticastCompleteGraphTestMain1 {
 			numberOfIterations = Integer.parseInt(args[3]);
 		} else  if (args.length == 0) {
 			// default
-			whichMulticast = 0;
-			numOfNodes = 10;
+			whichMulticast = 1;
+			numOfNodes = 200;
 			degreeOfParalellism = 4;
-			numberOfIterations = 20;
+			numberOfIterations = 10;
 			System.out.println(" Running spargel multicast on a complete graph with default parameters");
 		} else {
 			System.err.println("Usage: <whichMulticast> <numOfNodes> <degreeOfParalellism> <numberOfIterations>" );
@@ -129,8 +129,7 @@ public class MulticastCompleteGraphTestMain1 {
 		Long numOfRecMsgs = jobRes
 				.getAccumulatorResult(NUM_OF_RECEIVED_MESSAGES);
 		System.out.println("Net runtime: " + jobRes.getNetRuntime());
-		// we cannot keep the accumulator between iterations
-		long expectedNumOfMessages = (long)edgeList.size(); //* (long)numberOfIterations;
+		long expectedNumOfMessages = (long)edgeList.size() * (long)numberOfIterations;
 		if (numOfRecMsgs != expectedNumOfMessages) {
 			throw new RuntimeException("The number of received messages (per iteration) was "
 					+ numOfRecMsgs + " instead of " + expectedNumOfMessages);
@@ -169,8 +168,8 @@ public class MulticastCompleteGraphTestMain1 {
 
 		@Override
 		public void preSuperstep() throws Exception {
-			// It seems that we cannot accumulate between iterations
-			getRuntimeContext().addAccumulator(MulticastCompleteGraphTestMain1.NUM_OF_RECEIVED_MESSAGES, new LongCounter());
+			System.out.println("SuperStep: " + getSuperstepNumber());
+			getRuntimeContext().addAccumulator(MulticastCompleteGraphTestMain2.NUM_OF_RECEIVED_MESSAGES, new LongCounter());
 		}
 		
 		@Override
@@ -180,8 +179,9 @@ public class MulticastCompleteGraphTestMain1 {
 				System.out.println("Message from " + msg.senderId + " to " + vertexKey);
 				msgcount ++;
 			}
-			getRuntimeContext().getAccumulator(MulticastCompleteGraphTestMain1.NUM_OF_RECEIVED_MESSAGES).add(msgcount);
+			getRuntimeContext().getAccumulator(MulticastCompleteGraphTestMain2.NUM_OF_RECEIVED_MESSAGES).add(msgcount);
 			//numOfRecievedMessages.add(msgcount);
+			setNewVertexValue(vertexValue);
 		}
 	}
 

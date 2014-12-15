@@ -24,10 +24,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import javax.management.RuntimeErrorException;
+
 import org.apache.commons.lang3.Validate;
 import org.apache.flink.api.common.aggregators.Aggregator;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.RichCoGroupFunction;
+import org.apache.flink.api.common.functions.RichFlatMapFunction;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.operators.CoGroupOperator;
@@ -445,8 +448,9 @@ public class VertexCentricIteration1<VertexKey extends Comparable<VertexKey>, Ve
 	}
 
 	private static class UnpackMessage<VertexKey extends Comparable<VertexKey>, Message>
+			extends
+			RichFlatMapFunction<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>, Tuple2<VertexKey, Message>>
 			implements
-			FlatMapFunction<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>, Tuple2<VertexKey, Message>>,
 			ResultTypeQueryable<Tuple2<VertexKey, Message>> {
 
 		private static final long serialVersionUID = 1L;
@@ -464,8 +468,14 @@ public class VertexCentricIteration1<VertexKey extends Comparable<VertexKey>, Ve
 			reuse.f1 = value.f1.getMessage();
 			for (VertexKey target : value.f1.getSomeRecipients()) {
 				reuse.f0 = target;
-				System.out.println("Unpacked record: " + reuse);
-				System.out.println("Channel id: " + ((OutputCollector<Tuple2<VertexKey, Message>>)out).getChannel(reuse));
+				if (((OutputCollector<Tuple2<VertexKey, Message>>)out).getChannel(reuse)  != 
+						 getRuntimeContext().getIndexOfThisSubtask()) {
+					throw new RuntimeException("Index of subtask and channelid differ");
+				}
+				System.out.println("don't forget me");
+//				System.out.println("Unpacked record: " + reuse + 
+//						"Channel id: " + ((OutputCollector<Tuple2<VertexKey, Message>>)out).getChannel(reuse) +
+//						", index of subtask: " + getRuntimeContext().getIndexOfThisSubtask());
 				out.collect(reuse);
 			}
 

@@ -542,6 +542,7 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 		public void mapPartition(Iterable<Tuple2<VertexKey, VertexKey>> values,
 				Collector<Tuple3<VertexKey, VertexKey, Integer>> out)
 				throws Exception {
+			System.out.println("ChannelIdAdder");
 			for (Tuple2<VertexKey, VertexKey> edge : values) {
 				reuse.f0 = edge.f0;
 				reuse.f1 = edge.f1;
