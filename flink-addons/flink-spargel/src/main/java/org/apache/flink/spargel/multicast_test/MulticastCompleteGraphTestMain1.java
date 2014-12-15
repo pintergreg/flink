@@ -50,22 +50,27 @@ public class MulticastCompleteGraphTestMain1 {
 		int whichMulticast = 0;
 		int numOfNodes = 0;
 		int degreeOfParalellism = 0;
-
-		if (args.length == 3) {
+		int numberOfIterations = 0;
+		
+		if (args.length == 4) {
 			
 			// some input data
 			whichMulticast = Integer.parseInt(args[0]);
 			numOfNodes = Integer.parseInt(args[1]);
 			degreeOfParalellism = Integer.parseInt(args[2]);
+			numberOfIterations = Integer.parseInt(args[3]);
 		} else  if (args.length == 0) {
 			// default
-			whichMulticast = 1;
+			whichMulticast = 0;
 			numOfNodes = 10;
-			degreeOfParalellism = 2;
+			degreeOfParalellism = 4;
+			numberOfIterations = 20;
 			System.out.println(" Running spargel multicast on a complete graph with default parameters");
 		} else {
-			System.out.println("Usage: <whichMulticast> <numOfNodes> <degreeOfParalellism>" );
-			System.out.println("<whichMulticast> is either 0, 1 or 2." );
+			System.err.println("Usage: <whichMulticast> <numOfNodes> <degreeOfParalellism> <numberOfIterations>" );
+			System.err.println("<whichMulticast> is either 0, 1 or 2." );
+			//.createRemoteEnvironment("dell150.ilab.sztaki.hu", 6123	, 40, "");
+			System.exit(1);
 		}
 			
 		List<Tuple2<Long, Long>> edgeList = new ArrayList<Tuple2<Long, Long>>();
@@ -78,6 +83,8 @@ public class MulticastCompleteGraphTestMain1 {
 		}
 
 		ExecutionEnvironment env = ExecutionEnvironment
+//				.createRemoteEnvironment("dell150.ilab.sztaki.hu", 6123	, 40, 
+//						"/home/sudocker/git/incubator-flink/flink-addons/flink-spargel/target/flink-spargel-0.8-incubating-SNAPSHOT.jar");
 				.getExecutionEnvironment();
 
 		DataSet<Long> vertexIds = env.generateSequence(0, numOfNodes - 1);
@@ -91,17 +98,17 @@ public class MulticastCompleteGraphTestMain1 {
 
 		if (whichMulticast == 0) {
 			VertexCentricIteration<Long, VertexVal, Message, ?> iteration = VertexCentricIteration
-					.withPlainEdges(edges, new CCUpdater(), new CCMessager(), 1);
+					.withPlainEdges(edges, new CCUpdater(), new CCMessager(), numberOfIterations);
 			result = initialVertices.runOperation(iteration);
 		} else if (whichMulticast == 1) {
 			VertexCentricIteration1<Long, VertexVal, Message, ?> iteration = VertexCentricIteration1
 					.withPlainEdges(edges, new CCUpdater(), new CCMessager1(),
-							1);
+							numberOfIterations);
 			result = initialVertices.runOperation(iteration);
 		} else if (whichMulticast == 2) {
 			VertexCentricIteration2<Long, VertexVal, Message, ?> iteration = VertexCentricIteration2
 					.withPlainEdges(edges, new CCUpdater(), new CCMessager2(),
-							1);
+							numberOfIterations);
 			result = initialVertices.runOperation(iteration);
 		} else {
 			throw new RuntimeException(
@@ -110,15 +117,23 @@ public class MulticastCompleteGraphTestMain1 {
 
 		result.sum(0).print();
 		env.setDegreeOfParallelism(degreeOfParalellism);
-		// System.out.println(env.getExecutionPlan());
+		
+		
+//		System.out.println("Get execution plan.");
+//		System.out.println(env.getExecutionPlan());
+//		System.exit(1);
+		
 		JobExecutionResult jobRes = env
 				.execute("Spargel Multiple recipients test with multicast "
 						+ whichMulticast);
 		Long numOfRecMsgs = jobRes
 				.getAccumulatorResult(NUM_OF_RECEIVED_MESSAGES);
-		if (numOfRecMsgs != edgeList.size()) {
-			throw new RuntimeException("The number of received messages was "
-					+ numOfRecMsgs + " instead of " + edgeList.size());
+		System.out.println("Net runtime: " + jobRes.getNetRuntime());
+		// we cannot keep the accumulator between iterations
+		long expectedNumOfMessages = (long)edgeList.size(); //* (long)numberOfIterations;
+		if (numOfRecMsgs != expectedNumOfMessages) {
+			throw new RuntimeException("The number of received messages (per iteration) was "
+					+ numOfRecMsgs + " instead of " + expectedNumOfMessages);
 		}
 		
 	}
@@ -151,11 +166,11 @@ public class MulticastCompleteGraphTestMain1 {
 	public static final class CCUpdater extends VertexUpdateFunction<Long, VertexVal, Message> {
 		private static final long serialVersionUID = 1L;
 		
-		private LongCounter numOfRecievedMessages = new LongCounter();
 
 		@Override
 		public void preSuperstep() throws Exception {
-			getRuntimeContext().addAccumulator(MulticastCompleteGraphTestMain1.NUM_OF_RECEIVED_MESSAGES, numOfRecievedMessages);
+			// It seems that we cannot accumulate between iterations
+			getRuntimeContext().addAccumulator(MulticastCompleteGraphTestMain1.NUM_OF_RECEIVED_MESSAGES, new LongCounter());
 		}
 		
 		@Override
@@ -164,22 +179,9 @@ public class MulticastCompleteGraphTestMain1 {
 			for (Message msg: inMessages) {
 				System.out.println("Message from " + msg.senderId + " to " + vertexKey);
 				msgcount ++;
-//				System.out.println("Message contents " + msg);
-				
-//				Tuple2<Long, Long> edge = new Tuple2<Long, Long>(msg.senderId, vertexKey);
-//				if (!messageReceivedAlready.containsKey(edge)) {
-//					throw new RuntimeException("invalid message from " + msg.senderId + " to " + vertexKey);
-//				} else {
-//					if (messageReceivedAlready.get(edge)) {
-//						throw new RuntimeException("Message from " + msg.senderId
-//								+ " to " + vertexKey + " sent more than once.");
-//					} else {
-//						messageReceivedAlready.put(edge, true);
-//						numOfMessagesToSend.decrementAndGet();
-//					}
-//				}
 			}
-			numOfRecievedMessages.add(msgcount);
+			getRuntimeContext().getAccumulator(MulticastCompleteGraphTestMain1.NUM_OF_RECEIVED_MESSAGES).add(msgcount);
+			//numOfRecievedMessages.add(msgcount);
 		}
 	}
 

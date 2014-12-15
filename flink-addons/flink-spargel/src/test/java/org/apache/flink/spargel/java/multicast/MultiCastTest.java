@@ -138,7 +138,7 @@ public class MultiCastTest {
 		env.setDegreeOfParallelism(degreeOfParalellism);
 		env.execute("Spargel Multiple recipients test.");
 		//System.out.println(env.getExecutionPlan());
-
+		
 		checkMessages(whichMulticast);
 		
 		

@@ -40,6 +40,7 @@ import org.apache.flink.api.java.typeutils.ResultTypeQueryable;
 import org.apache.flink.api.java.typeutils.TupleTypeInfo;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.runtime.operators.shipping.OutputCollector;
 import org.apache.flink.spargel.java.multicast.MessageWithHeader;
 import org.apache.flink.util.Collector;
 
@@ -455,14 +456,17 @@ public class VertexCentricIteration1<VertexKey extends Comparable<VertexKey>, Ve
 				TypeInformation<Tuple2<VertexKey, Message>> resultType) {
 			this.resultType = resultType;
 		}
-
+		Tuple2<VertexKey, Message> reuse = new Tuple2<VertexKey, Message>();
 		@Override
 		public void flatMap(
 				Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>> value,
 				Collector<Tuple2<VertexKey, Message>> out) throws Exception {
+			reuse.f1 = value.f1.getMessage();
 			for (VertexKey target : value.f1.getSomeRecipients()) {
-				out.collect(new Tuple2<VertexKey, Message>(target, value.f1
-						.getMessage()));
+				reuse.f0 = target;
+				System.out.println("Unpacked record: " + reuse);
+				System.out.println("Channel id: " + ((OutputCollector<Tuple2<VertexKey, Message>>)out).getChannel(reuse));
+				out.collect(reuse);
 			}
 
 		}

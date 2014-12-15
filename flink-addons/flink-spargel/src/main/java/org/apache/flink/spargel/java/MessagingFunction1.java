@@ -137,7 +137,7 @@ public abstract class MessagingFunction1<VertexKey extends Comparable<VertexKey>
 			outValue.f1.setChannelId(channel);
 			out.collect(outValue);
 			numOfBlockedMessages ++;
-			System.out.println(outValue);
+			//System.out.println(outValue);
 		}
 		return numOfBlockedMessages;
 	}
