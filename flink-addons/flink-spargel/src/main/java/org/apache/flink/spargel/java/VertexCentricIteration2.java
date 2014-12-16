@@ -27,9 +27,10 @@ import java.util.Map;
 import org.apache.commons.lang3.Validate;
 import org.apache.flink.api.common.aggregators.Aggregator;
 import org.apache.flink.api.common.functions.JoinFunction;
+import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.functions.RichCoGroupFunction;
 import org.apache.flink.api.common.functions.RichMapFunction;
-import org.apache.flink.api.common.functions.RichMapPartitionFunction;
+import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.functions.KeySelector;
@@ -107,7 +108,8 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 	@SuppressWarnings("rawtypes")
 	private final TypeInformation<MessageWithHeader> packedMessageType;
 	private final TypeInformation<Message> unPackedMessageType;
-
+	private final TypeInformation<VertexKey> keyType;
+	
 	private DataSet<Tuple2<VertexKey, VertexValue>> initialVertices;
 
 	private String name;
@@ -149,23 +151,25 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 		this.edgesWithValue = null;
 		this.maximumNumberOfIterations = maximumNumberOfIterations;
 		this.aggregators = new HashMap<String, Aggregator<?>>();
-
-		this.packedMessageType = getMessageType(mf);
+		
+		this.keyType = TypeExtractor.createTypeInfo(
+				MessagingFunction2.class, mf.getClass(), 0, null, null);
 		this.unPackedMessageType = TypeExtractor.createTypeInfo(
 				MessagingFunction2.class, mf.getClass(), 2, null, null);
+		this.packedMessageType = MessageWithHeader.getTypeInfo(this.keyType, this.unPackedMessageType);
 		// this.messageType = mf.getMessageType();
 	}
 
-	@SuppressWarnings("rawtypes")
-	private TypeInformation<MessageWithHeader> getMessageType(
-			MessagingFunction2<VertexKey, VertexValue, Message, EdgeValue> mf) {
-
-		TypeInformation<VertexKey> keyType = TypeExtractor.createTypeInfo(
-				MessagingFunction2.class, mf.getClass(), 0, null, null);
-		TypeInformation<Message> msgType = TypeExtractor.createTypeInfo(
-				MessagingFunction2.class, mf.getClass(), 2, null, null);
-		return MessageWithHeader.getTypeInfo(keyType, msgType);
-	}
+//	@SuppressWarnings("rawtypes")
+//	private TypeInformation<MessageWithHeader> getMessageType(
+//			MessagingFunction2<VertexKey, VertexValue, Message, EdgeValue> mf) {
+//
+//		TypeInformation<VertexKey> keyType = TypeExtractor.createTypeInfo(
+//				MessagingFunction2.class, mf.getClass(), 0, null, null);
+//		TypeInformation<Message> msgType = TypeExtractor.createTypeInfo(
+//				MessagingFunction2.class, mf.getClass(), 2, null, null);
+//		return MessageWithHeader.getTypeInfo(keyType, msgType);
+//	}
 
 	/**
 	 * Registers a new aggregator. Aggregators registered here are available
@@ -361,6 +365,7 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 
 		// build the messaging function (co group)
 		CoGroupOperator<?, ?, Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>> messages;
+		DataSet<Tuple3<VertexKey, VertexKey, Integer>> edgesWithChannelId = null;
 		// DataSet<Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>>
 		// messages;
 		if (edgesWithoutValue != null) {
@@ -368,11 +373,33 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 					messagingFunction, packedMessageTypeInfo);
 			messages = this.edgesWithoutValue.coGroup(iteration.getWorkset())
 					.where(0).equalTo(0).with(messenger);
+			edgesWithChannelId = edgesWithoutValue
+					.partitionByHash(1)
+					.map(new SubtaskIndexAdder<VertexKey>());
 		} else {
 			MessagingUdfWithEdgeValues<VertexKey, VertexValue, Message, EdgeValue> messenger = new MessagingUdfWithEdgeValues<VertexKey, VertexValue, Message, EdgeValue>(
 					messagingFunction, packedMessageTypeInfo);
 			messages = this.edgesWithValue.coGroup(iteration.getWorkset())
 					.where(0).equalTo(0).with(messenger);
+			edgesWithChannelId = edgesWithValue
+					// the following is essentially a projection, but I think it
+					// cannot be done as a projection
+					// .project(0,1).types(VertexKey.class, VertexKey.class)
+					.map(new MapFunction<Tuple3<VertexKey, VertexKey, EdgeValue>, Tuple2<VertexKey, VertexKey>>() {
+						private static final long serialVersionUID = 1L;
+						Tuple2<VertexKey, VertexKey> reuse = new Tuple2<VertexKey, VertexKey>();
+
+						@Override
+						public Tuple2<VertexKey, VertexKey> map(
+								Tuple3<VertexKey, VertexKey, EdgeValue> value)
+								throws Exception {
+							reuse.f0 = value.f0;
+							reuse.f1 = value.f1;
+							return reuse;
+						}
+					})
+					.partitionByHash(1)
+					.map(new SubtaskIndexAdder<VertexKey>());
 		}
 
 		// configure coGroup message function with name and broadcast variables
@@ -384,26 +411,27 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 		VertexUpdateUdf<VertexKey, VertexValue, Message> updateUdf = new VertexUpdateUdf<VertexKey, VertexValue, Message>(
 				updateFunction, vertexTypes);
 
-		DataSet<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>> messages1 = messages
-				.partitionByHash(0);
-
-		DataSet<Tuple3<VertexKey, VertexKey, Integer>> edgesWithChannelId = edgesWithoutValue
-				.partitionByHash(1).map(new ChannelIdAdder2<VertexKey>());
+		DataSet<Tuple3<Integer, VertexKey, Message>> messages1 = messages
+				.partitionByHash(0)
+				.map(new UnpackPhase1<VertexKey, Message>(this.keyType, this.unPackedMessageType));
 
 		// edgesWithChannelId.print();
 		// messages1.print();
 		DataSet<Tuple2<VertexKey, Message>> messages2 = edgesWithChannelId
-				// Kell ez?
-				// .joinWithTiny(messages1)
-				.join(messages1)
-				.where(new ChannelIdAndSenderSelectorEdge<VertexKey>())
+		// Kell ez?
+		 //.joinWithTiny(messages1)
+			.join(messages1)
+				.where(2, 0)
 				// .equalTo(0)
 				// .equalTo(new SenderSelector<VertexKey, Message>())
-				.equalTo(
-						new ChannelIdAndSenderSelectorMsg<VertexKey, Message>())
-				.with(new UnpackMessage2<VertexKey, Message>(
+				.equalTo(0, 1)
+				// .equalTo(new ChannelIdAndSenderSelectorMsg<VertexKey,
+				// Message>())
+				.with(new UnpackMessage3<VertexKey, Message>(
 						unpackedMessageTypeInfo));
+				//.projectFirst(1).projectSecond(2).types(VertexKey, Message);
 
+		
 		// build the update function (co group)
 		CoGroupOperator<?, ?, Tuple2<VertexKey, VertexValue>> updates = messages2
 				.coGroup(iteration.getSolutionSet()).where(0).equalTo(0)
@@ -453,6 +481,39 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 			return String.format("%03d", channelId)
 					+ String.format("%10d", sender);
 
+		}
+	}
+
+
+	public static class UnpackPhase1<VertexKey extends Comparable<VertexKey>, Message>
+			implements
+			MapFunction<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>, Tuple3<Integer, VertexKey, Message>>,
+			ResultTypeQueryable<Tuple3<Integer, VertexKey, Message>> {
+
+		private static final long serialVersionUID = 1L;
+		private transient TypeInformation<Tuple3<Integer, VertexKey, Message>> resultType;
+
+		public UnpackPhase1(TypeInformation<VertexKey> keyType,
+				TypeInformation<Message> unPackedMessageType) {
+			this.resultType = new TupleTypeInfo<Tuple3<Integer, VertexKey, Message>>(
+					BasicTypeInfo.INT_TYPE_INFO, keyType, unPackedMessageType);
+		}
+
+		@Override
+		public TypeInformation<Tuple3<Integer, VertexKey, Message>> getProducedType() {
+			return resultType;
+		}
+
+		private Tuple3<Integer, VertexKey, Message> reuse = new Tuple3<Integer, VertexKey, Message>();
+
+		@Override
+		public Tuple3<Integer, VertexKey, Message> map(
+				Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>> value)
+				throws Exception {
+			reuse.f0 = value.f1.getChannelId();
+			reuse.f1 = value.f1.getSender();
+			reuse.f2 = value.f1.getMessage();
+			return reuse;
 		}
 	}
 
@@ -532,27 +593,61 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 		}
 	}
 
-	public static class ChannelIdAdder<VertexKey extends Comparable<VertexKey>>
-			extends
-			RichMapPartitionFunction<Tuple2<VertexKey, VertexKey>, Tuple3<VertexKey, VertexKey, Integer>> {
+	public static class UnpackMessage3<VertexKey extends Comparable<VertexKey>, Message>
+			implements
+			JoinFunction<Tuple3<VertexKey, VertexKey, Integer>, Tuple3<Integer, VertexKey, Message>, Tuple2<VertexKey, Message>>,
+			ResultTypeQueryable<Tuple2<VertexKey, Message>> {
+
 		private static final long serialVersionUID = 1L;
-		Tuple3<VertexKey, VertexKey, Integer> reuse = new Tuple3<VertexKey, VertexKey, Integer>();
+		private transient TypeInformation<Tuple2<VertexKey, Message>> resultType;
+
+		private UnpackMessage3(
+				TypeInformation<Tuple2<VertexKey, Message>> resultType) {
+			this.resultType = resultType;
+		}
 
 		@Override
-		public void mapPartition(Iterable<Tuple2<VertexKey, VertexKey>> values,
-				Collector<Tuple3<VertexKey, VertexKey, Integer>> out)
+		public TypeInformation<Tuple2<VertexKey, Message>> getProducedType() {
+			return this.resultType;
+		}
+
+		Tuple2<VertexKey, Message> reuse = new Tuple2<VertexKey, Message>();
+
+		@Override
+		public Tuple2<VertexKey, Message> join(
+				Tuple3<VertexKey, VertexKey, Integer> edgeWithPartId,
+				Tuple3<Integer, VertexKey, Message> msgWithHeader)
 				throws Exception {
-			System.out.println("ChannelIdAdder");
-			for (Tuple2<VertexKey, VertexKey> edge : values) {
-				reuse.f0 = edge.f0;
-				reuse.f1 = edge.f1;
-				reuse.f2 = getRuntimeContext().getIndexOfThisSubtask();
-				out.collect(reuse);
-			}
+			reuse.f0 = edgeWithPartId.f1;
+			reuse.f1 = msgWithHeader.f2;
+			return reuse;
 		}
 	}
 
-	public static class ChannelIdAdder2<VertexKey extends Comparable<VertexKey>>
+	// public static class ChannelIdAdder<VertexKey extends
+	// Comparable<VertexKey>>
+	// extends
+	// RichMapPartitionFunction<Tuple2<VertexKey, VertexKey>, Tuple3<VertexKey,
+	// VertexKey, Integer>> {
+	// private static final long serialVersionUID = 1L;
+	// Tuple3<VertexKey, VertexKey, Integer> reuse = new Tuple3<VertexKey,
+	// VertexKey, Integer>();
+	//
+	// @Override
+	// public void mapPartition(Iterable<Tuple2<VertexKey, VertexKey>> values,
+	// Collector<Tuple3<VertexKey, VertexKey, Integer>> out)
+	// throws Exception {
+	// System.out.println("ChannelIdAdder");
+	// for (Tuple2<VertexKey, VertexKey> edge : values) {
+	// reuse.f0 = edge.f0;
+	// reuse.f1 = edge.f1;
+	// reuse.f2 = getRuntimeContext().getIndexOfThisSubtask();
+	// out.collect(reuse);
+	// }
+	// }
+	// }
+
+	public static class SubtaskIndexAdder<VertexKey extends Comparable<VertexKey>>
 			extends
 			RichMapFunction<Tuple2<VertexKey, VertexKey>, Tuple3<VertexKey, VertexKey, Integer>> {
 		private static final long serialVersionUID = 1L;
