@@ -115,18 +115,18 @@ public class MultiCastTest {
 		DataSet<Long> vertexIds = env.generateSequence(0, numOfNodes - 1);
 		DataSet<Tuple2<Long, Long>> edges = env.fromCollection(edgeList);
 
-		DataSet<Tuple2<Long, Long>> initialVertices = vertexIds
+		DataSet<Tuple2<Long, VertexVal>> initialVertices = vertexIds
 				.map(new IdAssigner());
 
 
-		DataSet<Tuple2<Long, Long>> result = null;
+		DataSet<Tuple2<Long, VertexVal>> result = null;
 		if (whichMulticast == 1) {
-			VertexCentricIteration1<Long, Long, Message, ?> iteration = VertexCentricIteration1
+			VertexCentricIteration1<Long, VertexVal, Message, ?> iteration = VertexCentricIteration1
 					.withPlainEdges(edges, new TestUpdater(),
 							new TestMessager1(), 1);
 			result = initialVertices.runOperation(iteration);
 		} else if (whichMulticast == 2) {
-			VertexCentricIteration2<Long, Long, Message, ?> iteration = VertexCentricIteration2
+			VertexCentricIteration2<Long, VertexVal, Message, ?> iteration = VertexCentricIteration2
 					.withPlainEdges(edges, new TestUpdater(),
 							new TestMessager2(), 1);
 			result = initialVertices.runOperation(iteration);
@@ -134,7 +134,7 @@ public class MultiCastTest {
 			throw new RuntimeException("The value of <whichMulticast>  should be 1, or 2");
 		}
 
-		result.print();
+		result.max(0).print();
 		env.setDegreeOfParallelism(degreeOfParalellism);
 		env.execute("Spargel Multiple recipients test.");
 		//System.out.println(env.getExecutionPlan());
@@ -174,7 +174,10 @@ public class MultiCastTest {
 		}
 	}
 	
-	
+	public static final class VertexVal {
+		public Integer dummy = 1;
+	}
+
 	public static final class Message {
 		public Long senderId;
 		
@@ -192,9 +195,9 @@ public class MultiCastTest {
 
 	
 
-	public static final class TestUpdater extends VertexUpdateFunction<Long, Long, Message> {
+	public static final class TestUpdater extends VertexUpdateFunction<Long, VertexVal, Message> {
 		@Override
-		public void updateVertex(Long vertexKey, Long vertexValue, MessageIterator<Message> inMessages) {
+		public void updateVertex(Long vertexKey, VertexVal vertexValue, MessageIterator<Message> inMessages) {
 			for (Message msg: inMessages) {
 //				System.out.println("Message from " + msg.senderId + " to " + vertexKey);
 //				System.out.println("Message contents " + msg);
@@ -215,10 +218,10 @@ public class MultiCastTest {
 		}
 	}
 
-	public static final class TestMessager1 extends MessagingFunction1<Long, Long, Message, NullValue> {
+	public static final class TestMessager1 extends MessagingFunction1<Long, VertexVal, Message, NullValue> {
 		boolean multiRecipients = false;
 		@Override
-		public void sendMessages(Long vertexId, Long componentId) {
+		public void sendMessages(Long vertexId, VertexVal componentId) {
 			Message m = new Message(vertexId);
 			
 			MultipleRecipients<Long> recipients = new MultipleRecipients<Long>();
@@ -232,10 +235,10 @@ public class MultiCastTest {
 	}
 
 
-	public static final class TestMessager2 extends MessagingFunction2<Long, Long, Message, NullValue> {
+	public static final class TestMessager2 extends MessagingFunction2<Long, VertexVal, Message, NullValue> {
 		boolean multiRecipients = false;
 		@Override
-		public void sendMessages(Long vertexId, Long componentId) {
+		public void sendMessages(Long vertexId, VertexVal componentId) {
 			Message m = new Message(vertexId);
 
 			int numOfBlockedMessages = sendMessageToAllNeighbors(m);
@@ -248,10 +251,10 @@ public class MultiCastTest {
 	 * A map function that takes a Long value and creates a 2-tuple out of it:
 	 * <pre>(Long value) -> (value, value)</pre>
 	 */
-	public static final class IdAssigner implements MapFunction<Long, Tuple2<Long, Long>> {
+	public static final class IdAssigner implements MapFunction<Long, Tuple2<Long, VertexVal>> {
 		@Override
-		public Tuple2<Long, Long> map(Long value) {
-			return new Tuple2<Long, Long>(value, value);
+		public Tuple2<Long, VertexVal> map(Long value) {
+			return new Tuple2<Long, VertexVal>(value, new VertexVal());
 		}
 	}
 

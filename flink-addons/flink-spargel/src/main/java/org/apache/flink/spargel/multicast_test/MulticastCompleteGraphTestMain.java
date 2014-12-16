@@ -38,14 +38,13 @@ import org.apache.flink.spargel.java.VertexUpdateFunction;
 import org.apache.flink.spargel.java.multicast.MultipleRecipients;
 import org.apache.flink.types.NullValue;
 
-public class MulticastCompleteGraphTestMain2 {
+public class MulticastCompleteGraphTestMain {
 
 	public static final String NUM_OF_RECEIVED_MESSAGES = "NUM_OF_RECEIVED_MESSAGES";
 	
 	
 	
 	public static void main(String[] args) throws Exception {
-		System.out.println("Testing spargel multicast on a complete graph." );
 
 		int whichMulticast = 0;
 		int numOfNodes = 0;
@@ -72,7 +71,13 @@ public class MulticastCompleteGraphTestMain2 {
 			//.createRemoteEnvironment("dell150.ilab.sztaki.hu", 6123	, 40, "");
 			System.exit(1);
 		}
-			
+
+		System.out.println("Parameters:" );
+		System.out.println("<whichMulticast>: " + whichMulticast);
+		System.out.println( " <numOfNodes>: " + numOfNodes);
+		System.out.println( "<degreeOfParalellism>: " + degreeOfParalellism);
+		System.out.println( "<numberOfIterations>: "  + numberOfIterations);
+
 		List<Tuple2<Long, Long>> edgeList = new ArrayList<Tuple2<Long, Long>>();
 		for (int i = 0; i < numOfNodes; ++i) {
 			for (int j = 0; j < numOfNodes; ++j) {
@@ -169,17 +174,17 @@ public class MulticastCompleteGraphTestMain2 {
 		@Override
 		public void preSuperstep() throws Exception {
 			System.out.println("SuperStep: " + getSuperstepNumber());
-			getRuntimeContext().addAccumulator(MulticastCompleteGraphTestMain2.NUM_OF_RECEIVED_MESSAGES, new LongCounter());
+			getRuntimeContext().addAccumulator(MulticastCompleteGraphTestMain.NUM_OF_RECEIVED_MESSAGES, new LongCounter());
 		}
 		
 		@Override
 		public void updateVertex(Long vertexKey, VertexVal vertexValue, MessageIterator<Message> inMessages) {
 			long msgcount = 0;
 			for (Message msg: inMessages) {
-				System.out.println("Message from " + msg.senderId + " to " + vertexKey);
+				//System.out.println("Message from " + msg.senderId + " to " + vertexKey);
 				msgcount ++;
 			}
-			getRuntimeContext().getAccumulator(MulticastCompleteGraphTestMain2.NUM_OF_RECEIVED_MESSAGES).add(msgcount);
+			getRuntimeContext().getAccumulator(MulticastCompleteGraphTestMain.NUM_OF_RECEIVED_MESSAGES).add(msgcount);
 			//numOfRecievedMessages.add(msgcount);
 			setNewVertexValue(vertexValue);
 		}
