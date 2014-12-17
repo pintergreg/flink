@@ -61,9 +61,9 @@ public class MulticastCompleteGraphTestMain {
 		} else  if (args.length == 0) {
 			// default
 			whichMulticast = 2;
-			numOfNodes = 200;
+			numOfNodes = 10;
 			degreeOfParalellism = 4;
-			numberOfIterations = 10;
+			numberOfIterations = 2;
 			System.out.println(" Running spargel multicast on a complete graph with default parameters");
 		} else {
 			System.err.println("Usage: <whichMulticast> <numOfNodes> <degreeOfParalellism> <numberOfIterations>" );
@@ -124,9 +124,9 @@ public class MulticastCompleteGraphTestMain {
 		env.setDegreeOfParallelism(degreeOfParalellism);
 		
 		
-//		System.out.println("Get execution plan.");
-//		System.out.println(env.getExecutionPlan());
-//		System.exit(1);
+		System.out.println("Get execution plan.");
+		System.out.println(env.getExecutionPlan());
+		System.exit(1);
 		
 		JobExecutionResult jobRes = env
 				.execute("Spargel Multiple recipients test with multicast "

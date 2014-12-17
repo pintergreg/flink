@@ -29,11 +29,11 @@ import org.apache.flink.api.common.aggregators.Aggregator;
 import org.apache.flink.api.common.functions.JoinFunction;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.functions.RichCoGroupFunction;
+import org.apache.flink.api.common.functions.RichFlatMapFunction;
 import org.apache.flink.api.common.functions.RichMapFunction;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.DataSet;
-import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.operators.CoGroupOperator;
 import org.apache.flink.api.java.operators.CustomUnaryOperation;
 import org.apache.flink.api.java.operators.DeltaIteration;
@@ -43,6 +43,7 @@ import org.apache.flink.api.java.typeutils.ResultTypeQueryable;
 import org.apache.flink.api.java.typeutils.TupleTypeInfo;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.runtime.operators.shipping.OutputCollector;
 import org.apache.flink.spargel.java.multicast.MessageWithHeader;
 import org.apache.flink.util.Collector;
 
@@ -339,9 +340,9 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 				.getType();
 		TypeInformation<VertexKey> keyType = ((TupleTypeInfo<?>) initialVertices
 				.getType()).getTypeAt(0);
-		TypeInformation<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>> packedMessageTypeInfo = new TupleTypeInfo<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>>(
+		TypeInformation<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>> packedMessageTupleTypeInfo = new TupleTypeInfo<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>>(
 				keyType, packedMessageType);
-		TypeInformation<Tuple2<VertexKey, Message>> unpackedMessageTypeInfo = new TupleTypeInfo<Tuple2<VertexKey, Message>>(
+		TypeInformation<Tuple2<VertexKey, Message>> unpackedMessageTupleTypeInfo = new TupleTypeInfo<Tuple2<VertexKey, Message>>(
 				keyType, unPackedMessageType);
 
 		// set up the iteration operator
@@ -370,7 +371,7 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 		// messages;
 		if (edgesWithoutValue != null) {
 			MessagingUdfNoEdgeValues<VertexKey, VertexValue, Message> messenger = new MessagingUdfNoEdgeValues<VertexKey, VertexValue, Message>(
-					messagingFunction, packedMessageTypeInfo);
+					messagingFunction, packedMessageTupleTypeInfo);
 			messages = this.edgesWithoutValue.coGroup(iteration.getWorkset())
 					.where(0).equalTo(0).with(messenger);
 			edgesWithChannelId = edgesWithoutValue
@@ -378,7 +379,7 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 					.map(new SubtaskIndexAdder<VertexKey>());
 		} else {
 			MessagingUdfWithEdgeValues<VertexKey, VertexValue, Message, EdgeValue> messenger = new MessagingUdfWithEdgeValues<VertexKey, VertexValue, Message, EdgeValue>(
-					messagingFunction, packedMessageTypeInfo);
+					messagingFunction, packedMessageTupleTypeInfo);
 			messages = this.edgesWithValue.coGroup(iteration.getWorkset())
 					.where(0).equalTo(0).with(messenger);
 			edgesWithChannelId = edgesWithValue
@@ -413,7 +414,7 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 
 		DataSet<Tuple3<Integer, VertexKey, Message>> messages1 = messages
 				.partitionByHash(0)
-				.map(new UnpackPhase1<VertexKey, Message>(this.keyType, this.unPackedMessageType));
+				.flatMap(new UnpackPhase1<VertexKey, Message>(this.keyType, this.unPackedMessageType));
 
 		// edgesWithChannelId.print();
 		// messages1.print();
@@ -428,7 +429,7 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 				// .equalTo(new ChannelIdAndSenderSelectorMsg<VertexKey,
 				// Message>())
 				.with(new UnpackMessage3<VertexKey, Message>(
-						unpackedMessageTypeInfo));
+						unpackedMessageTupleTypeInfo));
 				//.projectFirst(1).projectSecond(2).types(VertexKey, Message);
 
 		
@@ -450,44 +451,46 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 
 	}
 
-	public static class SenderSelector<VertexKey, Message>
-			implements
-			KeySelector<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>, VertexKey> {
-		private static final long serialVersionUID = 1L;
+//	public static class SenderSelector<VertexKey, Message>
+//			implements
+//			KeySelector<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>, VertexKey> {
+//		private static final long serialVersionUID = 1L;
+//
+//		@Override
+//		public VertexKey getKey(
+//				Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>> value)
+//				throws Exception {
+//			return value.f1.getSender();
+//		}
+//	}
 
-		@Override
-		public VertexKey getKey(
-				Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>> value)
-				throws Exception {
-			return value.f1.getSender();
-		}
-	}
+//	public static class ChannelIdAndSenderSelectorEdge<VertexKey> implements
+//			KeySelector<Tuple3<VertexKey, VertexKey, Integer>, String> {
+//		private static final long serialVersionUID = 1L;
+//
+//		@Override
+//		public String getKey(Tuple3<VertexKey, VertexKey, Integer> value)
+//				throws Exception {
+//			return MulticastUtil.getKeyFromChannelIdAndSender(value.f2,
+//					value.f0);
+//		}
+//	}
 
-	public static class ChannelIdAndSenderSelectorEdge<VertexKey> implements
-			KeySelector<Tuple3<VertexKey, VertexKey, Integer>, String> {
-		private static final long serialVersionUID = 1L;
-
-		@Override
-		public String getKey(Tuple3<VertexKey, VertexKey, Integer> value)
-				throws Exception {
-			return MulticastUtil.getKeyFromChannelIdAndSender(value.f2,
-					value.f0);
-		}
-	}
-
-	public static class MulticastUtil {
-		static <VertexKey> String getKeyFromChannelIdAndSender(
-				Integer channelId, VertexKey sender) {
-			return String.format("%03d", channelId)
-					+ String.format("%10d", sender);
-
-		}
-	}
+//	public static class MulticastUtil {
+//		static <VertexKey> String getKeyFromChannelIdAndSender(
+//				Integer channelId, VertexKey sender) {
+//			return String.format("%03d", channelId)
+//					+ String.format("%10d", sender);
+//
+//		}
+//	}
 
 
+	//This is in fact only a MapFunction: I use flatmap because I want to get hold of the outputcollector
 	public static class UnpackPhase1<VertexKey extends Comparable<VertexKey>, Message>
+			extends
+			RichFlatMapFunction<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>, Tuple3<Integer, VertexKey, Message>>
 			implements
-			MapFunction<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>, Tuple3<Integer, VertexKey, Message>>,
 			ResultTypeQueryable<Tuple3<Integer, VertexKey, Message>> {
 
 		private static final long serialVersionUID = 1L;
@@ -506,92 +509,114 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 
 		private Tuple3<Integer, VertexKey, Message> reuse = new Tuple3<Integer, VertexKey, Message>();
 
+//		@Override
+//		public Tuple3<Integer, VertexKey, Message> map(
+//				Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>> value)
+//				throws Exception {
+//			reuse.f0 = value.f1.getChannelId();
+//			reuse.f1 = value.f1.getSender();
+//			reuse.f2 = value.f1.getMessage();
+//			return reuse;
+//		}
+
 		@Override
-		public Tuple3<Integer, VertexKey, Message> map(
-				Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>> value)
+		public void flatMap(
+				Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>> value,
+				Collector<Tuple3<Integer, VertexKey, Message>> out)
 				throws Exception {
 			reuse.f0 = value.f1.getChannelId();
 			reuse.f1 = value.f1.getSender();
 			reuse.f2 = value.f1.getMessage();
-			return reuse;
+			if (value.f1.getChannelId()  != 
+					getRuntimeContext().getIndexOfThisSubtask()) {
+				throw new RuntimeException("Index of subtask and storedchannelid differ");
+			}
+			if (((OutputCollector<Tuple3<Integer, VertexKey, Message>>)out).getChannel(reuse)  != 
+					getRuntimeContext().getIndexOfThisSubtask()) {
+				throw new RuntimeException("Index of subtask (" + getRuntimeContext().getIndexOfThisSubtask() + ") and channelid (" +
+						((OutputCollector<Tuple3<Integer, VertexKey, Message>>)out).getChannel(reuse) + ") differ");
+			}
+			System.out.println("don't forget me");
+
+			out.collect(reuse);
 		}
 	}
 
-	public static class ChannelIdAndSenderSelectorMsg<VertexKey, Message>
-			implements
-			KeySelector<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>, String> {
-		private static final long serialVersionUID = 1L;
-
-		@Override
-		public String getKey(
-				Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>> value)
-				throws Exception {
-			return MulticastUtil.getKeyFromChannelIdAndSender(
-					value.f1.getChannelId(), value.f1.getSender());
-		}
-	}
-
-	public static class UnpackMessage<VertexKey extends Comparable<VertexKey>, Message>
-			implements
-			JoinFunction<Tuple2<VertexKey, VertexKey>, Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>, Tuple2<VertexKey, Message>>,
-			ResultTypeQueryable<Tuple2<VertexKey, Message>> {
-
-		private static final long serialVersionUID = 1L;
-		private transient TypeInformation<Tuple2<VertexKey, Message>> resultType;
-
-		private UnpackMessage(
-				TypeInformation<Tuple2<VertexKey, Message>> resultType) {
-			this.resultType = resultType;
-		}
-
-		@Override
-		public TypeInformation<Tuple2<VertexKey, Message>> getProducedType() {
-			return this.resultType;
-		}
-
-		Tuple2<VertexKey, Message> reuse = new Tuple2<VertexKey, Message>();
-
-		@Override
-		public Tuple2<VertexKey, Message> join(
-				Tuple2<VertexKey, VertexKey> first,
-				Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>> second)
-				throws Exception {
-			reuse.f0 = first.f1;
-			reuse.f1 = second.f1.getMessage();
-			return reuse;
-		}
-	}
-
-	public static class UnpackMessage2<VertexKey extends Comparable<VertexKey>, Message>
-			implements
-			JoinFunction<Tuple3<VertexKey, VertexKey, Integer>, Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>, Tuple2<VertexKey, Message>>,
-			ResultTypeQueryable<Tuple2<VertexKey, Message>> {
-
-		private static final long serialVersionUID = 1L;
-		private transient TypeInformation<Tuple2<VertexKey, Message>> resultType;
-
-		private UnpackMessage2(
-				TypeInformation<Tuple2<VertexKey, Message>> resultType) {
-			this.resultType = resultType;
-		}
-
-		@Override
-		public TypeInformation<Tuple2<VertexKey, Message>> getProducedType() {
-			return this.resultType;
-		}
-
-		Tuple2<VertexKey, Message> reuse = new Tuple2<VertexKey, Message>();
-
-		@Override
-		public Tuple2<VertexKey, Message> join(
-				Tuple3<VertexKey, VertexKey, Integer> edgeWithPartId,
-				Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>> msgWithHeader)
-				throws Exception {
-			reuse.f0 = edgeWithPartId.f1;
-			reuse.f1 = msgWithHeader.f1.getMessage();
-			return reuse;
-		}
-	}
+//	public static class ChannelIdAndSenderSelectorMsg<VertexKey, Message>
+//			implements
+//			KeySelector<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>, String> {
+//		private static final long serialVersionUID = 1L;
+//
+//		@Override
+//		public String getKey(
+//				Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>> value)
+//				throws Exception {
+//			return MulticastUtil.getKeyFromChannelIdAndSender(
+//					value.f1.getChannelId(), value.f1.getSender());
+//		}
+//	}
+//
+//	public static class UnpackMessage<VertexKey extends Comparable<VertexKey>, Message>
+//			implements
+//			JoinFunction<Tuple2<VertexKey, VertexKey>, Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>, Tuple2<VertexKey, Message>>,
+//			ResultTypeQueryable<Tuple2<VertexKey, Message>> {
+//
+//		private static final long serialVersionUID = 1L;
+//		private transient TypeInformation<Tuple2<VertexKey, Message>> resultType;
+//
+//		private UnpackMessage(
+//				TypeInformation<Tuple2<VertexKey, Message>> resultType) {
+//			this.resultType = resultType;
+//		}
+//
+//		@Override
+//		public TypeInformation<Tuple2<VertexKey, Message>> getProducedType() {
+//			return this.resultType;
+//		}
+//
+//		Tuple2<VertexKey, Message> reuse = new Tuple2<VertexKey, Message>();
+//
+//		@Override
+//		public Tuple2<VertexKey, Message> join(
+//				Tuple2<VertexKey, VertexKey> first,
+//				Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>> second)
+//				throws Exception {
+//			reuse.f0 = first.f1;
+//			reuse.f1 = second.f1.getMessage();
+//			return reuse;
+//		}
+//	}
+//
+//	public static class UnpackMessage2<VertexKey extends Comparable<VertexKey>, Message>
+//			implements
+//			JoinFunction<Tuple3<VertexKey, VertexKey, Integer>, Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>, Tuple2<VertexKey, Message>>,
+//			ResultTypeQueryable<Tuple2<VertexKey, Message>> {
+//
+//		private static final long serialVersionUID = 1L;
+//		private transient TypeInformation<Tuple2<VertexKey, Message>> resultType;
+//
+//		private UnpackMessage2(
+//				TypeInformation<Tuple2<VertexKey, Message>> resultType) {
+//			this.resultType = resultType;
+//		}
+//
+//		@Override
+//		public TypeInformation<Tuple2<VertexKey, Message>> getProducedType() {
+//			return this.resultType;
+//		}
+//
+//		Tuple2<VertexKey, Message> reuse = new Tuple2<VertexKey, Message>();
+//
+//		@Override
+//		public Tuple2<VertexKey, Message> join(
+//				Tuple3<VertexKey, VertexKey, Integer> edgeWithPartId,
+//				Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>> msgWithHeader)
+//				throws Exception {
+//			reuse.f0 = edgeWithPartId.f1;
+//			reuse.f1 = msgWithHeader.f1.getMessage();
+//			return reuse;
+//		}
+//	}
 
 	public static class UnpackMessage3<VertexKey extends Comparable<VertexKey>, Message>
 			implements
@@ -611,7 +636,7 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 			return this.resultType;
 		}
 
-		Tuple2<VertexKey, Message> reuse = new Tuple2<VertexKey, Message>();
+		private Tuple2<VertexKey, Message> reuse = new Tuple2<VertexKey, Message>();
 
 		@Override
 		public Tuple2<VertexKey, Message> join(

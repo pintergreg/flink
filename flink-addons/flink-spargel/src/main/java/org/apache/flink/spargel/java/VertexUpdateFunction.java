@@ -111,6 +111,7 @@ public abstract class VertexUpdateFunction<VertexKey extends Comparable<VertexKe
 		return this.runtimeContext.<T>getPreviousIterationAggregate(name);
 	}
 	
+	
 	/**
 	 * Gets the broadcast data set registered under the given name. Broadcast data sets
 	 * are available on all parallel instances of a function. They can be registered via
