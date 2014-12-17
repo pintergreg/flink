@@ -22,9 +22,9 @@ package org.apache.flink.test.spargel;
 import java.io.BufferedReader;
 
 import org.apache.flink.api.common.functions.RichMapFunction;
-import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.spargel.java.VertexCentricIteration;
 import org.apache.flink.spargel.java.examples.SpargelConnectedComponents.CCMessager;
 import org.apache.flink.spargel.java.examples.SpargelConnectedComponents.CCUpdater;

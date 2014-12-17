@@ -29,19 +29,19 @@ import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.spargel.java.MessageIterator;
-import org.apache.flink.spargel.java.MessagingFunction;
-import org.apache.flink.spargel.java.MultipleRecipients;
+import org.apache.flink.spargel.java.MessagingFunction1;
 import org.apache.flink.spargel.java.OutgoingEdge;
-import org.apache.flink.spargel.java.VertexCentricIteration;
+import org.apache.flink.spargel.java.VertexCentricIteration1;
 import org.apache.flink.spargel.java.VertexUpdateFunction;
-import org.apache.flink.types.NullValue;
+import org.apache.flink.spargel.java.multicast.MultipleRecipients;
 
 
-@SuppressWarnings({"serial", "unchecked"})
+@SuppressWarnings({"serial"})
 //@SuppressWarnings({"serial"})
 //@SuppressWarnings({"unchecked"})
-public class MultipleRecipientsTestMain {
+public class MultipleRecipientsValuedEdgesTestMain {
 
 	
 	static List<Set<Long>> inNeighbours;
@@ -53,7 +53,6 @@ public class MultipleRecipientsTestMain {
 //
 //		instance.run();
 		ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
-		
 //		DataSet<Long> vertexIds = env.generateSequence(0, 10);
 //		DataSet<Tuple2<Long, Long>> edges = env.fromElements(new Tuple2<Long, Long>(0L, 2L), new Tuple2<Long, Long>(2L, 4L), new Tuple2<Long, Long>(4L, 8L),
 //															new Tuple2<Long, Long>(1L, 5L), new Tuple2<Long, Long>(3L, 7L), new Tuple2<Long, Long>(3L, 9L));
@@ -75,44 +74,49 @@ public class MultipleRecipientsTestMain {
 		numOfReceivedMEssages = 0;
 		messageReceivedAlready = new HashMap<Tuple2<Long, Long>, Boolean>();
 		
-		List<Tuple2<Long, Long>> edgeList = new ArrayList<Tuple2<Long, Long>>();
+		List<Tuple3<Long, Long, Double>> edgeList = new ArrayList<Tuple3<Long, Long, Double>>();
 		for (int i = 0; i < numOfNodes; ++i) {
 			for (long j:inNeighbours.get(i)) {
 				numOfReceivedMEssages++;
-				Tuple2<Long, Long> edge = new Tuple2<Long, Long>(j, (long)i);
+				Tuple3<Long, Long, Double> edge = new Tuple3<Long, Long, Double>(j, (long)i, 0.5);
 				edgeList.add(edge);
-				messageReceivedAlready.put(edge, false);
+				messageReceivedAlready.put(new Tuple2<Long, Long>(j, (long)i), false);
 			}
 		}
 		DataSet<Long> vertexIds = env.generateSequence(0, numOfNodes - 1);
-		DataSet<Tuple2<Long, Long>> edges = env.fromCollection(edgeList);
+		DataSet<Tuple3<Long, Long, Double>> edges = env.fromCollection(edgeList);
 		
 		DataSet<Tuple2<Long, Long>> initialVertices = vertexIds.map(new IdAssigner());
 		
 
 		
-		VertexCentricIteration<Long, Long, Message, ?> iteration = VertexCentricIteration.withPlainEdges(edges, new CCUpdater(), new CCMessager(), 1);
+		VertexCentricIteration1<Long, Long, Message, Double> iteration = VertexCentricIteration1.withValuedEdges(edges, new CCUpdater(), new CCMessager(), 1);
 		
 		DataSet<Tuple2<Long, Long>> result = initialVertices.runOperation(iteration);
 		
 		result.print();
 		env.setDegreeOfParallelism(2);
-		env.execute("Spargel Connected Components");
-		if (numOfReceivedMEssages != 0) {
-			throw new RuntimeException("not every message was delivered (remaining: " + numOfReceivedMEssages + ")");
-		}
+		env.execute("Spargel Multiple recipients test.");
+		//System.out.println(env.getExecutionPlan());
+//		if (numOfReceivedMEssages != 0) {
+//			throw new RuntimeException("Not every message was delivered (remaining: " + numOfReceivedMEssages + ")");
+//		}
 		
 	}
 	
 	
 	public static final class Message {
-		public Long sender;
+		public Long senderke;
 		
+		@Override
+		public String toString() {
+			return "Message [senderke=" + senderke + "]";
+		}
 		public Message() {
-			sender = -1L;
+			senderke = -1L;
 		}
 		public Message(Long a) {
-			this.sender = a;
+			this.senderke = a;
 		}
 	}
 
@@ -120,18 +124,19 @@ public class MultipleRecipientsTestMain {
 		@Override
 		public void updateVertex(Long vertexKey, Long vertexValue, MessageIterator<Message> inMessages) {
 			for (Message msg: inMessages) {
-				System.out.println("Message from " + msg.sender + " to " + vertexKey);
+//				System.out.println("Message from " + msg.sender + " to " + vertexKey + " and " + Arrays.toString(msg.someRecipients));
+//				System.out.println("Message contents " + msg.message);
 //				if (! inNeighbours.get(vertexKey.intValue()).contains(msg.sender)) {
 //					throw new RuntimeException("invalid message from " + msg + " to " + vertexKey);
 //				} else {
 //					numOfReceivedMEssages--;
 //				}
-				Tuple2<Long, Long> edge = new Tuple2<Long, Long>(msg.sender, vertexKey);
+				Tuple2<Long, Long> edge = new Tuple2<Long, Long>(msg.senderke, vertexKey);
 				if (!messageReceivedAlready.containsKey(edge)) {
-					throw new RuntimeException("invalid message from " + msg + " to " + vertexKey);
+					throw new RuntimeException("invalid message from " + msg.senderke + " to " + vertexKey);
 				} else {
 					if (messageReceivedAlready.get(edge)) {
-						throw new RuntimeException("Message from " + msg
+						throw new RuntimeException("Message from " + msg.senderke
 								+ " to " + vertexKey + " sent more than once.");
 					} else {
 						messageReceivedAlready.put(edge, true);
@@ -142,17 +147,19 @@ public class MultipleRecipientsTestMain {
 		}
 	}
 	
-	public static final class CCMessager extends MessagingFunction<Long, Long, Message, NullValue> {
+	public static final class CCMessager extends MessagingFunction1<Long, Long, Message, Double> {
+		boolean multiRecipients = false;
 		@Override
 		public void sendMessages(Long vertexId, Long componentId) {
 			Message m = new Message(vertexId);
 
 			MultipleRecipients<Long> recipients = new MultipleRecipients<Long>();
-			
-			for (OutgoingEdge<Long, NullValue> edge : getOutgoingEdges()) {
+			for (OutgoingEdge<Long, Double> edge : getOutgoingEdges()) {
 				//sendMessageTo(edge.target(), m);
 				recipients.addRecipient(edge.target());
 			}
+//			System.out.println("Sending from "+ vertexId);
+//			System.out.println("To "+ recipients);
 			sendMessageToMultipleRecipients(recipients, m);
 		}
 	}

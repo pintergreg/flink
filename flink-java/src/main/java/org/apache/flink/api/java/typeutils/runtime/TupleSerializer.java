@@ -101,6 +101,7 @@ public final class TupleSerializer<T extends Tuple> extends TupleSerializerBase<
 
 	@Override
 	public T deserialize(DataInputView source) throws IOException {
+
 		T tuple = instantiateRaw();
 		for (int i = 0; i < arity; i++) {
 			Object field = fieldSerializers[i].deserialize(source);
@@ -115,6 +116,10 @@ public final class TupleSerializer<T extends Tuple> extends TupleSerializerBase<
 			Object field = fieldSerializers[i].deserialize(reuse.getField(i), source);
 			reuse.setField(field, i);
 		}
+		//System.out.println("Thread id: " + Thread.currentThread().getName() + "(" + Thread.currentThread().getId() + ")");
+//		System.out.println("Thread id: " + Thread.currentThread().getId() + ")");
+//		System.out.println("Deserialize tuple: " + reuse.toString());
+//		Thread.dumpStack();
 		return reuse;
 	}
 	

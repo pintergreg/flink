@@ -15,14 +15,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.flink.spargel.java;
+package org.apache.flink.spargel.java.multicast;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
 public class MultipleRecipients<VertexKey extends Comparable<VertexKey>>
-		implements Iterable<VertexKey> {
+		implements Iterable<VertexKey>, Serializable{
+
+	private static final long serialVersionUID = 1L;
+
+	@Override
+	public String toString() {
+		return "MultipleRecipients [recipients=" + recipients + "]";
+	}
+
 
 	private List<VertexKey> recipients;
 
@@ -30,6 +39,9 @@ public class MultipleRecipients<VertexKey extends Comparable<VertexKey>>
 		recipients = new ArrayList<VertexKey>();
 	}
 
+	public void clear() {
+		recipients.clear();
+	}
 	public void addRecipient(VertexKey recipient) {
 		recipients.add(recipient);
 	}

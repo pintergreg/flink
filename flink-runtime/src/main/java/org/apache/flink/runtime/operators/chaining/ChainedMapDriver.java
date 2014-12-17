@@ -74,10 +74,6 @@ public class ChainedMapDriver<IT, OT> extends ChainedDriver<IT, OT> {
 
 	@Override
 	public void collect(IT record) {
-		//SYSO
-		System.out.println("hello ChainedMapDriver's collect()!");
-//		System.out.println(record);
-		
 		try {
 			this.outputCollector.collect(this.mapper.map(record));
 		} catch (Exception ex) {

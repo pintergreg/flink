@@ -121,14 +121,20 @@ public abstract class VertexUpdateFunction<VertexKey extends Comparable<VertexKe
 	 */
 	public <T> Collection<T> getBroadcastSet(String name) {
 		return this.runtimeContext.<T>getBroadcastVariable(name);
+		
 	}
-	
+
+	public IterationRuntimeContext getRuntimeContext() {
+		return runtimeContext;
+	}
+
 	// --------------------------------------------------------------------------------------------
 	//  internal methods
 	// --------------------------------------------------------------------------------------------
 	
 	private IterationRuntimeContext runtimeContext;
 	
+
 	private Collector<Tuple2<VertexKey, VertexValue>> out;
 	
 	private Tuple2<VertexKey, VertexValue> outVal;
