@@ -64,7 +64,7 @@ public class MulticastCompleteGraphTestMain {
 			whichMulticast = 2;
 			numOfNodes = 200;
 			degreeOfParalellism = 4;
-			numberOfIterations = 2;
+			numberOfIterations = 10;
 			System.out.println(" Running spargel multicast on a complete graph with default parameters");
 		} else {
 			System.err.println("Usage: <whichMulticast> <numOfNodes> <degreeOfParalellism> <numberOfIterations>" );
@@ -171,7 +171,7 @@ public class MulticastCompleteGraphTestMain {
 
 		@Override
 		public void preSuperstep() throws Exception {
-			System.out.println("SuperStep: " + getSuperstepNumber());
+			//System.out.println("SuperStep: " + getSuperstepNumber());
 			getRuntimeContext().addAccumulator(MulticastCompleteGraphTestMain.NUM_OF_RECEIVED_MESSAGES, new LongCounter());
 		}
 		
