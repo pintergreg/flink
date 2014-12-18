@@ -38,6 +38,7 @@ import org.apache.flink.spargel.java.VertexUpdateFunction;
 import org.apache.flink.spargel.java.multicast.MultipleRecipients;
 import org.apache.flink.types.NullValue;
 
+
 public class MulticastCompleteGraphTestMain {
 
 	public static final String NUM_OF_RECEIVED_MESSAGES = "NUM_OF_RECEIVED_MESSAGES";
@@ -124,9 +125,9 @@ public class MulticastCompleteGraphTestMain {
 		env.setDegreeOfParallelism(degreeOfParalellism);
 		
 		
-		System.out.println("Get execution plan.");
-		System.out.println(env.getExecutionPlan());
-		System.exit(1);
+//		System.out.println("Get execution plan.");
+//		System.out.println(env.getExecutionPlan());
+//		System.exit(1);
 		
 		JobExecutionResult jobRes = env
 				.execute("Spargel Multiple recipients test with multicast "
