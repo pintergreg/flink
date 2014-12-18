@@ -62,7 +62,7 @@ public class MulticastCompleteGraphTestMain {
 		} else  if (args.length == 0) {
 			// default
 			whichMulticast = 2;
-			numOfNodes = 10;
+			numOfNodes = 200;
 			degreeOfParalellism = 4;
 			numberOfIterations = 2;
 			System.out.println(" Running spargel multicast on a complete graph with default parameters");
