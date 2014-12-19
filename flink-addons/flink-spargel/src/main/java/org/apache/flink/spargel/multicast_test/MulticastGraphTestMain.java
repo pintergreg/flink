@@ -18,6 +18,8 @@
 package org.apache.flink.spargel.multicast_test;
 
 
+import java.io.Serializable;
+
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.accumulators.LongCounter;
 import org.apache.flink.api.common.functions.FlatMapFunction;
@@ -40,7 +42,7 @@ import org.apache.flink.types.NullValue;
 import org.apache.flink.util.Collector;
 
 
-public class MulticastGraphTestMain {
+public class MulticastGraphTestMain implements Serializable {
 
 	public static final String NUM_OF_RECEIVED_MESSAGES = "NUM_OF_RECEIVED_MESSAGES";
 
@@ -51,6 +53,7 @@ public class MulticastGraphTestMain {
 	private transient DataSet<Tuple2<Long, Long>> edges;// = env.fromCollection(edgeList);
 	private transient DataSet<Tuple2<Long, VertexVal>> initialVertices;
 	
+	@SuppressWarnings("unchecked")
 	private  void loadInput(ExecutionEnvironment env) {
 		// Read the input
 		if (inputFile == null) {
