@@ -23,6 +23,7 @@ import static org.apache.flink.api.java.aggregation.Aggregations.SUM;
 import java.util.ArrayList;
 import java.util.Iterator;
 
+import org.apache.commons.configuration.MapConfiguration;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.GroupReduceFunction;
@@ -38,7 +39,7 @@ import org.apache.flink.api.java.operators.IterativeDataSet;
 import org.apache.flink.examples.java.graph.util.PageRankData;
 
 /**
- * A basic implementation of the Page Rank algorithm using a bulk iteration.
+ * A basic implementation of the Page Rank algorithm using a bulk iteration and ?multicast?.
  * 
  * <p>
  * This implementation requires a set of pages and a set of directed links as
@@ -68,7 +69,7 @@ import org.apache.flink.examples.java.graph.util.PageRankData;
  * 
  * <p>
  * Usage:
- * <code>PageRankBasic &lt;pages path&gt; &lt;links path&gt; &lt;output path&gt; &lt;num pages&gt; &lt;num iterations&gt;</code>
+ * <code>MulticastPageRankBasic &lt;pages path&gt; &lt;links path&gt; &lt;output path&gt; &lt;num pages&gt; &lt;num iterations&gt;</code>
  * <br>
  * If no parameters are provided, the program is run with default data from
  * {@link PageRankData} and 10 iterations.
@@ -123,39 +124,54 @@ public class MulticastPageRankBasic {
 		IterativeDataSet<Tuple2<Long, Double>> iteration = pagesWithRanks
 				.iterate(1);
 
-		DataSet<Tuple2<Long, Double>> sentDegrees = iteration
+//		DataSet<Tuple2<Long, Double>> sentDegrees = iteration
+//				// join pages with outgoing edges and distribute rank
+//				.join(adjacencyListInput)
+//				.where(0)
+//				.equalTo(0)
+//				.flatMap(new JoinVertexWithEdgesMatch())
+//				// collect and sum ranks
+//				.groupBy(MulticastMessage.getKeySelector())
+//				.reduceGroup(
+//						new GroupReduceFunction<MulticastMessage, Tuple2<Long, Double>>() {
+//
+//							private Tuple2<Long, Double> record = new Tuple2<Long, Double>();
+//
+//							@Override
+//							public void reduce(
+//									Iterable<MulticastMessage> values,
+//									Collector<Tuple2<Long, Double>> out)
+//									throws Exception {
+//								Iterator<MulticastMessage> iter = values
+//										.iterator();
+//								MulticastMessage value;
+//
+//								while (iter.hasNext()) {
+//									value = iter.next();
+//									record.setFields(value.f0[0], value.f1);
+//									out.collect(record);
+//								}
+//							}
+//						});
+//		
+//		DataSet<Tuple2<Long, Double>> newRanks = sentDegrees.groupBy(0).aggregate(SUM, 1)
+//		// apply dampening factor
+//				.map(new Dampener(DAMPENING_FACTOR, numPages));
+		
+		DataSet<Tuple2<Long, Double>> newRanks = iteration
 				// join pages with outgoing edges and distribute rank
 				.join(adjacencyListInput)
 				.where(0)
 				.equalTo(0)
-				.flatMap(new JoinVertexWithEdgesMatch())
-				// collect and sum ranks
-				.groupBy(MulticastMessage.getKeySelector())
-				.reduceGroup(
-						new GroupReduceFunction<MulticastMessage, Tuple2<Long, Double>>() {
+				.flatMap(new JoinVertexWithEdgesMatch()).groupBy(MulticastMessage.getKeySelector()).sum(1)
+				.map(new MapFunction<MulticastMessage, Tuple2<Long, Double>>() {
 
-							private Tuple2<Long, Double> record = new Tuple2<Long, Double>();
-
-							@Override
-							public void reduce(
-									Iterable<MulticastMessage> values,
-									Collector<Tuple2<Long, Double>> out)
-									throws Exception {
-								Iterator<MulticastMessage> iter = values
-										.iterator();
-								MulticastMessage value;
-
-								while (iter.hasNext()) {
-									value = iter.next();
-									record.setFields(value.f0[0], value.f1);
-									out.collect(record);
-								}
-							}
-						});
-		
-		DataSet<Tuple2<Long, Double>> newRanks = sentDegrees.groupBy(0).aggregate(SUM, 1)
-		// apply dampening factor
-				.map(new Dampener(DAMPENING_FACTOR, numPages));
+					@Override
+					public Tuple2<Long, Double> map(MulticastMessage value) throws Exception {
+						// TODO Auto-generated method stub
+						return new Tuple2<Long, Double>(value.f0[0], value.f1);
+					}
+				});
 
 		DataSet<Tuple2<Long, Double>> finalPageRanks = iteration.closeWith(
 				newRanks, newRanks.join(iteration).where(0).equalTo(0)

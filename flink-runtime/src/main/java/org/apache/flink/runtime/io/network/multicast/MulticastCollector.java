@@ -29,9 +29,10 @@ import org.apache.flink.runtime.plugable.SerializationDelegate;
 import org.apache.flink.util.Collector;
 
 /**
- * The OutputCollector collects records, and emits the pair to a set of Nephele
- * {@link RecordWriter}s. The OutputCollector tracks to which writers a
- * deep-copy must be given and which not.
+ * The MulticastCollector collects records which contain the array of recepients and the value to be sent. 
+ * From these records the targetChannel, which is needed in the {@link RecordWriter}s, is computed inside the 
+ * {@link MulticastMessageBlocker}. After the targetChannels are computed all the blocked {@link MulticastMessage}s are emitted towards the set of Nephele
+ * {@link RecordWriter}s. The MulticastCollector tracks to which writers a deep-copy must be given and which not.
  */
 public class MulticastCollector implements Collector<MulticastMessage> {
 	// list of writers
@@ -64,7 +65,7 @@ public class MulticastCollector implements Collector<MulticastMessage> {
 	}
 
 	/**
-	 * Adds a writer to the OutputCollector.
+	 * Adds a writer to the MulticastCollector.
 	 * 
 	 * @param writer
 	 *            The writer to add.
@@ -86,7 +87,9 @@ public class MulticastCollector implements Collector<MulticastMessage> {
 	}
 
 	/**
-	 * Collects a record and emits it to all writers.
+	 * Collects a record which is then passed to the {@link MulticastMessageBlocker}.
+	 * After the {@link MulticastMessageBlocker} computed all targetChannel the blocked {@link MulticastMessages}s
+	 * are emitted to all writers.
 	 */
 
 	@Override

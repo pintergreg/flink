@@ -21,6 +21,12 @@ package org.apache.flink.runtime.io.network.multicast;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple2;
 
+/**
+ * The MulticastMessage is the predefined object to be used for multicasting.
+ * It can contain an original message, when f0.lenth==0.
+ * But it can represent more original messages blocked into one {@link MulticastMessage}.
+ */
+
 public class MulticastMessage extends Tuple2<long[], Double> {
 
 	public MulticastMessage() {

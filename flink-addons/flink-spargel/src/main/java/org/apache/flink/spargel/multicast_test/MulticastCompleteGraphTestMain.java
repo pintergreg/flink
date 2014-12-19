@@ -126,7 +126,7 @@ public class MulticastCompleteGraphTestMain {
 		
 //		System.out.println("Get execution plan.");
 //		System.out.println(env.getExecutionPlan());
-//		System.exit(1);
+		System.exit(1);
 		
 		JobExecutionResult jobRes = env
 				.execute("Spargel Multiple recipients test with multicast "
