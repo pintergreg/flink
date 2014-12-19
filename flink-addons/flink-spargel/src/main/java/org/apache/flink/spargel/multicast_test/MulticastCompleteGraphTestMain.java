@@ -45,7 +45,7 @@ public class MulticastCompleteGraphTestMain {
 	
 	
 	public static void main(String[] args) throws Exception {
-
+		System.out.println("Testing spargel multicast on a complete graph." );
 		int whichMulticast = 0;
 		int numOfNodes = 0;
 		int degreeOfParalellism = 0;
@@ -60,10 +60,10 @@ public class MulticastCompleteGraphTestMain {
 			numberOfIterations = Integer.parseInt(args[3]);
 		} else  if (args.length == 0) {
 			// default
-			whichMulticast = 1;
-			numOfNodes = 200;
-			degreeOfParalellism = 4;
-			numberOfIterations = 10;
+			whichMulticast = 2;
+			numOfNodes = 10;
+			degreeOfParalellism = 2;
+			numberOfIterations = 2;
 			System.out.println(" Running spargel multicast on a complete graph with default parameters");
 		} else {
 			System.err.println("Usage: <whichMulticast> <numOfNodes> <degreeOfParalellism> <numberOfIterations>" );
@@ -74,9 +74,9 @@ public class MulticastCompleteGraphTestMain {
 
 		System.out.println("Parameters:" );
 		System.out.println("<whichMulticast>: " + whichMulticast);
-		System.out.println( " <numOfNodes>: " + numOfNodes);
-		System.out.println( "<degreeOfParalellism>: " + degreeOfParalellism);
-		System.out.println( "<numberOfIterations>: "  + numberOfIterations);
+		System.out.println("<numOfNodes>: " + numOfNodes);
+		System.out.println("<degreeOfParalellism>: " + degreeOfParalellism);
+		System.out.println("<numberOfIterations>: "  + numberOfIterations);
 
 		List<Tuple2<Long, Long>> edgeList = new ArrayList<Tuple2<Long, Long>>();
 		for (int i = 0; i < numOfNodes; ++i) {
@@ -123,10 +123,9 @@ public class MulticastCompleteGraphTestMain {
 		result.sum(0).print();
 		env.setDegreeOfParallelism(degreeOfParalellism);
 		
-		
 //		System.out.println("Get execution plan.");
 //		System.out.println(env.getExecutionPlan());
-		System.exit(1);
+//		System.exit(1);
 		
 		JobExecutionResult jobRes = env
 				.execute("Spargel Multiple recipients test with multicast "
@@ -144,9 +143,6 @@ public class MulticastCompleteGraphTestMain {
 
 	public static final class VertexVal {
 		public Integer dummy = 1;
-//		public VertexVal(){
-//			dummy = new Integer(0);
-//		}
 	}
 	
 	public static final class Message {

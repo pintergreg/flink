@@ -215,6 +215,7 @@ public class MultiCastTest {
 					}
 				}
 			}
+			setNewVertexValue(vertexValue);
 		}
 	}
 

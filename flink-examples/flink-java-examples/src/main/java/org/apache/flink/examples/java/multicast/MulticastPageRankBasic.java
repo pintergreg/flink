@@ -18,25 +18,21 @@
 
 package org.apache.flink.examples.java.multicast;
 
-import static org.apache.flink.api.java.aggregation.Aggregations.SUM;
-
 import java.util.ArrayList;
-import java.util.Iterator;
 
-import org.apache.commons.configuration.MapConfiguration;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.api.common.functions.MapFunction;
-import org.apache.flink.api.java.functions.FunctionAnnotation.ConstantFields;
-import org.apache.flink.api.java.tuple.Tuple1;
-import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.runtime.io.network.multicast.MulticastMessage;
-import org.apache.flink.util.Collector;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.api.java.functions.FunctionAnnotation.ConstantFields;
 import org.apache.flink.api.java.operators.IterativeDataSet;
+import org.apache.flink.api.java.tuple.Tuple1;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.examples.java.graph.util.PageRankData;
+import org.apache.flink.runtime.io.network.multicast.MulticastMessage;
+import org.apache.flink.util.Collector;
 
 /**
  * A basic implementation of the Page Rank algorithm using a bulk iteration and ?multicast?.
