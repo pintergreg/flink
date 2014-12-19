@@ -1,6 +1,5 @@
 package org.apache.flink.spargel.multicast_test.io_utils;
 
-
 import java.util.HashSet;
 import java.util.Set;
 

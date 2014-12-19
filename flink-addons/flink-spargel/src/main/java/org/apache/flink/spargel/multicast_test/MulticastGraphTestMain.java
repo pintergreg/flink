@@ -61,7 +61,7 @@ public class MulticastGraphTestMain {
 			degreeOfParalellism = 4;
 			numberOfIterations = 10;
 
-			initialVertices = env.generateSequence(0L, numOfVertices).map(new IdAssigner());
+			initialVertices = env.generateSequence(0L, numOfVertices - 1).map(new IdAssigner());
 			// set of edges
 			edges = env.fromElements(new Tuple2<Long, Long>(0L, 2L),
 					new Tuple2<Long, Long>(2L, 4L), new Tuple2<Long, Long>(0L,
