@@ -44,6 +44,8 @@ import org.apache.flink.util.Collector;
 
 public class MulticastGraphTestMain implements Serializable {
 
+	private static final long serialVersionUID = 1L;
+
 	public static final String NUM_OF_RECEIVED_MESSAGES = "NUM_OF_RECEIVED_MESSAGES";
 
 	private int whichMulticast = 0;
@@ -60,9 +62,6 @@ public class MulticastGraphTestMain implements Serializable {
 
 			Long numOfVertices = 11L;
 
-			whichMulticast = 2;
-			degreeOfParalellism = 4;
-			numberOfIterations = 10;
 
 			initialVertices = env.generateSequence(0L, numOfVertices - 1).map(new IdAssigner());
 			// set of edges
@@ -130,6 +129,9 @@ public class MulticastGraphTestMain implements Serializable {
 		} else  if (args.length == 0) {
 			// default
 			System.out.println(" Running spargel multicast on a graph with default parameters");
+			whichMulticast = 2;
+			degreeOfParalellism = 4;
+			numberOfIterations = 10;
 
 		} else {
 			System.err.println("Usage: <whichMulticast> <inputFile> <degreeOfParalellism> <numberOfIterations>" );
@@ -188,6 +190,7 @@ public class MulticastGraphTestMain implements Serializable {
 		Long numOfRecMsgs = jobRes
 				.getAccumulatorResult(NUM_OF_RECEIVED_MESSAGES);
 		System.out.println("Net runtime: " + jobRes.getNetRuntime());
+		System.out.println("Number of recieved messages: " + numOfRecMsgs);
 		
 //We could check here whether the number of messages was correct
 		//		long expectedNumOfMessages = (long)edgeList.size() * (long)numberOfIterations;
