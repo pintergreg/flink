@@ -458,17 +458,10 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 
 
 		DataSet<Tuple2<VertexKey, Message>> messages2 = edges4
-		// Kell ez?
-				// .joinWithTiny(messages1)
 				.coGroup(messages1).where(3)
-				// .equalTo(0)
-				// .equalTo(new SenderSelector<VertexKey, Message>())
 				.equalTo(3)
-				// .equalTo(new ChannelIdAndSenderSelectorMsg<VertexKey,
-				// Message>())
 				.with(new UnpackMessageCoGroup<VertexKey, Message>(
 						unpackedMessageTupleTypeInfo));
-		// .projectFirst(1).projectSecond(2).types(VertexKey, Message);
 	
 		
 		
