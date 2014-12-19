@@ -282,15 +282,6 @@ public class MulticastGraphTestMain {
 		@Override
 		public void sendMessages(Long vertexId, VertexVal componentId) {
 			Message m = new Message(vertexId);
-//			MultipleRecipients<Long> recipients = new MultipleRecipients<Long>();
-//			for (OutgoingEdge<Long, NullValue> edge : getOutgoingEdges()) {
-//				// sendMessageTo(edge.target(), m);
-//				recipients.addRecipient(edge.target());
-//			}
-//			// System.out.println("Sending from "+ vertexId);
-//			// System.out.println("To "+ recipients);
-//			sendMessageToMultipleRecipients(recipients, m);
-
 			sendMessageToAllNeighbors(m);
 		}
 	}
