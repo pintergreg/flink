@@ -38,6 +38,7 @@ import org.apache.flink.spargel.java.VertexUpdateFunction;
 import org.apache.flink.spargel.java.multicast.MultipleRecipients;
 import org.apache.flink.types.NullValue;
 
+
 public class MulticastCompleteGraphTestMain {
 
 	public static final String NUM_OF_RECEIVED_MESSAGES = "NUM_OF_RECEIVED_MESSAGES";
@@ -62,8 +63,9 @@ public class MulticastCompleteGraphTestMain {
 			// default
 			whichMulticast = 2;
 			numOfNodes = 10;
-			degreeOfParalellism = 2;
+			degreeOfParalellism = 4;
 			numberOfIterations = 2;
+
 			System.out.println(" Running spargel multicast on a complete graph with default parameters");
 		} else {
 			System.err.println("Usage: <whichMulticast> <numOfNodes> <degreeOfParalellism> <numberOfIterations>" );
@@ -169,7 +171,7 @@ public class MulticastCompleteGraphTestMain {
 
 		@Override
 		public void preSuperstep() throws Exception {
-			System.out.println("SuperStep: " + getSuperstepNumber());
+			//System.out.println("SuperStep: " + getSuperstepNumber());
 			getRuntimeContext().addAccumulator(MulticastCompleteGraphTestMain.NUM_OF_RECEIVED_MESSAGES, new LongCounter());
 		}
 		
