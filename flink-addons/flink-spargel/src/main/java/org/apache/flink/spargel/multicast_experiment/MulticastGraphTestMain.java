@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.flink.spargel.multicast_test;
+package org.apache.flink.spargel.multicast_experiment;
 
 
 import java.io.Serializable;
