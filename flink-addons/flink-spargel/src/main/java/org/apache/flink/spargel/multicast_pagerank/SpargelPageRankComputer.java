@@ -40,11 +40,13 @@ public class SpargelPageRankComputer implements Serializable {
 	
 	private final double BETA;
 	private double epsilonForConvergence;
-	
+	private int whichMulticast = -1; 
+
 	public SpargelPageRankComputer(double dumpeningFactor, 
-			double epsilonForConvergence) {
+			double epsilonForConvergence, int whichMulticast) {
 		this.BETA = dumpeningFactor;
 		this.epsilonForConvergence = epsilonForConvergence;
+		this.whichMulticast = whichMulticast;
 	}
 
 	public DataSet<Tuple2<Long, SpargelNode>> computeNodeData(DataSet<Tuple1<Long>> numOfPages,

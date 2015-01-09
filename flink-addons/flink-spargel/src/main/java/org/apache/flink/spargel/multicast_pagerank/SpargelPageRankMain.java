@@ -28,7 +28,8 @@ public class SpargelPageRankMain implements Serializable{
 	private boolean fileOutput = false;
 	private String outputPath = null;
 	private String edgeListInputPath = null;
-
+	private int whichMulticast = -1; 
+	
 	private double epsilonForConvergence; 
 
 	public SpargelPageRankMain(double epsilon) {
@@ -49,7 +50,7 @@ public class SpargelPageRankMain implements Serializable{
 		loadInput(env);
 		
 		DataSet<Tuple2<Long, Double>> nodeRanks = 
-				new SpargelPageRankComputer(DAMPENING_FACTOR, epsilonForConvergence)
+				new SpargelPageRankComputer(DAMPENING_FACTOR, epsilonForConvergence, whichMulticast)
 		.computePageRank(nodes, edges, outNeighbourList, maxNumberOfIterations);
 
 		if (fileOutput) {
@@ -154,16 +155,19 @@ public class SpargelPageRankMain implements Serializable{
 	}
 
 	private boolean parseParameters(String[] args) {
+		String usageMessage = this.getClass().getSimpleName() + " usage: <edgeListInputPath> <outputPath> <maxIterations> <degreeOfParalellism>";
+
 		if(args.length > 0) {
 			if(args.length == 4) {
 				fileOutput = true;
-				edgeListInputPath = args[0];
-				outputPath = args[1];
+				degreeOfParallelism = Integer.parseInt(args[0]);
+				edgeListInputPath = args[1];
+				outputPath = args[2];
 				maxNumberOfIterations = Integer.parseInt(args[2]);
-				degreeOfParallelism = Integer.parseInt(args[3]);
+				whichMulticast = Integer.parseInt(args[3]);
 			} else {
 				System.err
-				.println("SpargelPageRank usage: <edgeListInputPath> <outputPath> <maxIterations> <degreeOfParalellism>");
+				.println(usageMessage);
 				return false;
 			}
 		} else {
@@ -171,7 +175,7 @@ public class SpargelPageRankMain implements Serializable{
 			System.out.println("  Provide parameters to read input data from files.");
 			System.out.println("  See the documentation for the correct format of input files.");
 			System.out
-			.println("SpargelPageRank usage: <edgeListInputPath> <outputPath> <maxIterations> <degreeOfParalellism>");
+			.println(usageMessage);
 		}
 		return true;
 	}
