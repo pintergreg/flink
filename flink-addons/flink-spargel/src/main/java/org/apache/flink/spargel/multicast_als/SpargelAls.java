@@ -113,7 +113,7 @@ public class SpargelAls {
 
 		env.setDegreeOfParallelism(noSubTasks);
 
-		env.execute(getClass().getSimpleName());
+		env.execute(getClass().getSimpleName() + "_" + whichMulticast + "MC");
 	}
 
 	public static void main(String[] args) throws Exception {
