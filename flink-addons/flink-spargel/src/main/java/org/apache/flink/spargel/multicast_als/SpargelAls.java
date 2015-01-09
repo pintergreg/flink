@@ -7,14 +7,16 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.spargel.java.VertexCentricIteration;
+import org.apache.flink.spargel.java.VertexCentricIteration1;
+import org.apache.flink.spargel.java.VertexCentricIteration2;
 
 //TODO: usage of union operator fails
 
 public class SpargelAls {
 
 	public void runAls(int noSubTasks, String matrixInput, String output,
-			int k, double lambda, int iteration, String qInput,
-			String whichSolver) throws Exception {
+			int k, double lambda, int iteration,
+			String whichSolver, int whichMulticast) throws Exception {
 
 		final ExecutionEnvironment env = ExecutionEnvironment
 				.getExecutionEnvironment();
@@ -65,17 +67,32 @@ public class SpargelAls {
 		DataSet<Tuple2<Integer, Integer>> edges = matrixSource.flatMap(
 				new CreateEdges()).name("Create the edges of the graph");
 
-		// run vertex centric iteration for 2*iteration rounds: because we have
-		// a bipartite graph
-		VertexCentricIteration<Integer, DoubleVectorWithMap, AlsCustomMessageForSpargel, ?> vc_iteration = VertexCentricIteration
-				.withPlainEdges(edges, new AlsUpdater(k, lambda, whichSolver),
-						new AlsMessager(), 2 * iteration + 1);
+		DataSet<Tuple2<Integer, DoubleVectorWithMap>> result = null;
+		if (whichMulticast == 0) {
+			VertexCentricIteration<Integer, DoubleVectorWithMap, AlsCustomMessageForSpargel, ?> vc_iteration = VertexCentricIteration
+					.withPlainEdges(edges, new AlsUpdater(k, lambda,
+							whichSolver), new AlsMessager(), 2 * iteration + 1);
+			// Stephan's workaround: is it needed?
+			vc_iteration.setSolutionSetUnmanagedMemory(true);
 
-		// Stephan's workaround
-		vc_iteration.setSolutionSetUnmanagedMemory(true);
+			result = vertices.runOperation(vc_iteration);
+		} else if (whichMulticast == 1) {
+			// must I use long id?
+			VertexCentricIteration1<Integer, DoubleVectorWithMap, AlsCustomMessageForSpargel, ?> vc_iteration1 = VertexCentricIteration1
+					.withPlainEdges(edges, new AlsUpdater(k, lambda,
+							whichSolver), new AlsMessager1(), 2 * iteration + 1);
+			result = vertices.runOperation(vc_iteration1);
 
-		DataSet<Tuple2<Integer, DoubleVectorWithMap>> result = vertices
-				.runOperation(vc_iteration);
+		} else if (whichMulticast == 2) {
+			// must I use long id?
+			VertexCentricIteration2<Integer, DoubleVectorWithMap, AlsCustomMessageForSpargel, ?> vc_iteration2 = VertexCentricIteration2
+					.withPlainEdges(edges, new AlsUpdater(k, lambda,
+							whichSolver), new AlsMessager2(), 2 * iteration + 1);
+			result = vertices.runOperation(vc_iteration2);
+		} else {
+			throw new RuntimeException(
+					"The value of <whichMulticast>  should be 0, 1, or 2");
+		}
 
 		// delete marker fields
 		DataSet<Tuple2<Integer, double[]>> pOutFormat = result.groupBy(0)
@@ -108,9 +125,8 @@ public class SpargelAls {
 		int k = (args.length > 3 ? Integer.parseInt(args[3]) : 1);
 		double lambda = (args.length > 4 ? Double.parseDouble(args[4]) : 0.0);
 		int numIterations = (args.length > 5 ? Integer.parseInt(args[5]) : 1);
-		String qSource = (args.length > 6 ? args[6] : "-");
 
 		new SpargelAls().runAls(numTasks, input, output, k, lambda,
-				numIterations, qSource, "jama");
+				numIterations, "jama", 0);
 	}
 }

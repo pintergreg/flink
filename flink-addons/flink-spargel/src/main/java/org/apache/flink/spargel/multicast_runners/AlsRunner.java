@@ -6,44 +6,29 @@ import org.apache.flink.spargel.multicast_test.io_utils.LogCreator;
 
 public class AlsRunner {
 
-	private static String[] programs = {"AlsWithMap"};
+	private static String[] programs = { "AlsWithMap" };
 
 	public static void main(String[] args) throws Exception {
 		int numOfParameters = 9;
-//
-//		if (args.length < numOfParameters) {
-//			System.out
-//					.println("Parameters: [WhichProgram] [noSubStasks] [matrix] [output] [rank] [lambda] [numberOfIterations] [qSource:'-' if random q] [whichSolver] [LogPath:OPTIONAL]");
-//		} else {
 
-			// manual parameters:
-			String whichProgram = "AlsWithMap";
-			int numTasks = 1;
-			String matrixSource = "/home/fberes/sztaki/git/cumulo-strato/data/sampledb2b.csv.txt";
-			String outputPath = "/home/fberes/sztaki/git/incubator-flink-output/test";
-			int k = 5;
-			double lambda = 0.01;
-			int numIterations = 3;
-			String qSource = "-";
-			String whichSolver = "jama";
-			
-//			// parse parameters:
-//			String whichProgram = args[0];
-//			int numTasks = Integer.parseInt(args[1]);
-//			String matrixSource = args[2];
-//			String outputPath = args[3];
-//			int k = Integer.parseInt(args[4]);
-//			double lambda = Double.parseDouble(args[5]);
-//			int numIterations = Integer.parseInt(args[6]);
-//			String[] splits = args[7].split("/");
-//			String qSource = (splits[splits.length - 1].equals("-") ? "-"
-//					: args[7]);// "-" means random Q generation
-//			String whichSolver = args[8];
+		if (args.length < numOfParameters) {
+			System.out
+					.println("Parameters: [whichProgram] [whichMulticast] [noSubStasks] [matrix] [output] [rank] [lambda] [numberOfIterations] [whichSolver] [LogPath:OPTIONAL]");
+		} else {
+			// parse parameters:
+			String whichProgram = args[0];
+			int whichMulticast = Integer.parseInt(args[1]);
+			int numTasks = Integer.parseInt(args[2]);
+			String matrixSource = args[3];
+			String outputPath = args[4];
+			int k = Integer.parseInt(args[5]);
+			double lambda = Double.parseDouble(args[6]);
+			int numIterations = Integer.parseInt(args[7]);
+			String whichSolver = args[8];
 
-			boolean enableLogging = true; //TODO: originally it was false!
-			String logPath = outputPath; //TODO: originally it was given as input parameter
+			boolean enableLogging = false;
 			LogCreator logger = null;
-			//String logPath = "";
+			String logPath = "";
 			boolean legalParameters = true;
 			long startTime = 0L;
 			long endTime = 0L;
@@ -55,25 +40,23 @@ public class AlsRunner {
 			}
 
 			try {
-
 				// start logging
 				if (enableLogging) {
 					logger = new LogCreator(logPath + "/log");
 					startTime = System.currentTimeMillis();
 				}
-
+				
 				if (LinalgSolver.isLegalSolver(whichSolver)) {
 
 					if (whichProgram.equals("AlsWithMap")) {
 						new SpargelAls().runAls(numTasks, matrixSource,
-								outputPath, k, lambda, numIterations, qSource,
-								whichSolver);
+								outputPath, k, lambda, numIterations,
+								whichSolver, whichMulticast);
 					} else {
 						legalParameters = false;
 						throw new IllegalArgumentException(
 								printOptions(whichProgram));
 					}
-
 				} else {
 					throw new IllegalArgumentException(
 							LinalgSolver.printOptions(whichSolver));
@@ -86,7 +69,8 @@ public class AlsRunner {
 					if (legalParameters) {
 						logger.writeAlsParameters(whichProgram, totalTime,
 								matrixSource, outputPath, numTasks,
-								numIterations, k, lambda, qSource, whichSolver);
+								numIterations, k, lambda, whichSolver,
+								whichMulticast);
 					}
 				}
 			} catch (IllegalArgumentException iaex) {
@@ -98,9 +82,8 @@ public class AlsRunner {
 					logger.close();
 				}
 			}
-
 		}
-//	}
+	}
 
 	public static String printOptions(String whichProgram) {
 		String errorMsg = whichProgram
@@ -113,5 +96,4 @@ public class AlsRunner {
 		}
 		return errorMsg;
 	}
-
 }

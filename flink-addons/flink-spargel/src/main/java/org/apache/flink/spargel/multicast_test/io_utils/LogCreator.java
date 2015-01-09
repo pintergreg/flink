@@ -23,7 +23,7 @@ public class LogCreator {
 
 	public void writeAlsParameters(String algorithm, long timeTaken,
 			String input, String output, int numTasks, int numIterations,
-			int k, double lambda, String qInput, String whichSolver) {
+			int k, double lambda, String whichSolver, int whichMulticast) {
 
 		try {
 			pw = new PrintWriter(new FileWriter(new File(outputPath), true));
@@ -31,7 +31,6 @@ public class LogCreator {
 
 			pw.println("start time: " + dateFormat.format(this.startTime));
 			pw.println("input file: " + input);
-			pw.println("q input: " + qInput);
 			pw.println("output file: " + output);
 			pw.println("numOfTasks: " + numTasks);
 			pw.println("k: " + k);
@@ -39,6 +38,7 @@ public class LogCreator {
 			pw.println("iter: " + numIterations);
 			pw.println("solver: " + whichSolver);
 			pw.println("program: " + algorithm);
+			pw.println("multicast_version: " + whichMulticast);
 			pw.println("Time taken: " + Integer.toString((int) timeTaken));
 
 		} catch (IOException io) {
