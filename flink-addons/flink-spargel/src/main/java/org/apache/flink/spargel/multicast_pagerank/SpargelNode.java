@@ -74,25 +74,33 @@ public class SpargelNode implements Serializable{
 
 	@Override
 	public boolean equals(Object obj) {
-		if (this == obj)
+		if (this == obj) {
 			return true;
-		if (obj == null)
+		}
+		if (obj == null) {
 			return false;
-		if (getClass() != obj.getClass())
+		}
+		if (getClass() != obj.getClass()) {
 			return false;
+		}
 		SpargelNode other = (SpargelNode) obj;
-		if (id != other.id)
+		if (id != other.id) {
 			return false;
-		if (isSource != other.isSource)
+		}
+		if (isSource != other.isSource) {
 			return false;
-		if (outDegree != other.outDegree)
+		}
+		if (outDegree != other.outDegree) {
 			return false;
+		}
 		if (Double.doubleToLongBits(rank) != Double
-				.doubleToLongBits(other.rank))
+				.doubleToLongBits(other.rank)) {
 			return false;
+		}
 		if (Double.doubleToLongBits(previousRank) != Double
-				.doubleToLongBits(other.previousRank))
+				.doubleToLongBits(other.previousRank)) {
 			return false;
+		}
 		return true;
 	}
 

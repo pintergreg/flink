@@ -1,9 +1,5 @@
 package org.apache.flink.spargel.multicast_pagerank;
 
-
-import java.util.HashMap;
-import java.util.Map;
-
 import org.apache.flink.api.java.tuple.Tuple1;
 import org.apache.flink.spargel.java.MessageIterator;
 import org.apache.flink.spargel.java.VertexUpdateFunction;
