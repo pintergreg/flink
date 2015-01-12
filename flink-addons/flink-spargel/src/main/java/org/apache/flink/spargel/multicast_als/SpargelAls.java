@@ -72,22 +72,26 @@ public class SpargelAls {
 			VertexCentricIteration<Integer, DoubleVectorWithMap, AlsCustomMessageForSpargel, ?> vc_iteration = VertexCentricIteration
 					.withPlainEdges(edges, new AlsUpdater(k, lambda,
 							whichSolver), new AlsMessager(), 2 * iteration + 1);
-			// Stephan's workaround: is it needed?
+			// Stephan's workaround: is it needed for big input?
 			vc_iteration.setSolutionSetUnmanagedMemory(true);
 
 			result = vertices.runOperation(vc_iteration);
 		} else if (whichMulticast == 1) {
-			// must I use long id?
 			VertexCentricIteration1<Integer, DoubleVectorWithMap, AlsCustomMessageForSpargel, ?> vc_iteration1 = VertexCentricIteration1
 					.withPlainEdges(edges, new AlsUpdater(k, lambda,
 							whichSolver), new AlsMessager1(), 2 * iteration + 1);
+			// Stephan's workaround: is it needed for big input?
+			vc_iteration1.setSolutionSetUnmanagedMemory(true);
+			
 			result = vertices.runOperation(vc_iteration1);
-
 		} else if (whichMulticast == 2) {
 			// must I use long id?
 			VertexCentricIteration2<Integer, DoubleVectorWithMap, AlsCustomMessageForSpargel, ?> vc_iteration2 = VertexCentricIteration2
 					.withPlainEdges(edges, new AlsUpdater(k, lambda,
 							whichSolver), new AlsMessager2(), 2 * iteration + 1);
+			// Stephan's workaround: is it needed?
+			vc_iteration2.setSolutionSetUnmanagedMemory(true);
+			
 			result = vertices.runOperation(vc_iteration2);
 		} else {
 			throw new RuntimeException(
