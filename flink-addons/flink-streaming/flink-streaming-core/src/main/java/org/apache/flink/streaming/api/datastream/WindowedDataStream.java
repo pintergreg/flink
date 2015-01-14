@@ -32,10 +32,6 @@ import org.apache.flink.streaming.api.function.aggregation.AggregationFunction;
 import org.apache.flink.streaming.api.function.aggregation.AggregationFunction.AggregationType;
 import org.apache.flink.streaming.api.function.aggregation.ComparableAggregator;
 import org.apache.flink.streaming.api.function.aggregation.SumAggregator;
-import org.apache.flink.streaming.api.invokable.StreamInvokable;
-import org.apache.flink.streaming.api.invokable.operator.GroupedWindowInvokable;
-import org.apache.flink.streaming.api.invokable.operator.WindowGroupReduceInvokable;
-import org.apache.flink.streaming.api.invokable.operator.WindowReduceInvokable;
 import org.apache.flink.streaming.api.windowing.helper.Time;
 import org.apache.flink.streaming.api.windowing.helper.WindowingHelper;
 import org.apache.flink.streaming.api.windowing.policy.CloneableEvictionPolicy;
@@ -221,6 +217,17 @@ public class WindowedDataStream<OUT> {
 	}
 
 	/**
+	 * Sets the windowed computations local, so that the windowing and reduce or
+	 * aggregation logic will be computed for each parallel instance of this
+	 * operator
+	 * 
+	 * @return The local windowed data stream
+	 */
+	public WindowedDataStream<OUT> local() {
+		return new LocalWindowedStream<OUT>(this);
+	}
+
+	/**
 	 * Applies a reduce transformation on the windowed data stream by reducing
 	 * the current window at every trigger.The user can also extend the
 	 * {@link RichReduceFunction} to gain access to other features provided by
@@ -231,8 +238,7 @@ public class WindowedDataStream<OUT> {
 	 * @return The transformed DataStream
 	 */
 	public SingleOutputStreamOperator<OUT, ?> reduce(ReduceFunction<OUT> reduceFunction) {
-		return dataStream.transform("WindowReduce", getType(),
-				getReduceInvokable(reduceFunction));
+		throw new RuntimeException("Not implemented yet");
 	}
 
 	/**
@@ -252,11 +258,11 @@ public class WindowedDataStream<OUT> {
 			GroupReduceFunction<OUT, R> reduceFunction) {
 
 		TypeInformation<OUT> inType = getType();
+		@SuppressWarnings("unused")
 		TypeInformation<R> outType = TypeExtractor
 				.getGroupReduceReturnTypes(reduceFunction, inType);
 
-		return dataStream.transform("WindowReduce", outType,
-				getReduceGroupInvokable(reduceFunction));
+		throw new RuntimeException("Not implemented yet");
 	}
 
 	/**
@@ -279,8 +285,7 @@ public class WindowedDataStream<OUT> {
 	public <R> SingleOutputStreamOperator<R, ?> reduceGroup(
 			GroupReduceFunction<OUT, R> reduceFunction, TypeInformation<R> outType) {
 
-		return dataStream.transform("WindowReduce", outType,
-				getReduceGroupInvokable(reduceFunction));
+		throw new RuntimeException("Not implemented yet");
 	}
 
 	/**
@@ -505,15 +510,10 @@ public class WindowedDataStream<OUT> {
 	}
 
 	private SingleOutputStreamOperator<OUT, ?> aggregate(AggregationFunction<OUT> aggregator) {
-		StreamInvokable<OUT, OUT> invokable = getReduceInvokable(aggregator);
-
-		SingleOutputStreamOperator<OUT, ?> returnStream = dataStream.transform("windowReduce",
-				getType(), invokable);
-
-		return returnStream;
+		return reduce(aggregator);
 	}
 
-	private LinkedList<TriggerPolicy<OUT>> getTriggers() {
+	protected LinkedList<TriggerPolicy<OUT>> getTriggers() {
 
 		LinkedList<TriggerPolicy<OUT>> triggers = new LinkedList<TriggerPolicy<OUT>>();
 
@@ -531,7 +531,7 @@ public class WindowedDataStream<OUT> {
 
 	}
 
-	private LinkedList<EvictionPolicy<OUT>> getEvicters() {
+	protected LinkedList<EvictionPolicy<OUT>> getEvicters() {
 
 		LinkedList<EvictionPolicy<OUT>> evicters = new LinkedList<EvictionPolicy<OUT>>();
 
@@ -541,15 +541,15 @@ public class WindowedDataStream<OUT> {
 			}
 		} else {
 			if (userEvicters == null) {
-				boolean notOnlyTime=false;
-				for (WindowingHelper<OUT> helper : triggerHelpers){
-					if (helper instanceof Time<?>){
+				boolean notOnlyTime = false;
+				for (WindowingHelper<OUT> helper : triggerHelpers) {
+					if (helper instanceof Time<?>) {
 						evicters.add(helper.toEvict());
 					} else {
-						notOnlyTime=true;
+						notOnlyTime = true;
 					}
 				}
-				if (notOnlyTime){
+				if (notOnlyTime) {
 					evicters.add(new TumblingEvictionPolicy<OUT>());
 				}
 			}
@@ -562,7 +562,7 @@ public class WindowedDataStream<OUT> {
 		return evicters;
 	}
 
-	private LinkedList<TriggerPolicy<OUT>> getCentralTriggers() {
+	protected LinkedList<TriggerPolicy<OUT>> getCentralTriggers() {
 		LinkedList<TriggerPolicy<OUT>> cTriggers = new LinkedList<TriggerPolicy<OUT>>();
 		if (allCentral) {
 			cTriggers.addAll(getTriggers());
@@ -576,7 +576,7 @@ public class WindowedDataStream<OUT> {
 		return cTriggers;
 	}
 
-	private LinkedList<CloneableTriggerPolicy<OUT>> getDistributedTriggers() {
+	protected LinkedList<CloneableTriggerPolicy<OUT>> getDistributedTriggers() {
 		LinkedList<CloneableTriggerPolicy<OUT>> dTriggers = null;
 
 		if (!allCentral) {
@@ -591,7 +591,7 @@ public class WindowedDataStream<OUT> {
 		return dTriggers;
 	}
 
-	private LinkedList<CloneableEvictionPolicy<OUT>> getDistributedEvicters() {
+	protected LinkedList<CloneableEvictionPolicy<OUT>> getDistributedEvicters() {
 		LinkedList<CloneableEvictionPolicy<OUT>> evicters = null;
 
 		if (!allCentral) {
@@ -604,39 +604,12 @@ public class WindowedDataStream<OUT> {
 		return evicters;
 	}
 
-	private LinkedList<EvictionPolicy<OUT>> getCentralEvicters() {
+	protected LinkedList<EvictionPolicy<OUT>> getCentralEvicters() {
 		if (allCentral) {
 			return getEvicters();
 		} else {
 			return null;
 		}
-	}
-
-	private <R> StreamInvokable<OUT, R> getReduceGroupInvokable(GroupReduceFunction<OUT, R> reducer) {
-		StreamInvokable<OUT, R> invokable;
-		if (isGrouped) {
-			invokable = new GroupedWindowInvokable<OUT, R>(clean(reducer), keySelector,
-					getDistributedTriggers(), getDistributedEvicters(), getCentralTriggers(),
-					getCentralEvicters());
-
-		} else {
-			invokable = new WindowGroupReduceInvokable<OUT, R>(clean(reducer), getTriggers(),
-					getEvicters());
-		}
-		return invokable;
-	}
-
-	private StreamInvokable<OUT, OUT> getReduceInvokable(ReduceFunction<OUT> reducer) {
-		StreamInvokable<OUT, OUT> invokable;
-		if (isGrouped) {
-			invokable = new GroupedWindowInvokable<OUT, OUT>(clean(reducer), keySelector,
-					getDistributedTriggers(), getDistributedEvicters(), getCentralTriggers(),
-					getCentralEvicters());
-
-		} else {
-			invokable = new WindowReduceInvokable<OUT>(clean(reducer), getTriggers(), getEvicters());
-		}
-		return invokable;
 	}
 
 	/**

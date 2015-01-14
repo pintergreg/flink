@@ -64,6 +64,7 @@ public class SlidingExample {
 				.withDelete(4))
 				.every(Count.of(4)
 				.startingAt(-1))
+				.local()
 				.reduce(new Concat());
 
 		// emit result

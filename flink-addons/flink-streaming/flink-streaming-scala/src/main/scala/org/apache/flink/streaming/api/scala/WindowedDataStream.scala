@@ -86,6 +86,16 @@ class WindowedDataStream[T](javaStream: JavaWStream[T]) {
     }
     javaStream.groupBy(keyExtractor)
   }
+  
+  /**
+   * Sets the computations local meaning that the windowing and reduce or
+   * aggregation logic will be computed for each parallel instance of this
+   * operator
+   * 
+   */
+  def local(): WindowedDataStream[T]= {
+    javaStream.local
+  }
 
   /**
    * Applies a reduce transformation on the windowed data stream by reducing

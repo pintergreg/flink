@@ -50,7 +50,7 @@ public class DeltaExtractExample {
 		DataStream dstream = env
 				.addSource(new CountingSource())
 				.window(Delta.of(1.2, new EuclideanDistance(new FieldsFromTuple(0, 1)), new Tuple3(
-						0d, 0d, "foo"))).every(Count.of(2)).reduce(new ConcatStrings());
+						0d, 0d, "foo"))).every(Count.of(2)).local().reduce(new ConcatStrings());
 
 		// emit result
 		if (fileOutput) {

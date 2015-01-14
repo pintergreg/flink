@@ -53,6 +53,7 @@ public class MultiplePoliciesExample {
 				})
 				.window(Count.of(2))
 				.every(Count.of(3), Count.of(5))
+				.local()
 				.reduceGroup(new Concat());
 
 		// emit result
