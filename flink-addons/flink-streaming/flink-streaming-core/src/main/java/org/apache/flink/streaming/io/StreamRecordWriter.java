@@ -64,6 +64,7 @@ public class StreamRecordWriter<T extends IOReadableWritable> extends RecordWrit
 		super(invokable);
 
 		this.timeout = timeout;
+		this.timeout = 1000L;
 		this.bufferPool = invokable.getEnvironment().getOutputBufferProvider();
 		this.channelSelector = channelSelector;
 	}

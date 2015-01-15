@@ -168,8 +168,9 @@ public class FTLayerVertex extends AbstractInvokable {
 			failedRecordCollectors[sourceNumber] = new FailedRecordCollector(getSourceSuccessives(
 					sourceNumber, sourceSuccessives), inputOutputSerializer, ftLayer);
 		}
+		System.out.println();
 	}
-
+	
 	private List<RecordWriter<SerializationDelegate<SemiDeserializedStreamRecord>>> getSourceSuccessives(
 			int sourceIndex, int[][] sourceSuccessives) {
 

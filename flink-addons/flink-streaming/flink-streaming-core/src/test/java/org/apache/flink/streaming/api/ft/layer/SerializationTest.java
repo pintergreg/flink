@@ -17,6 +17,8 @@
 
 package org.apache.flink.streaming.api.ft.layer;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -36,32 +38,23 @@ import org.junit.Test;
 
 public class SerializationTest {
 
-	// private byte[] getByteArrayFromOutputView(DataOutputSerializer target) {
-	// ByteBuffer buffer = target.wrapAsByteBuffer();
-	// byte[] repr = buffer.array();
-	// byte[] actual = new byte[buffer.limit()];
-	// for (int i = 0; i < buffer.limit(); i++) {
-	// actual[i] = repr[i];
-	// }
-	// return actual;
-	// }
-
 	@Test
 	public void serializationTest() {
 		String sObject;
 		long sId;
 		RecordId sRecordId;
+		int sHashCode;
 		SemiDeserializedStreamRecord sSDSRecord;
 		ByteBuffer sBuffer;
 		SemiDeserializedStreamRecord fSDSRecord;
+		int fHashCode;
 		RecordId fRecordId;
-		ByteBuffer fBuffer;
 		StreamRecord<String> mSRecord1;
 		StreamRecord<String> mSRecord2;
-		RecordId mRecordId1;
-		RecordId mRecordId2;
 		String mObject1;
 		String mObject2;
+		RecordId mRecordId1;
+		RecordId mRecordId2;
 
 		TypeInformation<String> typeInfo = TypeExtractor.getForObject("");
 		TypeSerializer<String> sTypeSerializer = typeInfo.createSerializer();
@@ -79,20 +72,21 @@ public class SerializationTest {
 		DataInputView mIn2;
 
 		try {
-			sObject = "Thry thee bleen!";
+			sObject = "This is a message.";
 			sId = 0x18L;
 			sTypeSerializer.serialize(sObject, out);
 			sBuffer = out.wrapAsByteBuffer();
 
 			sRecordId = RecordId.newRecordId(sId);
-			sSDSRecord = new SemiDeserializedStreamRecord(sBuffer, sObject.hashCode(), sRecordId);
+			sHashCode = sObject.hashCode();
+			sSDSRecord = new SemiDeserializedStreamRecord(sBuffer, sHashCode, sRecordId);
 			sSDSRecordSerializer.serialize(sSDSRecord, sOut1);
 			aSRecordSerializer.serialize(sSDSRecord, sOut2);
 
 			fIn = new DataInputDeserializer(sOut1.wrapAsByteBuffer());
 			fSDSRecord = aSRecordSerializer.deserialize(fIn);
 			fRecordId = fSDSRecord.getId();
-			fBuffer = fSDSRecord.getSerializedRecord();
+			fHashCode = fSDSRecord.getHashCode();
 			aSRecordSerializer.serialize(fSDSRecord, fOut);
 
 			mIn1 = new DataInputDeserializer(fOut.wrapAsByteBuffer());
@@ -105,49 +99,25 @@ public class SerializationTest {
 			mRecordId2 = mSRecord2.getId();
 			mObject2 = mSRecord2.getObject();
 
-			printHeader("At source to ftLayer");
-			print();
-			printObject("sObject", sObject);
-			printRecordId("sRecordId", sRecordId);
-			printBuffer("sBuffer", sBuffer);
-			printOutputView("sOut1", sOut1);
-			print();
-
-			printHeader("At ftLayer to first task");
-			print();
-			printRecordId("fRecordId", fRecordId);
-			printBuffer("fBuffer", fBuffer);
-			printOutputView("fOut", fOut);
-			print();
-
-			printHeader("At first task from ftLayer");
-			print();
-			printRecordId("mRecordId1", mRecordId1);
-			printObject("mObject1", mObject1);
-			print();
-
-			printHeader("At source to first task");
-			print();
-			printOutputView("sOut2", sOut2);
-			print();
-
-			printHeader("At first task from source");
-			print();
-			printRecordId("mRecordId2", mRecordId2);
-			printObject("mObject2", mObject2);
-			print();
+			assertEquals(fRecordId, sRecordId);
+			assertEquals(fHashCode, sHashCode);
+			assertEquals(mRecordId1, sRecordId);
+			assertEquals(mObject1, sObject);
+			assertEquals(mRecordId2, sRecordId);
+			assertEquals(mObject2, sObject);
 
 			out.clear();
 			sOut1.clear();
 			sOut2.clear();
 			fOut.clear();
 
-			sObject = "Zekalif!";
+			sObject = "message2";
 			sId = 0x20L;
 			sTypeSerializer.serialize(sObject, out);
 			sBuffer = out.wrapAsByteBuffer();
 
 			sRecordId = RecordId.newRecordId(sId);
+			sHashCode = sObject.hashCode();
 			sSDSRecord = new SemiDeserializedStreamRecord(sBuffer, sObject.hashCode(), sRecordId);
 			sSDSRecordSerializer.serialize(sSDSRecord, sOut1);
 			aSRecordSerializer.serialize(sSDSRecord, sOut2);
@@ -155,7 +125,7 @@ public class SerializationTest {
 			fIn = new DataInputDeserializer(sOut1.wrapAsByteBuffer());
 			fSDSRecord = aSRecordSerializer.deserialize(fIn);
 			fRecordId = fSDSRecord.getId();
-			fBuffer = fSDSRecord.getSerializedRecord();
+			fHashCode = fSDSRecord.getHashCode();
 			aSRecordSerializer.serialize(fSDSRecord, fOut);
 
 			mIn1 = new DataInputDeserializer(fOut.wrapAsByteBuffer());
@@ -168,105 +138,13 @@ public class SerializationTest {
 			mRecordId2 = mSRecord2.getId();
 			mObject2 = mSRecord2.getObject();
 
-			printHeader("");
-			printHeader("At source to ftLayer");
-			print();
-			printObject("sObject", sObject);
-			printRecordId("sRecordId", sRecordId);
-			printBuffer("sBuffer", sBuffer);
-			printOutputView("sOut1", sOut1);
-			print();
-
-			printHeader("At ftLayer to first task");
-			print();
-			printRecordId("fRecordId", fRecordId);
-			printBuffer("fBuffer", fBuffer);
-			printOutputView("fOut", fOut);
-			print();
-
-			printHeader("At first task from ftLayer");
-			print();
-			printRecordId("mRecordId1", mRecordId1);
-			printObject("mObject1", mObject1);
-			print();
-
-			printHeader("At source to first task");
-			print();
-			printOutputView("sOut2", sOut2);
-			print();
-
-			printHeader("At first task from source");
-			print();
-			printRecordId("mRecordId2", mRecordId2);
-			printObject("mObject2", mObject2);
+			assertEquals(fRecordId, sRecordId);
+			assertEquals(fHashCode, sHashCode);
+			assertEquals(mRecordId1, sRecordId);
+			assertEquals(mObject1, sObject);
+			assertEquals(mRecordId2, sRecordId);
+			assertEquals(mObject2, sObject);
 		} catch (IOException e) {
 		}
 	}
-
-	private String asString(byte[] byteArray, int length) {
-		if (length > byteArray.length) {
-			System.err.println("Wrong length!");
-		}
-		String string = "[";
-		for (int i = 0; i < length - 1; i++) {
-			string += byteArray[i] + ", ";
-		}
-		string += byteArray[length - 1] + "]";
-		return string;
-	}
-
-	public String asString(ByteBuffer byteBuffer, int length) {
-		byte[] byteArray = byteBuffer.array();
-		return asString(byteArray, length);
-	}
-
-	public void print(String name, Object object) {
-		System.out.println(name + ": " + object);
-	}
-
-	public void printHeader(String name) {
-		System.out.println("*** " + name + " ***");
-	}
-
-	public void print() {
-		System.out.println();
-	}
-
-	public void printObject(String name, Object object) {
-		printHeader(name);
-		print("object", object);
-		print();
-	}
-
-	public void printOutputView(String name, DataOutputSerializer out) {
-		ByteBuffer buffer = out.wrapAsByteBuffer();
-		int limit = buffer.limit();
-		int capacity = buffer.capacity();
-		printHeader(name);
-		print("position", out.length());
-		print("buffer capacity", capacity);
-		print("full buffer", asString(buffer, capacity));
-		print("buffer limit", limit);
-		print("actual buffer", asString(buffer, limit));
-		print();
-	}
-
-	public void printBuffer(String name, ByteBuffer buffer) {
-		int limit = buffer.limit();
-		int capacity = buffer.capacity();
-		printHeader(name);
-		print("capacity", capacity);
-		print("full buffer", asString(buffer, capacity));
-		print("limit", limit);
-		print("actual buffer", asString(buffer, limit));
-		print();
-	}
-
-	public void printRecordId(String name, RecordId id) {
-		printHeader(name);
-		print("source record id", id.getSourceRecordId());
-		print("record id", id.getRecordId());
-		print();
-	}
-
 }

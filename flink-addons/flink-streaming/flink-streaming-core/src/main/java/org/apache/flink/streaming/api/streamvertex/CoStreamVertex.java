@@ -62,7 +62,14 @@ public class CoStreamVertex<IN1, IN2, OUT> extends StreamVertex<IN1, OUT> {
 	@SuppressWarnings("unchecked")
 	@Override
 	public <X> StreamRecordSerializer<X> getInputSerializer(int index) {
-		return null;
+		switch (index) {
+		case 0:
+			return (StreamRecordSerializer<X>) coInputHandler.getInputDeserializer1();
+		case 1:
+			return (StreamRecordSerializer<X>) coInputHandler.getInputDeserializer2();
+		default:
+			throw new IllegalArgumentException("CoStreamVertex has only 2 inputs");
+		}
 	}
 
 	@SuppressWarnings("unchecked")

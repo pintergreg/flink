@@ -49,8 +49,9 @@ public class SinkInvokable<IN> extends StreamInvokable<IN, IN> {
 	@Override
 	protected void callUserFunctionAndLogException() {
 		try {
+			setAnchorRecord();
 			callUserFunction();
-			ackerCollector.collect(nextRecord.getId());
+			ackAnchorRecord();
 		} catch (FailException e) {
 			ackerCollector.setFailFlag(true);
 			ackerCollector.collect(nextRecord.getId());

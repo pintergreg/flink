@@ -62,8 +62,8 @@ import org.slf4j.LoggerFactory;
 // Tests the fault tolerance layer (acking, failing and replaying records) through a built up topology
 public class FaultToleranceWithTopologyTest {
 
-	private static final long MEMORYSIZE = 32;
-	private static final int PARALLELISM = 2;
+	//	private static final long MEMORYSIZE = 32;
+	private static final int PARALLELISM = 1;
 	private static final int SOURCE_PARALLELISM = 1;
 
 	// lists of records that tasks see during the job
@@ -113,21 +113,6 @@ public class FaultToleranceWithTopologyTest {
 			config.setBufferTimeout(100L);
 		}
 
-		//		public <IN, OUT> void addSimpleTaskVertex(String vertexName,
-		//				StreamInvokable<IN, OUT> invokableObject, TypeWrapper<?> inTypeWrapper,
-		//				TypeWrapper<?> outTypeWrapper, String operatorName, byte[] serializedFunction,
-		//				int parallelism) {
-		//
-		//			addStreamTaskVertex(vertexName, MockStreamTaskVertex.class, invokableObject,
-		//					operatorName, serializedFunction, parallelism);
-		//
-		//			addTypeWrappers(vertexName, inTypeWrapper, null, outTypeWrapper, null);
-		//
-		//			if (LOG.isDebugEnabled()) {
-		//				LOG.debug("Vertex: {}", vertexName);
-		//			}
-		//		}
-
 	}
 
 	public static class MockStreamTaskVertex<IN, OUT> extends StreamTaskVertex<IN, OUT> {
@@ -167,7 +152,6 @@ public class FaultToleranceWithTopologyTest {
 	}
 
 	public static class MockFTLayerVertex extends FTLayerVertex {
-		private static final Logger LOG = LoggerFactory.getLogger(MockFTLayerVertex.class);
 
 		public MockFTLayerVertex() {
 			instanceID = numOfTasks;
@@ -266,7 +250,7 @@ public class FaultToleranceWithTopologyTest {
 		protected void collectToSourceSuccessiveTasks(int sourceId,
 				SemiDeserializedStreamRecord sourceRecord) {
 			super.collectToSourceSuccessiveTasks(sourceId, sourceRecord);
-			replayedHashCodes.get(sourceId).add(sourceRecord.hashCode());
+			replayedHashCodes.get(sourceId).add(sourceRecord.getHashCode());
 		}
 
 	}
@@ -446,7 +430,7 @@ public class FaultToleranceWithTopologyTest {
 						15L)));
 		expected.put("sink2", new ArrayList<Long>(Arrays.asList(1L, 1L, 3L, 3L, 5L, 11L, 13L, 15L)));
 
-		expectedHashCodes.put(0, new ArrayList<Integer>(Arrays.asList(0, 1, 2, 3, 4, 5, 1, 3, 4)));
+		expectedHashCodes.put(0, new ArrayList<Integer>(Arrays.asList(0, 1, 2, 3, 4, 5)));
 		expectedHashCodes.put(1, new ArrayList<Integer>(Arrays.asList(10, 11, 12, 13, 14, 15)));
 		expectedReplayedHashCodes.put(0, new ArrayList<Integer>(Arrays.asList(1, 3, 4)));
 		expectedReplayedHashCodes.put(1, new ArrayList<Integer>());
@@ -464,31 +448,17 @@ public class FaultToleranceWithTopologyTest {
 
 		DataStream<Long> sourceStream1 = env.addSource(new MySource(values.get("source1")))
 				.setParallelism(SOURCE_PARALLELISM);
-		DataStream<Long> sourceStream2 = env.addSource(
-				new MySource(values.get("source2"), recordsToFail.get("source2"))).setParallelism(
-				SOURCE_PARALLELISM);
+		DataStream<Long> sourceStream2 = env.addSource(new MySource(values.get("source2")))
+				.setParallelism(SOURCE_PARALLELISM);
+		sourceStream1.filter(new MyFilter("filter1"))
+				.merge(sourceStream2.filter(new MyFilter("filter2"))).addSink(new MySink("sink2"));
 		sourceStream1.map(new MyMap("map1", recordsToFail.get("map1")))
 				.merge(sourceStream2.map(new MyMap("map2")))
 				.addSink(new MySink("sink1", recordsToFail.get("sink1")));
-		sourceStream1.filter(new MyFilter("filter1"))
-				.merge(sourceStream2.filter(new MyFilter("filter2"))).addSink(new MySink("sink2"));
 
-		Thread t = new Thread() {
-			public void run() {
-				try {
-					env.execute();
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-		};
-
-		t.start();
 		try {
-		//	while (true) {
-				Thread.sleep(10000);
-		//	}
-		} catch (InterruptedException e) {
+			env.execute();
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 
@@ -516,19 +486,6 @@ public class FaultToleranceWithTopologyTest {
 		for (Integer sourceId : expectedReplayedHashCodes.keySet()) {
 			Collections.sort(expectedReplayedHashCodes.get(sourceId));
 		}
-
-		//		System.out.println(recordsToFail);
-		//		System.out.println(failedIds);
-		//		System.out.println(xorMessagesReceived);
-		//		System.out.println(isSourceRecordIdProcessed);
-		//		System.out.println("");
-		//		System.out.println(results);
-				System.out.println(intermediateResults);
-		//		System.out.println("");
-		//		System.out.println(expected);
-		//		System.out.println(intermediateExpected);
-		System.out.println(hashCodes);
-		System.out.println(replayedHashCodes);
 
 		for (String name : intermediateNames) {
 			assertEquals(intermediateExpected.get(name), intermediateResults.get(name));
