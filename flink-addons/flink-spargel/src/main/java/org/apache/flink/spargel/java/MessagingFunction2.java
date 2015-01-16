@@ -32,7 +32,6 @@ import org.apache.flink.api.common.functions.IterationRuntimeContext;
 import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
-import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.operators.shipping.OutputCollector;
 import org.apache.flink.spargel.java.multicast.MessageWithHeader;
 import org.apache.flink.spargel.java.multicast.MultipleRecipients;

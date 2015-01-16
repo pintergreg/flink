@@ -18,12 +18,12 @@
 package org.apache.flink.spargel.multicast_test.io_utils;
 
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.io.FileWriter;
-import java.util.Date;
-import java.text.SimpleDateFormat;
 import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class LogCreator {
 	private String outputPath;

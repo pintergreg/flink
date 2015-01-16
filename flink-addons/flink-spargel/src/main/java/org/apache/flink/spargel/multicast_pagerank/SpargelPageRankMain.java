@@ -21,8 +21,6 @@ package org.apache.flink.spargel.multicast_pagerank;
 
 import java.io.Serializable;
 
-import org.apache.flink.spargel.multicast_test.io_utils.EdgeListInputFormat;
-
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.DataSet;
@@ -31,6 +29,7 @@ import org.apache.flink.api.java.io.CsvOutputFormat;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.core.fs.Path;
+import org.apache.flink.spargel.multicast_test.io_utils.EdgeListInputFormat;
 import org.apache.flink.util.Collector;
 
 
