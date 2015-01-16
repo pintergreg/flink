@@ -34,7 +34,7 @@ public class MessageWithHeaderTest {
 		TypeInformation<MessageWithHeader> typeInfo = MessageWithHeader
 				.getTypeInfo(BasicTypeInfo.LONG_TYPE_INFO,
 						BasicTypeInfo.DOUBLE_TYPE_INFO);
-		assertEquals(4, typeInfo.getArity());
+		assertEquals(5, typeInfo.getArity());
 		assertFalse(typeInfo.isBasicType());
 		assertFalse(typeInfo.isTupleType());
 		assertEquals(MessageWithHeader.class, typeInfo.getTypeClass());
@@ -46,11 +46,14 @@ public class MessageWithHeaderTest {
 		Integer channel = 0;
 		Double message = 0.5;
 		Long[] recipients = new Long[]{2L, 3L};
+		Long reprVertexOfPartition = 2L;
 		
 		record.setSender(sender);
 		record.setChannelId(channel);
 		record.setMessage(message);
 		record.setSomeRecipients(recipients);
+		record.setReprVertexOfPartition(reprVertexOfPartition);
+
 		
 		@SuppressWarnings("rawtypes")
 		TypeSerializer<MessageWithHeader> serializer = typeInfo.createSerializer();
@@ -62,6 +65,7 @@ public class MessageWithHeaderTest {
 		assertEquals(channel, record2.getChannelId());
 		assertEquals(message, record2.getMessage());
 		assertArrayEquals(recipients, record2.getSomeRecipients());
+		assertEquals(reprVertexOfPartition, record2.getReprVertexOfPartition());
     	
 		
 		

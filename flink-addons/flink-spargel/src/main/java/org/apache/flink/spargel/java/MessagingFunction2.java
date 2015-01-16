@@ -21,8 +21,10 @@ package org.apache.flink.spargel.java;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.flink.api.common.aggregators.Aggregator;
@@ -30,6 +32,7 @@ import org.apache.flink.api.common.functions.IterationRuntimeContext;
 import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.runtime.operators.shipping.OutputCollector;
 import org.apache.flink.spargel.java.multicast.MessageWithHeader;
 import org.apache.flink.spargel.java.multicast.MultipleRecipients;
@@ -155,8 +158,6 @@ public abstract class MessagingFunction2<VertexKey extends Comparable<VertexKey>
 			VertexKey target = next.getField(1);
 
 			recipients.clear();
-			outValue.f1.setSomeRecipients(emptyArray);
-			outValue.f1.setMessage(m);
 			outValue.f0 = target;
 			//This is a bit dodgy here
 			int channel = ((OutputCollector<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>>) out)
@@ -164,6 +165,9 @@ public abstract class MessagingFunction2<VertexKey extends Comparable<VertexKey>
 			if (!channelSet.contains(channel)) {
 				channelSet.add(channel);
 				outValue.f1.setChannelId(channel);
+				outValue.f1.setReprVertexOfPartition(hashKeys.get(channel));
+				outValue.f1.setSomeRecipients(emptyArray);
+				outValue.f1.setMessage(m);
 				out.collect(outValue);
 				numOfBlockedMessages ++;
 				//System.out.println(outValue);
@@ -251,11 +255,19 @@ public abstract class MessagingFunction2<VertexKey extends Comparable<VertexKey>
 
 	private boolean edgesUsed;
 	
+	private Map<Integer, VertexKey> hashKeys = new HashMap<Integer, VertexKey> (); 
+
 	
 	void init(IterationRuntimeContext context, boolean hasEdgeValue) {
 		this.runtimeContext = context;
 		this.outValue = new Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>();
 		this.outValue.f1 = new MessageWithHeader<VertexKey, Message>();
+		Collection<Tuple2<Integer, VertexKey>> broadcastSet = context
+				.getBroadcastVariable(
+						VertexCentricIteration2.HASH_KEYS_BROADCAST_SET);
+		for (Tuple2<Integer, VertexKey> a : broadcastSet) {
+			hashKeys.put(a.f0, a.f1);
+		}
 		
 		if (hasEdgeValue) {
 			this.edgeWithValueIter = new EdgesIteratorWithEdgeValue<VertexKey, EdgeValue>();

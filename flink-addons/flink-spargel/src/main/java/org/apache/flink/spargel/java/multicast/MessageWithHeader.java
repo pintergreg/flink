@@ -58,12 +58,19 @@ public class MessageWithHeader<VertexKey, Message>
 	public void setSomeRecipients(VertexKey[] someRecipients) {
 		this.someRecipients = someRecipients;
 	}
+	public VertexKey getReprVertexOfPartition() {
+		return reprVertexOfPartition;
+	}
+	public void setReprVertexOfPartition(VertexKey reprVertexOfPartition) {
+		this.reprVertexOfPartition = reprVertexOfPartition;
+	}
 
 
 	private VertexKey sender;
 	private VertexKey[] someRecipients;
 	private Message message;
 	private Integer channelId = -1;
+	private VertexKey reprVertexOfPartition;
 	
 	@SuppressWarnings("rawtypes")
 	public  static TypeInformation<MessageWithHeader> getTypeInfo(
@@ -74,6 +81,7 @@ public class MessageWithHeader<VertexKey, Message>
 			fields.add(new PojoField(MessageWithHeader.class.getDeclaredField("message"), msgType));
 			fields.add(new PojoField(MessageWithHeader.class.getDeclaredField("someRecipients"), ObjectArrayTypeInfo.getInfoFor(Array.newInstance(keyType.getTypeClass(), 0).getClass())));
 			fields.add(new PojoField(MessageWithHeader.class.getDeclaredField("channelId"), BasicTypeInfo.INT_TYPE_INFO));
+			fields.add(new PojoField(MessageWithHeader.class.getDeclaredField("reprVertexOfPartition"), keyType));
 		} catch (NoSuchFieldException e) {
 			// TODO Auto-generated catch block
 			throw new RuntimeException("No such field!", e);
@@ -90,7 +98,8 @@ public class MessageWithHeader<VertexKey, Message>
 	public String toString() {
 		return "MessageWithHeader [sender=" + sender + ", someRecipients="
 				+ Arrays.toString(someRecipients) + ", message=" + message
-				+ ", channelId=" + channelId + "]";
+				+ ", channelId=" + channelId + ", reprVertexOfPartition="
+				+ reprVertexOfPartition + "]";
 	}
 	
 }
