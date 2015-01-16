@@ -61,8 +61,8 @@ public class MulticastCompleteGraphTestMain {
 			numberOfIterations = Integer.parseInt(args[3]);
 		} else  if (args.length == 0) {
 			// default
-			whichMulticast = 1;
-			numOfNodes = 200;
+			whichMulticast = 2;
+			numOfNodes = 300;
 			degreeOfParalellism = 4;
 			numberOfIterations = 2;
 

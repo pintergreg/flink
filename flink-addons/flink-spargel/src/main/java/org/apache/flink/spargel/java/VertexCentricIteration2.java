@@ -388,7 +388,7 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 		//hashKeys.print();
 		//TODO: hashKeys are not necessarily a small DataSet!!!
 		//I think they are !!! The number of rows is equal to the degree of paralellism. (Attila)
-		DataSet<Tuple4<VertexKey, VertexKey, Integer, VertexKey>> edges4 = 
+		DataSet<Tuple4<VertexKey, VertexKey, Integer, VertexKey>> edgesWithReplesentativeVertex = 
 				edgesWithChannelId.joinWithTiny(hashKeys).where(2).equalTo(0)
 				.with(new DummyJoinFunc<VertexKey>()).name("Edges with a representative of the target");
 
@@ -448,7 +448,7 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 //		.withBroadcastSet(hashKeys, HASH_KEYS_BROADCAST_SET).name("Messages after unpack phase 1");
 
 
-		DataSet<Tuple2<VertexKey, Message>> messages2 = edges4
+		DataSet<Tuple2<VertexKey, Message>> messages2 = edgesWithReplesentativeVertex
 				.coGroup(messages)
 				.where(3)
 				.equalTo(new ReprVertexSelector<VertexKey, Message>())
@@ -508,63 +508,7 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 			reuse.f3 = second.f1;
 			return reuse;
 		}
-	
 	}
-	
-
-	//This is in fact only a MapFunction: I use flatmap because I want to get hold of the outputcollector
-	public static class UnpackPhase1Bar<VertexKey extends Comparable<VertexKey>, Message>
-			extends
-			RichFlatMapFunction<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>, 
-			Tuple4<Integer, VertexKey, Message, VertexKey>>
-			implements
-			ResultTypeQueryable<Tuple4<Integer, VertexKey, Message, VertexKey>> {
-
-		private static final long serialVersionUID = 1L;
-		private transient TypeInformation<Tuple4<Integer, VertexKey, Message, VertexKey>> resultType;
-		private Map<Integer, VertexKey> hashKeys = new HashMap<Integer, VertexKey> (); 
-		@Override
-		public void open(Configuration parameters) throws Exception {
-			if (getIterationRuntimeContext().getSuperstepNumber() == 1) {
-				Collection<Tuple2<Integer, VertexKey>> broadcastSet = getRuntimeContext()
-						.getBroadcastVariable(
-								VertexCentricIteration2.HASH_KEYS_BROADCAST_SET);
-				for (Tuple2<Integer, VertexKey> a : broadcastSet) {
-					hashKeys.put(a.f0, a.f1);
-				}
-			}
-		}
-		
-		public UnpackPhase1Bar(TypeInformation<VertexKey> keyType,
-				TypeInformation<Message> unPackedMessageType) {
-			this.resultType = new TupleTypeInfo<Tuple4<Integer, VertexKey, Message, VertexKey>>(
-					BasicTypeInfo.INT_TYPE_INFO, keyType, unPackedMessageType, keyType);
-		}
-
-		@Override
-		public TypeInformation<Tuple4<Integer, VertexKey, Message, VertexKey>> getProducedType() {
-			return resultType;
-		}
-
-		private Tuple4<Integer, VertexKey, Message, VertexKey> reuse = 
-				new Tuple4<Integer, VertexKey, Message, VertexKey>();
-
-
-		@Override
-		public void flatMap(
-				Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>> value,
-				Collector<Tuple4<Integer, VertexKey, Message, VertexKey>> out)
-				throws Exception {
-			reuse.f0 = value.f1.getChannelId();
-			reuse.f1 = value.f1.getSender();
-			reuse.f2 = value.f1.getMessage();
-			reuse.f3 = hashKeys.get(value.f1.getChannelId());
-
-			out.collect(reuse);
-		}
-	}
-
-
 
 	public static class UnpackMessageCoGroup<VertexKey extends Comparable<VertexKey>, Message>
 			extends
