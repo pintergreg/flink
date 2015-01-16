@@ -27,9 +27,11 @@ import java.util.Map;
 
 import org.apache.commons.lang3.Validate;
 import org.apache.flink.api.common.aggregators.Aggregator;
+import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.JoinFunction;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.functions.RichCoGroupFunction;
+import org.apache.flink.api.common.functions.RichFlatMapFunction;
 import org.apache.flink.api.common.functions.RichMapFunction;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.DataSet;
@@ -37,6 +39,7 @@ import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.operators.CoGroupOperator;
 import org.apache.flink.api.java.operators.CustomUnaryOperation;
 import org.apache.flink.api.java.operators.DeltaIteration;
+import org.apache.flink.api.java.operators.FlatMapOperator;
 import org.apache.flink.api.java.operators.PartitionOperator;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
@@ -438,19 +441,32 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 		}
 		//messages.print();
 
-//
-//		DataSet<Tuple4<Integer, VertexKey, Message, VertexKey>> messages1 = messages
-//		.partitionByHash(0)
-//		.flatMap(new UnpackPhase1Bar<VertexKey, Message>(this.keyType, this.unPackedMessageType))
-//		.withBroadcastSet(hashKeys, HASH_KEYS_BROADCAST_SET).name("Messages after unpack phase 1");
+		// Messages with sender info only
+		// unpacking messages with sender info only
+		DataSet<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>> messagesWithoutRecipients = messages.filter(
+				new FilterMsgsWithoutRecipients<VertexKey, Message>());
 
-
-		DataSet<Tuple2<VertexKey, Message>> messages2 = edgesWithReplesentativeVertex
-				.coGroup(messages)
+		DataSet<Tuple2<VertexKey, Message>> messagesWithoutRecipientsUnpacked = edgesWithReplesentativeVertex
+				.coGroup(messagesWithoutRecipients)
 				.where(3)
 				.equalTo(new ReprVertexSelector<VertexKey, Message>())
 				.with(new UnpackMessageCoGroup1<VertexKey, Message>(
 						unpackedMessageTupleTypeInfo)).name("Unpacked messages");
+		// Messages with sender info only  -- end
+
+		// Messages with recipient list
+		// unpacking messages with recipient info
+		DataSet<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>> messagesWithRecipients = messages.filter(
+				new FilterMsgsWithRecipients<VertexKey, Message>());
+
+		FlatMapOperator<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>, Tuple2<VertexKey, Message>> messagesWithRecipientsUnpacked = messagesWithRecipients
+				.flatMap(
+						new UnpackMessageMC1<VertexKey, Message>(
+								unpackedMessageTupleTypeInfo));
+		// Messages with recipient list -- end
+
+		// Union of the two tye messages
+		DataSet<Tuple2<VertexKey, Message>> messages2 = messagesWithoutRecipientsUnpacked.union(messagesWithRecipientsUnpacked);
 		
 		
 		VertexUpdateUdf<VertexKey, VertexValue, Message> updateUdf = new VertexUpdateUdf<VertexKey, VertexValue, Message>(
@@ -474,6 +490,31 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 
 	}
 
+	public static class FilterMsgsWithoutRecipients<VertexKey, Message>
+			implements
+			FilterFunction<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>> {
+		private static final long serialVersionUID = 1L;
+
+		@Override
+		public boolean filter(
+				Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>> value)
+				throws Exception {
+			return value.f1.getSomeRecipients().length == 0;
+		}
+	}
+
+	public static class FilterMsgsWithRecipients<VertexKey, Message>
+			implements
+			FilterFunction<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>> {
+		private static final long serialVersionUID = 1L;
+
+		@Override
+		public boolean filter(
+				Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>> value)
+				throws Exception {
+			return value.f1.getSomeRecipients().length > 0;
+		}
+	}
 
 	public static class ProjectFields<VertexKey>
 	implements MapFunction<Tuple3<VertexKey,VertexKey,Integer>, Tuple2<Integer, VertexKey>> {
@@ -627,7 +668,40 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 			return  value.f1.getReprVertexOfPartition();
 		}
 	}
-	
+
+	private static class UnpackMessageMC1<VertexKey extends Comparable<VertexKey>, Message>
+			extends
+			RichFlatMapFunction<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>, Tuple2<VertexKey, Message>>
+			implements ResultTypeQueryable<Tuple2<VertexKey, Message>> {
+
+		private static final long serialVersionUID = 1L;
+		private transient TypeInformation<Tuple2<VertexKey, Message>> resultType;
+
+		private UnpackMessageMC1(
+				TypeInformation<Tuple2<VertexKey, Message>> resultType) {
+			this.resultType = resultType;
+		}
+
+		Tuple2<VertexKey, Message> reuse = new Tuple2<VertexKey, Message>();
+
+		@Override
+		public void flatMap(
+				Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>> value,
+				Collector<Tuple2<VertexKey, Message>> out) throws Exception {
+			reuse.f1 = value.f1.getMessage();
+			for (VertexKey target : value.f1.getSomeRecipients()) {
+				reuse.f0 = target;
+				out.collect(reuse);
+			}
+
+		}
+
+		@Override
+		public TypeInformation<Tuple2<VertexKey, Message>> getProducedType() {
+			return this.resultType;
+		}
+	}
+
 	public static class SubtaskIndexAdder<VertexKey extends Comparable<VertexKey>>
 			extends
 			RichMapFunction<Tuple2<VertexKey, VertexKey>, Tuple3<VertexKey, VertexKey, Integer>> {

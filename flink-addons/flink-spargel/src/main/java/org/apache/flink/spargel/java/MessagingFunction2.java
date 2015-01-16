@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -102,7 +103,8 @@ public abstract class MessagingFunction2<VertexKey extends Comparable<VertexKey>
 		}
 	}
 
-	
+	private Map<Integer, List<VertexKey>> recipientsInBlock = new HashMap <Integer, List<VertexKey>>();
+
 	private Collector<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>> out;
 	private Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>> outValue;// = new Tuple2<VertexKey, MessageWithSender<VertexKey, Message>>();
 
@@ -111,27 +113,27 @@ public abstract class MessagingFunction2<VertexKey extends Comparable<VertexKey>
 		outValue.f1.setSender(sender);
 	}
 	
-//	@SuppressWarnings("unchecked")
-//	public void sendMessageToMultipleRecipients(MultipleRecipients<VertexKey> recipients, Message m) {
-//		recipientsInBlock.clear();
-//		outValue.f1.message = m;
-//		for (VertexKey target: recipients) {
-//			outValue.f0 = target;
-//			int channel = ((OutputCollector<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>>)out).getChannel(outValue);
-//			if (recipientsInBlock.get(channel) == null) {
-//				recipientsInBlock.put(channel, new ArrayList<VertexKey>());
-//			}
-//			recipientsInBlock.get(channel).add(target);
-//		}
-//		for (Integer channel: recipientsInBlock.keySet()) {
-//			List<VertexKey> targets =  recipientsInBlock.get(channel);
-//			outValue.f0 = targets.get(0);
-//			outValue.f1.someRecipients = (VertexKey[])targets.toArray(new Comparable[0]);
-//			outValue.f1.channelId = channel;
-//			out.collect(outValue);
-//			System.out.println(outValue);
-//		}
-//	}
+	@SuppressWarnings("unchecked")
+	public void sendMessageToMultipleRecipients(MultipleRecipients<VertexKey> recipients, Message m) {
+		recipientsInBlock.clear();
+		outValue.f1.setMessage(m);
+		for (VertexKey target: recipients) {
+			outValue.f0 = target;
+			int channel = ((OutputCollector<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>>)out).getChannel(outValue);
+			if (recipientsInBlock.get(channel) == null) {
+				recipientsInBlock.put(channel, new ArrayList<VertexKey>());
+			}
+			recipientsInBlock.get(channel).add(target);
+		}
+		for (Integer channel: recipientsInBlock.keySet()) {
+			List<VertexKey> targets =  recipientsInBlock.get(channel);
+			outValue.f0 = targets.get(0);
+			outValue.f1.setSomeRecipients((VertexKey[])targets.toArray(new Comparable[0]));
+			outValue.f1.setChannelId(channel);
+			out.collect(outValue);
+			//System.out.println(outValue);
+		}
+	}
 
 	private MultipleRecipients<VertexKey> recipients = new MultipleRecipients<VertexKey>();
 	/**
@@ -185,11 +187,11 @@ public abstract class MessagingFunction2<VertexKey extends Comparable<VertexKey>
 	 * @param m The message.
 	 */
 
-//	public void sendMessageTo(VertexKey target, Message m) {
-//		recipients.clear();
-//		recipients.addRecipient(target);
-//		sendMessageToMultipleRecipients(recipients, m);
-//	}
+	public void sendMessageTo(VertexKey target, Message m) {
+		recipients.clear();
+		recipients.addRecipient(target);
+		sendMessageToMultipleRecipients(recipients, m);
+	}
 
 
 	

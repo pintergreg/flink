@@ -62,7 +62,7 @@ public class MulticastCompleteGraphTestMain {
 		} else  if (args.length == 0) {
 			// default
 			whichMulticast = 2;
-			numOfNodes = 1000;
+			numOfNodes = 300;
 			degreeOfParalellism = 4;
 			numberOfIterations = 2;
 
