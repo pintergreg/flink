@@ -15,43 +15,54 @@
  * limitations under the License.
  */
 
-package org.apache.flink.streaming.api;
+package org.apache.flink.streaming.api.ft.layer;
 
 import java.io.Serializable;
 
-import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.MapFunction;
-import org.apache.flink.streaming.api.environment.LocalStreamEnvironment;
-import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.function.sink.SinkFunction;
+import org.apache.flink.streaming.api.invokable.ft.FailException;
 import org.junit.Test;
 
-public class PrintTest implements Serializable {
+public class FailTest {
 
-	private static final long serialVersionUID = 1L;
-	private static final long MEMORYSIZE = 32;
-
-	private static final class IdentityMap implements MapFunction<Long, Long> {
-		private static final long serialVersionUID = 1L;
+	public class MyMapFunction implements MapFunction<Integer, Integer>, Serializable {
+		private Integer z = 3;
 
 		@Override
-		public Long map(Long value) throws Exception {
-			return value;
+		public Integer map(Integer value) throws Exception {
+			if (value == z) {
+				z = -1;
+				throw new FailException();
+			} else {
+				return value;
+			}
 		}
 	}
-
-	private static final class FilterAll implements FilterFunction<Long> {
+	
+	public static class MySink implements SinkFunction<Long> {
 		private static final long serialVersionUID = 1L;
 
 		@Override
-		public boolean filter(Long value) throws Exception {
-			return true;
+		public void invoke(Long value) {
+
 		}
 	}
 
 	@Test
-	public void test() throws Exception {
-		StreamExecutionEnvironment env = new LocalStreamEnvironment().setDegreeOfParallelism(1);
-		env.generateSequence(1, 10).map(new IdentityMap()).print();
-		env.execute();
+	public void test() {
+//		MockLocalStreamEnvironment env = new MockLocalStreamEnvironment();
+//		env.setDegreeOfParallelism(1);
+//
+//		env.generateSequence(0, 5).setParallelism(1).map(new MyMapFunction())
+//				.addSink(new MySink());
+//
+//		try {
+//			env.executeTest(32);
+//		} catch (Exception e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
 	}
+
 }

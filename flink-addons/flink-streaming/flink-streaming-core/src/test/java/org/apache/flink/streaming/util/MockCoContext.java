@@ -27,6 +27,8 @@ import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.streaming.api.StreamConfig;
+import org.apache.flink.streaming.api.collector.AbstractStreamCollector;
+import org.apache.flink.streaming.api.collector.ft.AckerCollector;
 import org.apache.flink.streaming.api.invokable.operator.co.CoInvokable;
 import org.apache.flink.streaming.api.streamrecord.StreamRecord;
 import org.apache.flink.streaming.api.streamrecord.StreamRecordSerializer;
@@ -168,7 +170,7 @@ public class MockCoContext<IN1, IN2, OUT> implements StreamTaskContext<OUT> {
 	}
 
 	@Override
-	public StreamConfig getConfig() {
+	public StreamConfig getConfiguration() {
 		return null;
 	}
 
@@ -210,8 +212,14 @@ public class MockCoContext<IN1, IN2, OUT> implements StreamTaskContext<OUT> {
 	}
 
 	@Override
-	public Collector<OUT> getOutputCollector() {
-		return collector;
+	public AckerCollector getAckerCollector() {
+		return null;
+	}
+
+	@Override
+	public AbstractStreamCollector<OUT, ?> getOutputCollector()
+	{
+		return null; //collector;
 	}
 
 }

@@ -15,36 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.flink.streaming.api.streamrecord;
+package org.apache.flink.streaming.api.ft.acker;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-
-import org.apache.flink.runtime.io.network.serialization.DataInputDeserializer;
-import org.apache.flink.runtime.io.network.serialization.DataOutputSerializer;
+import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.java.typeutils.TypeExtractor;
+import org.apache.flink.streaming.api.ft.layer.util.RecordId;
 import org.junit.Test;
 
-public class UIDTest {
+public class TypeSerializerTest {
 
-	//TODO fix with matching DataOutputStream and DataOutputView
 	@Test
-	public void test() throws IOException {
-		DataOutputSerializer out = new DataOutputSerializer(64);
+	public void test() {
+		RecordId msg = new RecordId(10L, 15L);
 		
-		UID id = new UID(3);
-		id.write(out);
-
-		ByteBuffer buff = out.wrapAsByteBuffer();
-
+		TypeInformation<RecordId> xorMessageTypeInfo = TypeExtractor.getForClass(RecordId.class);
 		
-		DataInputDeserializer in = new DataInputDeserializer(buff);
+		TypeSerializer<RecordId> inputSerializer = xorMessageTypeInfo.createSerializer();
 		
-		UID id2 = new UID();
-		id2.read(in);
+		RecordId copyMessage = inputSerializer.copy(msg);
 
-		assertEquals(id.getChannelId(), id2.getChannelId());
-		assertArrayEquals(id.getGeneratedId(), id2.getGeneratedId());
-		assertArrayEquals(id.getId(), id2.getId());
+		System.out.println(copyMessage.getRecordId());
+		System.out.println(copyMessage.getSourceRecordId());
 	}
 
 }

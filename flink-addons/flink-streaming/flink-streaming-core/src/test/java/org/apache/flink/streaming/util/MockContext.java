@@ -26,6 +26,8 @@ import java.util.List;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.streaming.api.StreamConfig;
+import org.apache.flink.streaming.api.collector.AbstractStreamCollector;
+import org.apache.flink.streaming.api.collector.ft.AckerCollector;
 import org.apache.flink.streaming.api.invokable.StreamInvokable;
 import org.apache.flink.streaming.api.streamrecord.StreamRecord;
 import org.apache.flink.streaming.api.streamrecord.StreamRecordSerializer;
@@ -106,7 +108,7 @@ public class MockContext<IN, OUT> implements StreamTaskContext<OUT> {
 	}
 
 	@Override
-	public StreamConfig getConfig() {
+	public StreamConfig getConfiguration() {
 		return null;
 	}
 
@@ -136,13 +138,19 @@ public class MockContext<IN, OUT> implements StreamTaskContext<OUT> {
 	}
 
 	@Override
-	public Collector<OUT> getOutputCollector() {
-		return collector;
+	public AbstractStreamCollector<OUT, ?> getOutputCollector() {
+		return null;
+		//collector;
 	}
 
 	@Override
 	public <X, Y> CoReaderIterator<X, Y> getCoReader() {
 		throw new IllegalArgumentException("CoReader not available");
+	}
+
+	@Override
+	public AckerCollector getAckerCollector() {
+		return null;
 	}
 
 }
