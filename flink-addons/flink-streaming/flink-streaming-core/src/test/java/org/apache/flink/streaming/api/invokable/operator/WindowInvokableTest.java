@@ -24,6 +24,8 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.flink.api.common.functions.ReduceFunction;
+import org.apache.flink.streaming.api.invokable.operator.window.WindowInvokable;
+import org.apache.flink.streaming.api.invokable.operator.window.WindowReduceInvokable;
 import org.apache.flink.streaming.api.windowing.helper.Timestamp;
 import org.apache.flink.streaming.api.windowing.helper.TimestampWrapper;
 import org.apache.flink.streaming.api.windowing.policy.CountEvictionPolicy;

@@ -24,9 +24,9 @@ import org.apache.flink.api.common.functions.RichReduceFunction;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.streaming.api.invokable.StreamInvokable;
-import org.apache.flink.streaming.api.invokable.operator.GroupedWindowInvokable;
-import org.apache.flink.streaming.api.invokable.operator.WindowGroupReduceInvokable;
-import org.apache.flink.streaming.api.invokable.operator.WindowReduceInvokable;
+import org.apache.flink.streaming.api.invokable.operator.window.GroupedWindowInvokable;
+import org.apache.flink.streaming.api.invokable.operator.window.WindowGroupReduceInvokable;
+import org.apache.flink.streaming.api.invokable.operator.window.WindowReduceInvokable;
 import org.apache.flink.streaming.api.windowing.helper.WindowingHelper;
 
 public class LocalWindowedStream<OUT> extends WindowedDataStream<OUT> {

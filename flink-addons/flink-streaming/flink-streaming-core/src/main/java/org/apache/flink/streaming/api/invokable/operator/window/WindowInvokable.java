@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.flink.streaming.api.invokable.operator;
+package org.apache.flink.streaming.api.invokable.operator.window;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -41,7 +41,7 @@ public abstract class WindowInvokable<IN, OUT> extends StreamInvokable<IN, OUT> 
 	private LinkedList<EvictionPolicy<IN>> evictionPolicies;
 	private LinkedList<ActiveTriggerPolicy<IN>> activeTriggerPolicies;
 	private LinkedList<ActiveEvictionPolicy<IN>> activeEvictionPolicies;
-	private LinkedList<Thread> activePolicyTreads;
+	private LinkedList<Thread> activePolicyThreads;
 	protected LinkedList<IN> buffer;
 	private LinkedList<TriggerPolicy<IN>> currentTriggerPolicies;
 
@@ -79,7 +79,7 @@ public abstract class WindowInvokable<IN, OUT> extends StreamInvokable<IN, OUT> 
 			}
 		}
 
-		this.activePolicyTreads = new LinkedList<Thread>();
+		this.activePolicyThreads = new LinkedList<Thread>();
 		this.buffer = new LinkedList<IN>();
 		this.currentTriggerPolicies = new LinkedList<TriggerPolicy<IN>>();
 	}
@@ -91,7 +91,7 @@ public abstract class WindowInvokable<IN, OUT> extends StreamInvokable<IN, OUT> 
 			Runnable target = tp.createActiveTriggerRunnable(new WindowingCallback(tp));
 			if (target != null) {
 				Thread thread = new Thread(target);
-				activePolicyTreads.add(thread);
+				activePolicyThreads.add(thread);
 				thread.start();
 			}
 		}
@@ -132,7 +132,7 @@ public abstract class WindowInvokable<IN, OUT> extends StreamInvokable<IN, OUT> 
 		}
 
 		// Stop all remaining threads from policies
-		for (Thread t : activePolicyTreads) {
+		for (Thread t : activePolicyThreads) {
 			t.interrupt();
 		}
 

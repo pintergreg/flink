@@ -15,20 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.flink.streaming.api.invokable.operator;
+package org.apache.flink.streaming.api.invokable.operator.window;
 
+import java.util.Iterator;
 import java.util.LinkedList;
 
-import org.apache.flink.api.common.functions.GroupReduceFunction;
+import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.streaming.api.windowing.policy.EvictionPolicy;
 import org.apache.flink.streaming.api.windowing.policy.TriggerPolicy;
 
-public class WindowGroupReduceInvokable<IN, OUT> extends WindowInvokable<IN, OUT> {
+public class WindowReduceInvokable<IN> extends WindowInvokable<IN, IN> {
 
 	private static final long serialVersionUID = 1L;
-	GroupReduceFunction<IN, OUT> reducer;
 
-	public WindowGroupReduceInvokable(GroupReduceFunction<IN, OUT> userFunction,
+	ReduceFunction<IN> reducer;
+
+	public WindowReduceInvokable(ReduceFunction<IN> userFunction,
 			LinkedList<TriggerPolicy<IN>> triggerPolicies,
 			LinkedList<EvictionPolicy<IN>> evictionPolicies) {
 		super(userFunction, triggerPolicies, evictionPolicies);
@@ -37,15 +39,21 @@ public class WindowGroupReduceInvokable<IN, OUT> extends WindowInvokable<IN, OUT
 
 	@Override
 	protected void callUserFunction() throws Exception {
-		reducer.reduce(copyBuffer(), collector);
-	}
+		Iterator<IN> reducedIterator = buffer.iterator();
+		IN reduced = null;
 
-	public LinkedList<IN> copyBuffer() {
-		LinkedList<IN> copy = new LinkedList<IN>();
-		for (IN element : buffer) {
-			copy.add(copy(element));
+		while (reducedIterator.hasNext() && reduced == null) {
+			reduced = reducedIterator.next();
 		}
-		return copy;
-	}
 
+		while (reducedIterator.hasNext()) {
+			IN next = reducedIterator.next();
+			if (next != null) {
+				reduced = reducer.reduce(copy(reduced), copy(next));
+			}
+		}
+		if (reduced != null) {
+			collector.collect(reduced);
+		}
+	}
 }

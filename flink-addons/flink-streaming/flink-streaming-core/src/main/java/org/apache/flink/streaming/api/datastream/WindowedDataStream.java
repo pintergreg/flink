@@ -25,13 +25,21 @@ import org.apache.flink.api.common.functions.GroupReduceFunction;
 import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.common.functions.RichGroupReduceFunction;
 import org.apache.flink.api.common.functions.RichReduceFunction;
+import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.functions.KeySelector;
+import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.api.java.tuple.Tuple3;
+import org.apache.flink.api.java.typeutils.TupleTypeInfo;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.streaming.api.function.aggregation.AggregationFunction;
 import org.apache.flink.streaming.api.function.aggregation.AggregationFunction.AggregationType;
 import org.apache.flink.streaming.api.function.aggregation.ComparableAggregator;
 import org.apache.flink.streaming.api.function.aggregation.SumAggregator;
+import org.apache.flink.streaming.api.invokable.StreamInvokable;
+import org.apache.flink.streaming.api.invokable.operator.window.GlobalWindowAggregator;
+import org.apache.flink.streaming.api.invokable.operator.window.GlobalWindowTracker;
+import org.apache.flink.streaming.api.invokable.operator.window.WindowPreAggregator;
 import org.apache.flink.streaming.api.windowing.helper.Time;
 import org.apache.flink.streaming.api.windowing.helper.WindowingHelper;
 import org.apache.flink.streaming.api.windowing.policy.CloneableEvictionPolicy;
@@ -237,8 +245,27 @@ public class WindowedDataStream<OUT> {
 	 *            The reduce function that will be applied to the windows.
 	 * @return The transformed DataStream
 	 */
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public SingleOutputStreamOperator<OUT, ?> reduce(ReduceFunction<OUT> reduceFunction) {
-		throw new RuntimeException("Not implemented yet");
+		StreamInvokable<OUT, Tuple3<OUT, Integer, Integer>> globalWindowTracker = new GlobalWindowTracker<OUT>(
+				getTriggers(), getEvicters());
+
+		TypeInformation<Tuple3<OUT, Integer, Integer>> type1 = new TupleTypeInfo(Tuple3.class,
+				getType(), BasicTypeInfo.INT_TYPE_INFO, BasicTypeInfo.INT_TYPE_INFO);
+
+		StreamInvokable<Tuple3<OUT, Integer, Integer>, Tuple2<OUT, Integer>> preAggregator = new WindowPreAggregator<OUT>(
+				reduceFunction);
+
+		TypeInformation<Tuple2<OUT, Integer>> type2 = new TupleTypeInfo(Tuple2.class, getType(),
+				BasicTypeInfo.INT_TYPE_INFO);
+
+		StreamInvokable<Tuple2<OUT, Integer>, OUT> globalAggregator = new GlobalWindowAggregator<OUT>(
+				reduceFunction, dataStream.environment.getDegreeOfParallelism());
+
+		return dataStream.transform("GlobalWindowTracker", type1, globalWindowTracker)
+				.setParallelism(1).distribute()
+				.transform("WindowPreAggregator", type2, preAggregator)
+				.transform("GlobalWindowAggregator", getType(), globalAggregator).setParallelism(1);
 	}
 
 	/**
