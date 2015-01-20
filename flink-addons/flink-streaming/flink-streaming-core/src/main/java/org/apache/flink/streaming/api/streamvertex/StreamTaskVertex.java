@@ -19,60 +19,61 @@ package org.apache.flink.streaming.api.streamvertex;
 
 import org.apache.flink.streaming.api.collector.StreamTaskCollector;
 import org.apache.flink.streaming.api.collector.ft.TaskAckerCollector;
-import org.apache.flink.streaming.api.invokable.operator.co.CoInvokable;
+import org.apache.flink.streaming.api.invokable.StreamInvokable;
 import org.apache.flink.streaming.api.streamrecord.StreamRecordSerializer;
 import org.apache.flink.streaming.io.CoReaderIterator;
 import org.apache.flink.util.MutableObjectIterator;
 
-public class CoStreamVertex<IN1, IN2, OUT> extends StreamVertex<IN1, OUT> {
+public class StreamTaskVertex<IN, OUT> extends StreamVertex<IN, OUT> {
 
-	private CoInvokable<IN1, IN2, OUT> userInvokable;
-	private CoInputHandler<IN1, IN2> coInputHandler;
-
-	public CoStreamVertex() {
-		super();
-		userInvokable = null;
-	}
-
+	protected InputHandler<IN> inputHandler;
+	private StreamInvokable<IN, OUT> userInvokable;
+	
 	@Override
-	protected void setInputsOutputs() {
-		coInputHandler = new CoInputHandler<IN1, IN2>(this);
-		ackerCollector = new TaskAckerCollector(coInputHandler.getPersistanceInput());
+	protected void setInputsOutputs() {		
+		inputHandler = new InputHandler<IN>(this);
+		ackerCollector = new TaskAckerCollector(inputHandler.getPersistanceInput());
 		collector = new StreamTaskCollector<OUT>(this, ackerCollector);
 	}
 
 	@Override
 	protected void setInvokable() {
 		userInvokable = getConfiguration().getUserInvokable(getUserClassLoader());
-
 		userInvokable.setup(this);
 	}
 
 	@Override
-	protected CoInvokable<IN1, IN2, OUT> getInvokable() {
+	protected StreamInvokable<IN, OUT> getInvokable() {
 		return userInvokable;
+	}
+
+	@Override
+	public void initializeInvoke() {
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
 	public <X> MutableObjectIterator<X> getInput(int index) {
-		return null;
+		if (index == 0) {
+			return (MutableObjectIterator<X>) inputHandler.getInputIter();
+		} else {
+			throw new IllegalArgumentException("There is only 1 input");
+		}
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
 	public <X> StreamRecordSerializer<X> getInputSerializer(int index) {
-		return null;
+		if (index == 0) {
+			return (StreamRecordSerializer<X>) inputHandler.getInputSerializer();
+		} else {
+			throw new IllegalArgumentException("There is only 1 input");
+		}
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public <X, Y> CoReaderIterator<X, Y> getCoReader() {
-		return (CoReaderIterator<X, Y>) coInputHandler.getCoInputIter();
-	}
-
-	@Override
-	public void initializeInvoke() {
+		throw new IllegalArgumentException("CoReader not available");
 	}
 
 }

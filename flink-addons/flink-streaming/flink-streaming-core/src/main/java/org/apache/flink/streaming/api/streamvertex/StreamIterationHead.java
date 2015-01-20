@@ -22,10 +22,12 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.flink.api.java.tuple.Tuple;
-import org.apache.flink.runtime.io.network.api.RecordWriter;
-import org.apache.flink.runtime.plugable.SerializationDelegate;
+import org.apache.flink.streaming.api.invokable.StreamInvokable;
 import org.apache.flink.streaming.api.streamrecord.StreamRecord;
+import org.apache.flink.streaming.api.streamrecord.StreamRecordSerializer;
 import org.apache.flink.streaming.io.BlockingQueueBroker;
+import org.apache.flink.streaming.io.CoReaderIterator;
+import org.apache.flink.util.MutableObjectIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,10 +53,10 @@ public class StreamIterationHead<OUT extends Tuple> extends StreamVertex<OUT,OUT
 
 	@Override
 	public void setInputsOutputs() {
-		outputHandler = new OutputHandler<OUT>(this);
+//		outputHandler = new OutputHandler<OUT>(this, ackerCollector);
 
-		iterationId = configuration.getIterationId();
-		iterationWaitTime = configuration.getIterationWaitTime();
+		iterationId = getConfiguration().getIterationId();
+		iterationWaitTime = getConfiguration().getIterationWaitTime();
 		shouldWait = iterationWaitTime > 0;
 
 		try {
@@ -71,7 +73,7 @@ public class StreamIterationHead<OUT extends Tuple> extends StreamVertex<OUT,OUT
 			LOG.debug("SOURCE {} invoked with instance id {}", getName(), getInstanceID());
 		}
 
-		outputHandler.initializeOutputSerializers();
+//		outputHandler.initializeOutputSerializers();
 
 		StreamRecord<OUT> nextRecord;
 
@@ -84,17 +86,44 @@ public class StreamIterationHead<OUT extends Tuple> extends StreamVertex<OUT,OUT
 			if (nextRecord == null) {
 				break;
 			}
-			for (RecordWriter<SerializationDelegate<StreamRecord<OUT>>> output : outputHandler
-					.getOutputs()) {
-				outputHandler.outSerializationDelegate.setInstance(nextRecord);
-				output.emit(outputHandler.outSerializationDelegate);
-			}
+//			for (RecordWriter<SerializationDelegate<StreamRecord<OUT>>> output : outputHandler
+//					.getOutputs()) {
+//				outputHandler.outSerializationDelegate.setInstance(nextRecord);
+//				output.emit(outputHandler.outSerializationDelegate);
+//			}
 		}
 
-		outputHandler.flushOutputs();
+//		outputHandler.flushOutputs();
 	}
+
+	// TODO
 
 	@Override
 	protected void setInvokable() {
+	}
+
+	@Override
+	protected StreamInvokable<OUT, OUT> getInvokable() {
+		return null;
+	}
+
+	@Override
+	public void initializeInvoke() {
+
+	}
+
+	@Override
+	public <X> MutableObjectIterator<X> getInput(int index) {
+		return null;
+	}
+
+	@Override
+	public <X> StreamRecordSerializer<X> getInputSerializer(int index) {
+		return null;
+	}
+
+	@Override
+	public <X, Y> CoReaderIterator<X, Y> getCoReader() {
+		return null;
 	}
 }

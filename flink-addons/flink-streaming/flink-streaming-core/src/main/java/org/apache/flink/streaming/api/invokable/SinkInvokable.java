@@ -18,9 +18,14 @@
 package org.apache.flink.streaming.api.invokable;
 
 import org.apache.flink.streaming.api.function.sink.SinkFunction;
+import org.apache.flink.streaming.api.invokable.ft.FailException;
+import org.apache.flink.util.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SinkInvokable<IN> extends StreamInvokable<IN, IN> {
 	private static final long serialVersionUID = 1L;
+	private static final Logger LOG = LoggerFactory.getLogger(SinkInvokable.class);
 
 	private SinkFunction<IN> sinkFunction;
 
@@ -38,7 +43,23 @@ public class SinkInvokable<IN> extends StreamInvokable<IN, IN> {
 
 	@Override
 	protected void callUserFunction() throws Exception {
-		sinkFunction.invoke((IN) nextRecord.getObject());
+		sinkFunction.invoke(nextRecord.getObject());
+	}
+
+	@Override
+	protected void callUserFunctionAndLogException() {
+		try {
+			callUserFunction();
+			ackerCollector.collect(nextRecord.getId());
+		} catch (FailException e) {
+			ackerCollector.setFailFlag(true);
+			ackerCollector.collect(nextRecord.getId());
+		} catch (Exception e) {
+			if (LOG.isErrorEnabled()) {
+				LOG.error("Calling user function failed due to: {}",
+						StringUtils.stringifyException(e));
+			}
+		}
 	}
 
 }

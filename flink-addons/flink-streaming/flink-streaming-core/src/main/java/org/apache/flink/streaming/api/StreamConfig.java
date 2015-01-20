@@ -25,7 +25,10 @@ import java.util.Map;
 import org.apache.commons.lang3.SerializationException;
 import org.apache.commons.lang3.SerializationUtils;
 import org.apache.flink.api.common.functions.AbstractRichFunction;
+import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.core.io.IOReadableWritable;
+import org.apache.flink.runtime.io.network.api.ChannelSelector;
 import org.apache.flink.streaming.api.collector.OutputSelector;
 import org.apache.flink.streaming.api.invokable.StreamInvokable;
 import org.apache.flink.streaming.api.streamrecord.StreamRecordSerializer;
@@ -35,7 +38,7 @@ import org.apache.flink.streaming.partitioner.StreamPartitioner;
 import org.apache.flink.streaming.state.OperatorState;
 import org.apache.flink.util.InstantiationUtil;
 
-public class StreamConfig {
+public final class StreamConfig {
 	private static final String INPUT_TYPE = "inputType_";
 	private static final String NUMBER_OF_OUTPUTS = "numberOfOutputs";
 	private static final String NUMBER_OF_INPUTS = "numberOfInputs";
@@ -111,9 +114,9 @@ public class StreamConfig {
 	}
 
 	@SuppressWarnings("unchecked")
-	public <T> StreamRecordSerializer<T> getTypeSerializerOut1(ClassLoader cl) {
+	public <T> TypeSerializer<T> getTypeSerializerOut1(ClassLoader cl) {
 		try {
-			return (StreamRecordSerializer<T>) InstantiationUtil.readObjectFromConfig(this.config,
+			return (TypeSerializer<T>) InstantiationUtil.readObjectFromConfig(this.config,
 					TYPE_SERIALIZER_OUT_1, cl);
 		} catch (Exception e) {
 			throw new RuntimeException("Could not instantiate serializer.");
@@ -121,9 +124,9 @@ public class StreamConfig {
 	}
 
 	@SuppressWarnings("unchecked")
-	public <T> StreamRecordSerializer<T> getTypeSerializerOut2(ClassLoader cl) {
+	public <T> TypeSerializer<T> getTypeSerializerOut2(ClassLoader cl) {
 		try {
-			return (StreamRecordSerializer<T>) InstantiationUtil.readObjectFromConfig(this.config,
+			return (TypeSerializer<T>) InstantiationUtil.readObjectFromConfig(this.config,
 					TYPE_SERIALIZER_OUT_2, cl);
 		} catch (Exception e) {
 			throw new RuntimeException("Could not instantiate serializer.");
@@ -231,15 +234,15 @@ public class StreamConfig {
 				SerializationUtils.serialize(partitionerObject));
 	}
 
-	public <T> StreamPartitioner<T> getPartitioner(ClassLoader cl, int outputIndex)
-			throws ClassNotFoundException, IOException {
+	public <T extends IOReadableWritable> ChannelSelector<T> getPartitioner(ClassLoader cl,
+			int outputIndex) throws ClassNotFoundException, IOException {
 		@SuppressWarnings("unchecked")
-		StreamPartitioner<T> partitioner = (StreamPartitioner<T>) InstantiationUtil
+		ChannelSelector<T> partitioner = (ChannelSelector<T>) InstantiationUtil
 				.readObjectFromConfig(this.config, PARTITIONER_OBJECT + outputIndex, cl);
 		if (partitioner != null) {
 			return partitioner;
 		} else {
-			return new ShufflePartitioner<T>();
+			return (ChannelSelector<T>) new ShufflePartitioner();
 		}
 	}
 
@@ -283,7 +286,7 @@ public class StreamConfig {
 	}
 
 	public void setInputType(int inputNumber, Integer inputTypeNumber) {
-		config.setInteger(INPUT_TYPE + inputNumber++, inputTypeNumber);
+		config.setInteger(INPUT_TYPE + inputNumber, inputTypeNumber);
 	}
 
 	public int getInputType(int inputNumber) {

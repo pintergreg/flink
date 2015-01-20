@@ -22,27 +22,27 @@ import java.util.Map;
 import org.apache.flink.runtime.execution.Environment;
 import org.apache.flink.runtime.jobgraph.tasks.AbstractInvokable;
 import org.apache.flink.streaming.api.StreamConfig;
+import org.apache.flink.streaming.api.collector.AbstractStreamCollector;
+import org.apache.flink.streaming.api.collector.ft.AckerCollector;
 import org.apache.flink.streaming.api.invokable.StreamInvokable;
-import org.apache.flink.streaming.api.streamrecord.StreamRecordSerializer;
-import org.apache.flink.streaming.io.CoReaderIterator;
 import org.apache.flink.streaming.state.OperatorState;
-import org.apache.flink.util.Collector;
-import org.apache.flink.util.MutableObjectIterator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class StreamVertex<IN, OUT> extends AbstractInvokable implements StreamTaskContext<OUT> {
+public abstract class StreamVertex<IN, OUT> extends AbstractInvokable implements StreamTaskContext<OUT> {
+	private static final Logger LOG = LoggerFactory.getLogger(StreamVertex.class);
 
 	private static int numTasks;
 
-	protected StreamConfig configuration;
+	private StreamConfig configuration;
 	protected int instanceID;
 	protected String name;
 	private static int numVertices = 0;
 
 	protected String functionName;
+	protected AckerCollector ackerCollector;
 
-	private InputHandler<IN> inputHandler;
-	protected OutputHandler<OUT> outputHandler;
-	private StreamInvokable<IN, OUT> userInvokable;
+	protected AbstractStreamCollector<OUT, ?> collector;
 
 	private StreamingRuntimeContext context;
 	private Map<String, OperatorState<?>> states;
@@ -50,7 +50,6 @@ public class StreamVertex<IN, OUT> extends AbstractInvokable implements StreamTa
 	protected ClassLoader userClassLoader;
 
 	public StreamVertex() {
-		userInvokable = null;
 		numTasks = newVertex();
 		instanceID = numTasks;
 	}
@@ -65,6 +64,10 @@ public class StreamVertex<IN, OUT> extends AbstractInvokable implements StreamTa
 		initialize();
 		setInputsOutputs();
 		setInvokable();
+
+		if (LOG.isDebugEnabled()) {
+			LOG.debug("Registered input and output:\t{}", name);
+		}
 	}
 
 	protected void initialize() {
@@ -76,21 +79,19 @@ public class StreamVertex<IN, OUT> extends AbstractInvokable implements StreamTa
 		this.context = createRuntimeContext(name, this.states);
 	}
 
-	protected <T> void invokeUserFunction(StreamInvokable<?, T> userInvokable) throws Exception {
-		userInvokable.setRuntimeContext(context);
-		userInvokable.open(getTaskConfiguration());
-		userInvokable.invoke();
-		userInvokable.close();
-	}
+	protected abstract void setInputsOutputs();
 
-	public void setInputsOutputs() {
-		inputHandler = new InputHandler<IN>(this);
-		outputHandler = new OutputHandler<OUT>(this);
-	}
+	protected abstract void setInvokable();
 
-	protected void setInvokable() {
-		userInvokable = configuration.getUserInvokable(userClassLoader);
-		userInvokable.setup(this);
+	protected abstract StreamInvokable<IN, OUT> getInvokable();
+
+	protected void invokeUserFunction() throws Exception {
+		StreamInvokable<IN, OUT> invokable = getInvokable();
+
+		invokable.setRuntimeContext(context);
+		invokable.open(getTaskConfiguration());
+		invokable.invoke();
+		invokable.close();
 	}
 
 	public String getName() {
@@ -107,43 +108,54 @@ public class StreamVertex<IN, OUT> extends AbstractInvokable implements StreamTa
 		return new StreamingRuntimeContext(taskName, env, getUserCodeClassLoader(), states);
 	}
 
+	public abstract void initializeInvoke();
+
 	@Override
 	public void invoke() throws Exception {
-		outputHandler.invokeUserFunction("TASK", userInvokable);
+
+		if (LOG.isDebugEnabled()) {
+			LOG.debug("{} {} invoked with instance id {}", "TASK", getName(), getInstanceID());
+		}
+
+		initializeInvoke();
+
+		collector.initializeOutputSerializers();
+
+		try {
+			invokeUserFunction();
+		} catch (Exception e) {
+			collector.flushOutputs();
+			throw new RuntimeException(e);
+		}
+
+		if (LOG.isDebugEnabled()) {
+			LOG.debug("{} {} invoke finished instance id {}", "TASK", getName(), getInstanceID());
+		}
+
+		collector.flushOutputs();
 	}
 
 	@Override
-	public StreamConfig getConfig() {
+	public StreamConfig getConfiguration() {
 		return configuration;
 	}
 
-	@SuppressWarnings("unchecked")
-	@Override
-	public <X> MutableObjectIterator<X> getInput(int index) {
-		if (index == 0) {
-			return (MutableObjectIterator<X>) inputHandler.getInputIter();
-		} else {
-			throw new IllegalArgumentException("There is only 1 input");
-		}
-	}
-
-	@SuppressWarnings("unchecked")
-	@Override
-	public <X> StreamRecordSerializer<X> getInputSerializer(int index) {
-		if (index == 0) {
-			return (StreamRecordSerializer<X>) inputHandler.getInputSerializer();
-		} else {
-			throw new IllegalArgumentException("There is only 1 input");
-		}
+	public void setConfiguration(StreamConfig configuration) {
+		this.configuration = configuration;
 	}
 
 	@Override
-	public Collector<OUT> getOutputCollector() {
-		return outputHandler.getCollector();
+	public AbstractStreamCollector<OUT, ?> getOutputCollector() {
+		return collector;
+	}
+
+	public ClassLoader getUserClassLoader() {
+		return userClassLoader;
 	}
 
 	@Override
-	public <X, Y> CoReaderIterator<X, Y> getCoReader() {
-		throw new IllegalArgumentException("CoReader not available");
+	public AckerCollector getAckerCollector() {
+		return ackerCollector;
 	}
+
 }

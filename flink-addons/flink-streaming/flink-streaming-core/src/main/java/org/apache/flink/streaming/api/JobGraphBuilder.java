@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.flink.api.common.io.InputFormat;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
@@ -32,15 +33,18 @@ import org.apache.flink.runtime.jobgraph.tasks.AbstractInvokable;
 import org.apache.flink.runtime.jobmanager.scheduler.CoLocationGroup;
 import org.apache.flink.runtime.jobmanager.scheduler.SlotSharingGroup;
 import org.apache.flink.streaming.api.collector.OutputSelector;
+import org.apache.flink.streaming.api.ft.layer.util.FTLayerConfig;
 import org.apache.flink.streaming.api.function.source.SourceFunction;
 import org.apache.flink.streaming.api.invokable.SourceInvokable;
 import org.apache.flink.streaming.api.invokable.StreamInvokable;
+import org.apache.flink.streaming.api.invokable.ft.FTLayerVertex;
 import org.apache.flink.streaming.api.invokable.operator.co.CoInvokable;
 import org.apache.flink.streaming.api.streamrecord.StreamRecordSerializer;
 import org.apache.flink.streaming.api.streamvertex.CoStreamVertex;
 import org.apache.flink.streaming.api.streamvertex.StreamIterationHead;
 import org.apache.flink.streaming.api.streamvertex.StreamIterationTail;
-import org.apache.flink.streaming.api.streamvertex.StreamVertex;
+import org.apache.flink.streaming.api.streamvertex.StreamSourceVertex;
+import org.apache.flink.streaming.api.streamvertex.StreamTaskVertex;
 import org.apache.flink.streaming.partitioner.StreamPartitioner;
 import org.apache.flink.streaming.partitioner.StreamPartitioner.PartitioningStrategy;
 import org.apache.flink.streaming.state.OperatorState;
@@ -53,11 +57,14 @@ import org.slf4j.LoggerFactory;
 public class JobGraphBuilder {
 
 	private static final Logger LOG = LoggerFactory.getLogger(JobGraphBuilder.class);
-	private final static String DEAFULT_JOB_NAME = "Streaming Job";
-	private JobGraph jobGraph;
+	private final static String DEFAULT_JOB_NAME = "Streaming Job";
+	protected JobGraph jobGraph;
+	protected AbstractJobVertex ftLayerVertex;
 
 	// Graph attributes
 	private Map<String, AbstractJobVertex> streamVertices;
+	private Set<String> sourceVertices;
+	protected Set<String> taskVertices;
 	private Map<String, Integer> vertexParallelism;
 	private Map<String, Long> bufferTimeout;
 	private Map<String, List<String>> outEdgeList;
@@ -89,6 +96,8 @@ public class JobGraphBuilder {
 	public JobGraphBuilder() {
 
 		streamVertices = new HashMap<String, AbstractJobVertex>();
+		sourceVertices = new HashSet<String>();
+		taskVertices = new HashSet<String>();
 		vertexParallelism = new HashMap<String, Integer>();
 		bufferTimeout = new HashMap<String, Long>();
 		outEdgeList = new HashMap<String, List<String>>();
@@ -120,25 +129,18 @@ public class JobGraphBuilder {
 
 	/**
 	 * Adds a vertex to the streaming JobGraph with the given parameters
-	 * 
-	 * @param vertexName
-	 *            Name of the vertex
-	 * @param invokableObject
-	 *            User defined operator
-	 * @param inTypeInfo
-	 *            Input type for serialization
-	 * @param outTypeInfo
-	 *            Output type for serialization
-	 * @param operatorName
-	 *            Operator type
-	 * @param parallelism
-	 *            Number of parallel instances created
+	 *
+	 * @param vertexName      Name of the vertex
+	 * @param invokableObject User defined operator
+	 * @param inTypeInfo      Input type for serialization
+	 * @param outTypeInfo     Output type for serialization
+	 * @param operatorName    Operator type
+	 * @param parallelism     Number of parallel instances created
 	 */
-	public <IN, OUT> void addStreamVertex(String vertexName,
-			StreamInvokable<IN, OUT> invokableObject, TypeInformation<IN> inTypeInfo,
+	public <IN, OUT> void addSimpleTaskVertex(String vertexName, StreamInvokable<IN, OUT> invokableObject, TypeInformation<IN> inTypeInfo,
 			TypeInformation<OUT> outTypeInfo, String operatorName, int parallelism) {
 
-		addVertex(vertexName, StreamVertex.class, invokableObject, operatorName, parallelism);
+		addStreamTaskVertex(vertexName, StreamTaskVertex.class, invokableObject, operatorName, parallelism);
 
 		StreamRecordSerializer<IN> inSerializer = inTypeInfo != null ? new StreamRecordSerializer<IN>(
 				inTypeInfo) : null;
@@ -154,51 +156,51 @@ public class JobGraphBuilder {
 
 	/**
 	 * Adds a source vertex to the streaming JobGraph with the given parameters
-	 * 
-	 * @param vertexName
-	 *            Name of the vertex
-	 * @param function
-	 *            User defined function
-	 * @param inTypeInfo
-	 *            Input type for serialization
-	 * @param outTypeInfo
-	 *            Output type for serialization
-	 * @param operatorName
-	 *            Operator type
-	 * @param parallelism
-	 *            Number of parallel instances created
+	 *
+	 * @param vertexName   Name of the vertex
+	 * @param function     User defined function
+	 * @param inTypeInfo   Input type for serialization
+	 * @param outTypeInfo  Output type for serialization
+	 * @param operatorName Operator type
+	 * @param parallelism  Number of parallel instances created
 	 */
 	public <IN, OUT> void addSourceVertex(String vertexName, SourceFunction<OUT> function,
-			TypeInformation<IN> inTypeInfo, TypeInformation<OUT> outTypeInfo, String operatorName,
-			byte[] serializedFunction, int parallelism) {
+			TypeInformation<IN> inTypeInfo, TypeInformation<OUT> outTypeInfo, String operatorName, int parallelism) {
+
+		sourceVertices.add(vertexName);
 
 		@SuppressWarnings("unchecked")
 		StreamInvokable<IN, OUT> invokableObject = (StreamInvokable<IN, OUT>) new SourceInvokable<OUT>(
 				function);
 
-		addStreamVertex(vertexName, invokableObject, inTypeInfo, outTypeInfo, operatorName,
-				parallelism);
+		addVertex(vertexName, StreamSourceVertex.class, invokableObject, operatorName, parallelism);
+
+		StreamRecordSerializer<IN> inSerializer = inTypeInfo != null ? new StreamRecordSerializer<IN>(
+				inTypeInfo) : null;
+		StreamRecordSerializer<OUT> outSerializer = outTypeInfo != null ? new StreamRecordSerializer<OUT>(
+				outTypeInfo) : null;
+
+		addTypeSerializers(vertexName, inSerializer, null, outSerializer, null);
+
+		if (LOG.isDebugEnabled()) {
+			LOG.debug("Vertex: {}", vertexName);
+		}
 	}
 
 	/**
 	 * Adds a vertex for the iteration head to the {@link JobGraph}. The
 	 * iterated values will be fed from this vertex back to the graph.
-	 * 
-	 * @param vertexName
-	 *            Name of the vertex
-	 * @param iterationHead
-	 *            Id of the iteration head
-	 * @param iterationID
-	 *            ID of iteration for multiple iterations
-	 * @param parallelism
-	 *            Number of parallel instances created
-	 * @param waitTime
-	 *            Max wait time for next record
+	 *
+	 * @param vertexName    Name of the vertex
+	 * @param iterationHead Id of the iteration head
+	 * @param iterationID   ID of iteration for multiple iterations
+	 * @param parallelism   Number of parallel instances created
+	 * @param waitTime      Max wait time for next record
 	 */
 	public void addIterationHead(String vertexName, String iterationHead, Integer iterationID,
 			int parallelism, long waitTime) {
 
-		addVertex(vertexName, StreamIterationHead.class, null, null, parallelism);
+		addStreamTaskVertex(vertexName, StreamIterationHead.class, null, null, parallelism);
 
 		iterationIds.put(vertexName, iterationID);
 		iterationIDtoHeadName.put(iterationID, vertexName);
@@ -206,7 +208,7 @@ public class JobGraphBuilder {
 		setBytesFrom(iterationHead, vertexName);
 
 		setEdge(vertexName, iterationHead, connectionTypes
-				.get(inEdgeList.get(iterationHead).get(0)).get(0), 0, new ArrayList<String>(),
+						.get(inEdgeList.get(iterationHead).get(0)).get(0), 0, new ArrayList<String>(),
 				false);
 
 		iterationWaitTime.put(iterationIDtoHeadName.get(iterationID), waitTime);
@@ -220,17 +222,12 @@ public class JobGraphBuilder {
 	 * Adds a vertex for the iteration tail to the {@link JobGraph}. The values
 	 * intended to be iterated will be sent to this sink from the iteration
 	 * head.
-	 * 
-	 * @param vertexName
-	 *            Name of the vertex
-	 * @param iterationTail
-	 *            Id of the iteration tail
-	 * @param iterationID
-	 *            ID of iteration for mulitple iterations
-	 * @param parallelism
-	 *            Number of parallel instances created
-	 * @param waitTime
-	 *            Max waiting time for next record
+	 *
+	 * @param vertexName    Name of the vertex
+	 * @param iterationTail Id of the iteration tail
+	 * @param iterationID   ID of iteration for mulitple iterations
+	 * @param parallelism   Number of parallel instances created
+	 * @param waitTime      Max waiting time for next record
 	 */
 	public void addIterationTail(String vertexName, String iterationTail, Integer iterationID,
 			int parallelism, long waitTime) {
@@ -239,7 +236,7 @@ public class JobGraphBuilder {
 			throw new RuntimeException("Buffer timeout 0 at iteration tail is not supported.");
 		}
 
-		addVertex(vertexName, StreamIterationTail.class, null, null, parallelism);
+		addStreamTaskVertex(vertexName, StreamIterationTail.class, null, null, parallelism);
 
 		iterationIds.put(vertexName, iterationID);
 		iterationIDtoTailName.put(iterationID, vertexName);
@@ -258,7 +255,7 @@ public class JobGraphBuilder {
 			TypeInformation<IN2> in2TypeInfo, TypeInformation<OUT> outTypeInfo,
 			String operatorName, int parallelism) {
 
-		addVertex(vertexName, CoStreamVertex.class, taskInvokableObject, operatorName, parallelism);
+		addStreamTaskVertex(vertexName, CoStreamVertex.class, taskInvokableObject, operatorName, parallelism);
 
 		addTypeSerializers(vertexName, new StreamRecordSerializer<IN1>(in1TypeInfo),
 				new StreamRecordSerializer<IN2>(in2TypeInfo), new StreamRecordSerializer<OUT>(
@@ -271,18 +268,22 @@ public class JobGraphBuilder {
 
 	/**
 	 * Sets vertex parameters in the JobGraph
-	 * 
-	 * @param vertexName
-	 *            Name of the vertex
-	 * @param vertexClass
-	 *            The class of the vertex
-	 * @param invokableObjectject
-	 *            The user defined invokable object
-	 * @param operatorName
-	 *            Type of the user defined operator
-	 * @param parallelism
-	 *            Number of parallel instances created
+	 *
+	 * @param vertexName      Name of the vertex
+	 * @param vertexClass     The class of the vertex
+	 * @param invokableObject The user defined invokable object
+	 * @param operatorName    Type of the user defined operator
+	 * @param parallelism     Number of parallel instances created
 	 */
+	protected void addStreamTaskVertex(String vertexName,
+			Class<? extends AbstractInvokable> vertexClass, StreamInvokable<?, ?> invokableObject,
+			String operatorName, int parallelism) {
+
+		taskVertices.add(vertexName);
+
+		addVertex(vertexName, vertexClass, invokableObject, operatorName, parallelism);
+	}
+
 	private void addVertex(String vertexName, Class<? extends AbstractInvokable> vertexClass,
 			StreamInvokable<?, ?> invokableObject, String operatorName, int parallelism) {
 
@@ -308,12 +309,31 @@ public class JobGraphBuilder {
 		typeSerializersOut2.put(vertexName, out2);
 	}
 
+	protected void createFTLayerVertex(int parallelism, int numberOfSources) {
+		String vertexName = "FTLayerVertex";
+		Class<? extends AbstractInvokable> vertexClass = FTLayerVertex.class;
+		ftLayerVertex = new AbstractJobVertex(vertexName);
+
+		this.jobGraph.addVertex(ftLayerVertex);
+
+		ftLayerVertex.setInvokableClass(vertexClass);
+		ftLayerVertex.setParallelism(parallelism);
+
+		if (LOG.isDebugEnabled()) {
+			LOG.debug("FTLayer parallelism set: {} for {}", parallelism, vertexName);
+		}
+
+		FTLayerConfig config = new FTLayerConfig(ftLayerVertex.getConfiguration());
+		config.setNumberOfSources(numberOfSources);
+		config.setNumberOfOutputs(taskVertices.size());
+		config.setBufferTimeout(100L);
+	}
+
 	/**
 	 * Creates an {@link AbstractJobVertex} in the {@link JobGraph} and sets its
 	 * config parameters using the ones set previously.
-	 * 
-	 * @param vertexName
-	 *            Name for which the vertex will be created.
+	 *
+	 * @param vertexName Name for which the vertex will be created.
 	 */
 	private void createVertex(String vertexName) {
 
@@ -365,13 +385,10 @@ public class JobGraphBuilder {
 
 	/**
 	 * Connects two vertices with the given names, partitioning and channel type
-	 * 
-	 * @param upStreamVertexName
-	 *            Name of the upstream vertex, that will emit the values
-	 * @param downStreamVertexName
-	 *            Name of the downstream vertex, that will receive the values
-	 * @param partitionerObject
-	 *            The partitioner
+	 *
+	 * @param upStreamVertexName   Name of the upstream vertex, that will emit the values
+	 * @param downStreamVertexName Name of the downstream vertex, that will receive the values
+	 * @param partitionerObject    The partitioner
 	 */
 	private <T> void connect(String upStreamVertexName, String downStreamVertexName,
 			StreamPartitioner<T> partitionerObject) {
@@ -394,21 +411,21 @@ public class JobGraphBuilder {
 					upStreamVertexName, downStreamVertexName);
 		}
 
-		int outputIndex = upStreamVertex.getNumberOfProducedIntermediateDataSets() - 1;
+		int outputIndex = config.getNumberOfOutputs();
 
 		config.setOutputName(outputIndex, outEdgeNames.get(upStreamVertexName).get(outputIndex));
 		config.setSelectAll(outputIndex, outEdgeSelectAll.get(upStreamVertexName).get(outputIndex));
+
 		config.setPartitioner(outputIndex, partitionerObject);
 		config.setNumberOfOutputChannels(outputIndex, vertexParallelism.get(downStreamVertexName));
+		config.setNumberOfOutputs(outputIndex + 1);
 	}
 
 	/**
 	 * Sets the number of parallel instances created for the given vertex.
-	 * 
-	 * @param vertexName
-	 *            Name of the vertex
-	 * @param parallelism
-	 *            Number of parallel instances created
+	 *
+	 * @param vertexName  Name of the vertex
+	 * @param parallelism Number of parallel instances created
 	 */
 	public void setParallelism(String vertexName, int parallelism) {
 		vertexParallelism.put(vertexName, parallelism);
@@ -416,12 +433,10 @@ public class JobGraphBuilder {
 
 	/**
 	 * Sets the input format for the given vertex.
-	 * 
-	 * @param vertexName
-	 *            Name of the vertex
-	 * @param inputFormat
-	 *            input format of the file source associated with the given
-	 *            vertex
+	 *
+	 * @param vertexName  Name of the vertex
+	 * @param inputFormat input format of the file source associated with the given
+	 *                    vertex
 	 */
 	public void setInputFormat(String vertexName, InputFormat<String, ?> inputFormat) {
 		inputFormatList.put(vertexName, inputFormat);
@@ -450,17 +465,12 @@ public class JobGraphBuilder {
 	/**
 	 * Connects two vertices in the JobGraph using the selected partitioner
 	 * settings
-	 * 
-	 * @param upStreamVertexName
-	 *            Name of the upstream(output) vertex
-	 * @param downStreamVertexName
-	 *            Name of the downstream(input) vertex
-	 * @param partitionerObject
-	 *            Partitioner object
-	 * @param typeNumber
-	 *            Number of the type (used at co-functions)
-	 * @param outputNames
-	 *            User defined names of the out edge
+	 *
+	 * @param upStreamVertexName   Name of the upstream(output) vertex
+	 * @param downStreamVertexName Name of the downstream(input) vertex
+	 * @param partitionerObject    Partitioner object
+	 * @param typeNumber           Number of the type (used at co-functions)
+	 * @param outputNames          User defined names of the out edge
 	 */
 	public void setEdge(String upStreamVertexName, String downStreamVertexName,
 			StreamPartitioner<?> partitionerObject, int typeNumber, List<String> outputNames,
@@ -476,11 +486,9 @@ public class JobGraphBuilder {
 	/**
 	 * Sets the parallelism and buffertimeout of the iteration head of the given
 	 * iteration id to the parallelism given.
-	 * 
-	 * @param iterationID
-	 *            ID of the iteration
-	 * @param iterationTail
-	 *            ID of the iteration tail
+	 *
+	 * @param iterationID   ID of the iteration
+	 * @param iterationTail ID of the iteration tail
 	 */
 	public void setIterationSourceSettings(String iterationID, String iterationTail) {
 		setParallelism(iterationIDtoHeadName.get(iterationID), vertexParallelism.get(iterationTail));
@@ -490,11 +498,9 @@ public class JobGraphBuilder {
 	/**
 	 * Sets a user defined {@link OutputSelector} for the given vertex. Used for
 	 * directed emits.
-	 * 
-	 * @param vertexName
-	 *            Name of the vertex for which the output selector will be set
-	 * @param serializedOutputSelector
-	 *            Byte array representing the serialized output selector.
+	 *
+	 * @param vertexName               Name of the vertex for which the output selector will be set
+	 * @param serializedOutputSelector Byte array representing the serialized output selector.
 	 */
 	public <T> void setOutputSelector(String vertexName, byte[] serializedOutputSelector) {
 		outputSelectors.put(vertexName, serializedOutputSelector);
@@ -521,11 +527,9 @@ public class JobGraphBuilder {
 	/**
 	 * Sets TypeSerializerWrapper from one vertex to another, used with some
 	 * sinks.
-	 * 
-	 * @param from
-	 *            from
-	 * @param to
-	 *            to
+	 *
+	 * @param from from
+	 * @param to   to
 	 */
 	public void setBytesFrom(String from, String to) {
 		operatorNames.put(to, operatorNames.get(from));
@@ -567,29 +571,17 @@ public class JobGraphBuilder {
 	}
 
 	/**
-	 * Writes the number of outputs and output channels into each JobVertex's
-	 * config
-	 */
-	private void setNumberOfJobOutputs() {
-		for (AbstractJobVertex vertex : streamVertices.values()) {
-			(new StreamConfig(vertex.getConfiguration())).setNumberOfOutputs(vertex
-					.getNumberOfProducedIntermediateDataSets());
-		}
-	}
-
-	/**
 	 * Gets the assembled {@link JobGraph} and adds a default name for it.
 	 */
 	public JobGraph getJobGraph() {
-		return getJobGraph(DEAFULT_JOB_NAME);
+		return getJobGraph(DEFAULT_JOB_NAME);
 	}
 
 	/**
 	 * Gets the assembled {@link JobGraph} and adds a user specified name for
 	 * it.
-	 * 
-	 * @param jobGraphName
-	 *            name of the jobGraph
+	 *
+	 * @param jobGraphName name of the jobGraph
 	 */
 	public JobGraph getJobGraph(String jobGraphName) {
 		jobGraph = new JobGraph(jobGraphName);
@@ -602,11 +594,56 @@ public class JobGraphBuilder {
 	 * provided.
 	 */
 	private void buildJobGraph() {
-		for (String vertexName : outEdgeList.keySet()) {
-			createVertex(vertexName);
+
+		createFTLayerVertex(1, sourceVertices.size());
+
+		for (String sourceName : sourceVertices) {
+			createVertex(sourceName);
+
+			setFTLayerInput(sourceName);
 		}
 
-		for (String upStreamVertexName : outEdgeList.keySet()) {
+		HashMap<String, Integer> ftLayerOutputs = new HashMap<String, Integer>();
+		int ftLayerOutputNumber = 0;
+
+		for (String vertexName : taskVertices) {
+			createVertex(vertexName);
+
+			setFTLayerOutput(vertexName);
+			ftLayerOutputs.put(vertexName, ftLayerOutputNumber);
+			ftLayerOutputNumber++;
+		}
+
+		int[][] sourceSuccessives = new int[sourceVertices.size()][];
+		int sourceNumber = 0;
+
+		for (String upStreamVertexName : sourceVertices) {
+			int i = 0;
+
+			List<Integer> outEdgeTypeList = outEdgeType.get(upStreamVertexName);
+			List<String> outputs = outEdgeList.get(upStreamVertexName);
+
+			sourceSuccessives[sourceNumber] = new int[outputs.size()];
+
+			for (String downStreamVertexName : outputs) {
+				StreamConfig downStreamVertexConfig = new StreamConfig(streamVertices.get(
+						downStreamVertexName).getConfiguration());
+
+				int numberOfInputs = downStreamVertexConfig.getNumberOfInputs();
+
+				downStreamVertexConfig.setInputType(++numberOfInputs, outEdgeTypeList.get(i));
+				downStreamVertexConfig.setNumberOfInputs(numberOfInputs);
+
+				connect(upStreamVertexName, downStreamVertexName,
+						connectionTypes.get(upStreamVertexName).get(i));
+
+				sourceSuccessives[sourceNumber][i] = ftLayerOutputs.get(downStreamVertexName);
+				i++;
+			}
+			sourceNumber++;
+		}
+
+		for (String upStreamVertexName : taskVertices) {
 			int i = 0;
 
 			List<Integer> outEdgeTypeList = outEdgeType.get(upStreamVertexName);
@@ -617,7 +654,7 @@ public class JobGraphBuilder {
 
 				int inputNumber = downStreamVertexConfig.getNumberOfInputs();
 
-				downStreamVertexConfig.setInputType(inputNumber++, outEdgeTypeList.get(i));
+				downStreamVertexConfig.setInputType(++inputNumber, outEdgeTypeList.get(i));
 				downStreamVertexConfig.setNumberOfInputs(inputNumber);
 
 				connect(upStreamVertexName, downStreamVertexName,
@@ -626,9 +663,33 @@ public class JobGraphBuilder {
 			}
 		}
 
+		FTLayerConfig ftLayerConfig = new FTLayerConfig(ftLayerVertex.getConfiguration());
+		ftLayerConfig.setSourceSuccesives(sourceSuccessives);
+
 		setSlotSharing();
 		setNumberOfJobInputs();
-		setNumberOfJobOutputs();
+	}
+
+	private void setFTLayerOutput(String vertexName) {
+		AbstractJobVertex upStreamVertex = ftLayerVertex;
+		AbstractJobVertex downStreamVertex = streamVertices.get(vertexName);
+
+		downStreamVertex.connectNewDataSetAsInput(upStreamVertex, DistributionPattern.BIPARTITE);
+
+		if (LOG.isDebugEnabled()) {
+			LOG.debug("CONNECTED FTLayer to: {}", vertexName);
+		}
+	}
+
+	private void setFTLayerInput(String vertexName) {
+		AbstractJobVertex upStreamVertex = streamVertices.get(vertexName);
+		AbstractJobVertex downStreamVertex = ftLayerVertex;
+
+		downStreamVertex.connectNewDataSetAsInput(upStreamVertex, DistributionPattern.BIPARTITE);
+
+		if (LOG.isDebugEnabled()) {
+			LOG.debug("CONNECTED to FTLayer: {}", vertexName);
+		}
 	}
 
 }

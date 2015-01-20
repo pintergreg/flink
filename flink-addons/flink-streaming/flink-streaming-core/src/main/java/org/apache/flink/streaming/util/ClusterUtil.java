@@ -57,6 +57,7 @@ public class ClusterUtil {
 
 		try {
 			exec = new LocalFlinkMiniCluster(configuration, true);
+
 			ActorRef jobClient = exec.getJobClient();
 
 			JobClient.submitJobAndWait(jobGraph, true, jobClient, exec.timeout());

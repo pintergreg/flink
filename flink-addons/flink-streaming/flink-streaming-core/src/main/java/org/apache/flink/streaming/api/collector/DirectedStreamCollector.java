@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
  * @param <OUT>
  *            Type of the Tuple collected.
  */
-public class DirectedStreamCollector<OUT> extends StreamCollector<OUT> {
+public class DirectedStreamCollector<OUT> {// TODO extends StreamCollector<OUT> {
 
 	private static final Logger LOG = LoggerFactory.getLogger(DirectedStreamCollector.class);
 
@@ -57,20 +57,20 @@ public class DirectedStreamCollector<OUT> extends StreamCollector<OUT> {
 	public DirectedStreamCollector(int channelID,
 			SerializationDelegate<StreamRecord<OUT>> serializationDelegate,
 			OutputSelector<OUT> outputSelector) {
-		super(channelID, serializationDelegate);
+		// TODO super(channelID, serializationDelegate);
 		this.outputSelector = outputSelector;
 		this.emitted = new HashSet<RecordWriter<SerializationDelegate<StreamRecord<OUT>>>>();
 		this.selectAllOutputs = new LinkedList<RecordWriter<SerializationDelegate<StreamRecord<OUT>>>>();
 	}
 
-	@Override
+	// TODO @Override
 	public void addOutput(RecordWriter<SerializationDelegate<StreamRecord<OUT>>> output,
 			List<String> outputNames, boolean isSelectAllOutput) {
 
 		if (isSelectAllOutput) {
 			selectAllOutputs.add(output);
 		} else {
-			addOneOutput(output, outputNames, isSelectAllOutput);
+			// TODO addOneOutput(output, outputNames, isSelectAllOutput);
 		}
 	}
 
@@ -80,12 +80,12 @@ public class DirectedStreamCollector<OUT> extends StreamCollector<OUT> {
 	 *
 	 */
 	protected void emitToOutputs() {
-		Iterable<String> outputNames = outputSelector.select(streamRecord.getObject());
+		Iterable<String> outputNames = null; // TODO outputSelector.select(streamRecord.getObject());
 		emitted.clear();
 
 		for (RecordWriter<SerializationDelegate<StreamRecord<OUT>>> output : selectAllOutputs) {
 			try {
-				output.emit(serializationDelegate);
+				// TODO output.emit(serializationDelegate);
 			} catch (Exception e) {
 				if (LOG.isErrorEnabled()) {
 					LOG.error("Emit to {} failed due to: {}", output,
@@ -96,8 +96,7 @@ public class DirectedStreamCollector<OUT> extends StreamCollector<OUT> {
 		emitted.addAll(selectAllOutputs);
 
 		for (String outputName : outputNames) {
-			List<RecordWriter<SerializationDelegate<StreamRecord<OUT>>>> outputList = outputMap
-					.get(outputName);
+			List<RecordWriter<SerializationDelegate<StreamRecord<OUT>>>> outputList =  null; // TODO outputMap.get(outputName);
 			try {
 				if (outputList == null) {
 					if (LOG.isErrorEnabled()) {
@@ -111,7 +110,7 @@ public class DirectedStreamCollector<OUT> extends StreamCollector<OUT> {
 
 					for (RecordWriter<SerializationDelegate<StreamRecord<OUT>>> output : outputList) {
 						if (!emitted.contains(output)) {
-							output.emit(serializationDelegate);
+							// TODO output.emit(serializationDelegate);
 							emitted.add(output);
 						}
 					}

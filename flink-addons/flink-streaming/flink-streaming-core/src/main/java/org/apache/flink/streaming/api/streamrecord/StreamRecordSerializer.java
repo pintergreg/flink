@@ -102,6 +102,7 @@ public final class StreamRecordSerializer<T> extends TypeSerializer<StreamRecord
 
 	@Override
 	public StreamRecord<T> deserialize(StreamRecord<T> reuse, DataInputView source) throws IOException {
+		reuse.isTuple = this.isTuple;
 		reuse.getId().read(source);
 		reuse.setObject(typeSerializer.deserialize(reuse.getObject(), source));
 		return reuse;

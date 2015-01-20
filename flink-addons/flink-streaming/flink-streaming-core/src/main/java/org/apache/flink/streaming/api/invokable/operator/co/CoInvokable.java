@@ -49,6 +49,8 @@ public abstract class CoInvokable<IN1, IN2, OUT> extends StreamInvokable<IN1, OU
 	public void setup(StreamTaskContext<OUT> taskContext) {
 		this.collector = taskContext.getOutputCollector();
 
+		this.ackerCollector = taskContext.getAckerCollector();
+
 		this.recordIterator = taskContext.getCoReader();
 
 		this.srSerializer1 = taskContext.getInputSerializer(0);
@@ -110,7 +112,9 @@ public abstract class CoInvokable<IN1, IN2, OUT> extends StreamInvokable<IN1, OU
 
 	protected void callUserFunctionAndLogException1() {
 		try {
+			setAnchorRecord1();
 			callUserFunction1();
+			ackAnchorRecord1();
 		} catch (Exception e) {
 			if (LOG.isErrorEnabled()) {
 				LOG.error("Calling user function failed due to: {}",
@@ -121,13 +125,31 @@ public abstract class CoInvokable<IN1, IN2, OUT> extends StreamInvokable<IN1, OU
 
 	protected void callUserFunctionAndLogException2() {
 		try {
+			setAnchorRecord2();
 			callUserFunction2();
+			ackAnchorRecord2();
 		} catch (Exception e) {
 			if (LOG.isErrorEnabled()) {
 				LOG.error("Calling user function failed due to: {}",
 						StringUtils.stringifyException(e));
 			}
 		}
+	}
+
+	protected void ackAnchorRecord1() {
+		ackerCollector.collect(reuse1.getId());
+	}
+
+	protected void ackAnchorRecord2() {
+		ackerCollector.collect(reuse2.getId());
+	}
+
+	protected void setAnchorRecord1() {
+		collector.setAnchorRecord(reuse1.getId());
+	}
+
+	protected void setAnchorRecord2() {
+		collector.setAnchorRecord(reuse2.getId());
 	}
 
 }

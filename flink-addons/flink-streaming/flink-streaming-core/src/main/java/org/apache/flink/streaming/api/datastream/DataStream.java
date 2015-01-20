@@ -578,8 +578,8 @@ public class DataStream<OUT> {
 	 *         Join transformation.
 	 * 
 	 */
-	public <IN2> StreamJoinOperator<OUT, IN2> join(DataStream<IN2> dataStreamToJoin) {
-		return new StreamJoinOperator<OUT, IN2>(this, dataStreamToJoin);
+	public <IN2> StreamJoinOperator<OUT, IN2> join(DataStream<IN2> other) {
+		return new StreamJoinOperator<OUT, IN2>(this, other);
 	}
 
 	/**
@@ -1021,7 +1021,7 @@ public class DataStream<OUT> {
 		SingleOutputStreamOperator<R, ?> returnStream = new SingleOutputStreamOperator(environment,
 				operatorName, outTypeInfo);
 
-		jobGraphBuilder.addStreamVertex(returnStream.getId(), invokable, getType(), outTypeInfo,
+		jobGraphBuilder.addSimpleTaskVertex(returnStream.getId(), invokable, getType(), outTypeInfo,
 				operatorName, degreeOfParallelism);
 
 		connectGraph(inputStream, returnStream.getId(), 0);
@@ -1085,7 +1085,7 @@ public class DataStream<OUT> {
 
 		DataStreamSink<OUT> returnStream = new DataStreamSink<OUT>(environment, "sink", getType());
 
-		jobGraphBuilder.addStreamVertex(returnStream.getId(), new SinkInvokable<OUT>(
+		jobGraphBuilder.addSimpleTaskVertex(returnStream.getId(), new SinkInvokable<OUT>(
 				clean(sinkFunction)), getType(), null, "sink", degreeOfParallelism);
 
 		this.connectGraph(this.copy(), returnStream.getId(), 0);

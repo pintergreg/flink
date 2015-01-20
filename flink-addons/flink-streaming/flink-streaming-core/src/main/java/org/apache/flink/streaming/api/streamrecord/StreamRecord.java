@@ -21,6 +21,7 @@ import java.io.Serializable;
 
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple;
+import org.apache.flink.streaming.api.ft.layer.util.RecordId;
 
 /**
  * Object for wrapping a tuple or other object with ID used for sending records
@@ -29,7 +30,7 @@ import org.apache.flink.api.java.tuple.Tuple;
 public class StreamRecord<T> implements Serializable {
 	private static final long serialVersionUID = 1L;
 
-	private UID uid;
+	private RecordId id;
 	private T streamObject;
 	public boolean isTuple;
 
@@ -37,26 +38,14 @@ public class StreamRecord<T> implements Serializable {
 	 * Creates an empty StreamRecord
 	 */
 	public StreamRecord() {
-		uid = new UID();
+		id = new RecordId();
 	}
 
 	/**
 	 * @return The ID of the object
 	 */
-	public UID getId() {
-		return uid;
-	}
-
-	/**
-	 * Creates a new ID for the StreamRecord using the given channelID
-	 * 
-	 * @param channelID
-	 *            ID of the emitting task
-	 * @return The StreamRecord object
-	 */
-	public StreamRecord<T> newId(int channelID) {
-		uid = new UID(channelID);
-		return this;
+	public RecordId getId() {
+		return id;
 	}
 
 	/**
@@ -65,8 +54,8 @@ public class StreamRecord<T> implements Serializable {
 	 * @param id
 	 *            id to set
 	 */
-	public void setId(UID id) {
-		this.uid = id;
+	public void setId(RecordId id) {
+		this.id = id;
 	}
 
 	/**
@@ -110,7 +99,7 @@ public class StreamRecord<T> implements Serializable {
 		try {
 			return keySelector.getKey(streamObject);
 		} catch (Exception e) {
-			throw new RuntimeException("Failed to extract key: " + e.getMessage());
+			throw new RuntimeException("Failed to extract key: " + e.getMessage(), e);
 		}
 	}
 

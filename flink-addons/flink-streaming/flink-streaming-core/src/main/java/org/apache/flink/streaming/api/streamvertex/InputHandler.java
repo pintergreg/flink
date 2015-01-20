@@ -18,7 +18,6 @@
 package org.apache.flink.streaming.api.streamvertex;
 
 import org.apache.flink.api.common.typeutils.TypeSerializer;
-import org.apache.flink.core.io.IOReadableWritable;
 import org.apache.flink.runtime.io.network.api.MutableReader;
 import org.apache.flink.runtime.io.network.api.MutableRecordReader;
 import org.apache.flink.runtime.io.network.api.MutableUnionRecordReader;
@@ -32,8 +31,9 @@ import org.apache.flink.util.MutableObjectIterator;
 public class InputHandler<IN> {
 	private StreamRecordSerializer<IN> inputSerializer = null;
 	private MutableObjectIterator<StreamRecord<IN>> inputIter;
-	private MutableReader<IOReadableWritable> inputs;
-
+	private MutableReader<DeserializationDelegate<StreamRecord<IN>>> inputs;
+	private MutableRecordReader<DeserializationDelegate<StreamRecord<IN>>> ftInput;
+	
 	private StreamVertex<IN, ?> streamVertex;
 	private StreamConfig configuration;
 
@@ -58,15 +58,17 @@ public class InputHandler<IN> {
 
 			if (numberOfInputs < 2) {
 
-				inputs = new MutableRecordReader<IOReadableWritable>(streamVertex);
-
+				MutableRecordReader<DeserializationDelegate<StreamRecord<IN>>> reader = new MutableRecordReader<DeserializationDelegate<StreamRecord<IN>>>(streamVertex);
+				inputs = reader;
+				ftInput = reader;
 			} else {
-				MutableRecordReader<IOReadableWritable>[] recordReaders = (MutableRecordReader<IOReadableWritable>[]) new MutableRecordReader<?>[numberOfInputs];
+				MutableRecordReader<DeserializationDelegate<StreamRecord<IN>>>[] recordReaders = (MutableRecordReader<DeserializationDelegate<StreamRecord<IN>>>[]) new MutableRecordReader<?>[numberOfInputs];
 
 				for (int i = 0; i < numberOfInputs; i++) {
-					recordReaders[i] = new MutableRecordReader<IOReadableWritable>(streamVertex);
+					recordReaders[i] = new MutableRecordReader<DeserializationDelegate<StreamRecord<IN>>>(streamVertex);
 				}
-				inputs = new MutableUnionRecordReader<IOReadableWritable>(recordReaders);
+				inputs = new MutableUnionRecordReader<DeserializationDelegate<StreamRecord<IN>>>(recordReaders);
+				ftInput = recordReaders[0];
 			}
 
 			inputIter = createInputIterator();
@@ -97,5 +99,9 @@ public class InputHandler<IN> {
 
 	public MutableObjectIterator<StreamRecord<IN>> getInputIter() {
 		return inputIter;
+	}
+
+	public MutableRecordReader<DeserializationDelegate<StreamRecord<IN>>> getPersistanceInput() {
+		return ftInput;
 	}
 }

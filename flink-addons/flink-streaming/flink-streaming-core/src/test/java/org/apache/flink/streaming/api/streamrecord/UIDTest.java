@@ -17,9 +17,6 @@
 
 package org.apache.flink.streaming.api.streamrecord;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 

@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 import org.apache.flink.core.io.IOReadableWritable;
+import org.apache.flink.runtime.event.task.AbstractEvent;
 import org.apache.flink.runtime.io.network.Buffer;
 import org.apache.flink.runtime.io.network.api.ChannelSelector;
 import org.apache.flink.runtime.io.network.api.RecordWriter;
@@ -45,8 +46,8 @@ public class StreamRecordWriter<T extends IOReadableWritable> extends RecordWrit
 	/** RecordSerializer per outgoing channel */
 	private RecordSerializer<T>[] serializers;
 
-	private ArrayList<TargetChannel> targetChannels;
 
+	private ArrayList<TargetChannel> targetChannels;
 	// -----------------------------------------------------------------------------------------------------------------
 
 	public StreamRecordWriter(AbstractInvokable invokable) {
@@ -113,6 +114,15 @@ public class StreamRecordWriter<T extends IOReadableWritable> extends RecordWrit
 		}
 	}
 
+	@Override
+	public void broadcastEvent(AbstractEvent event) throws IOException, InterruptedException {
+		for (int targetChannel = 0; targetChannel < this.numChannels; targetChannel++) {
+			targetChannels.get(targetChannel).publishEvent(event);
+		}
+	}
+
+	// TODO make syncing less costly by only syncing e.g. the sendEvent method
+
 	private class TargetChannel {
 
 		private int targetChannel;
@@ -123,6 +133,20 @@ public class StreamRecordWriter<T extends IOReadableWritable> extends RecordWrit
 			this.serializer = serializers[targetChannel];
 		}
 
+		public synchronized void publishEvent(AbstractEvent event) throws IOException, InterruptedException {
+			RecordSerializer<T> serializer = serializers[targetChannel];
+
+			Buffer buffer = serializer.getCurrentBuffer();
+			if (buffer == null) {
+				sendEvent(event, targetChannel);
+			} else {
+				sendBufferAndEvent(buffer, event, targetChannel);
+
+				buffer = bufferPool.requestBufferBlocking(bufferPool.getBufferSize());
+				serializer.setNextBuffer(buffer);
+			}
+		}
+		
 		public synchronized void emit(final T record) throws IOException, InterruptedException {
 			RecordSerializer.SerializationResult result = serializer.addRecord(record);
 			while (result.isFullBuffer()) {
@@ -145,7 +169,7 @@ public class StreamRecordWriter<T extends IOReadableWritable> extends RecordWrit
 			serializer.clear();
 		}
 	}
-	
+
 	private class OutputFlusher extends Thread {
 
 		private boolean running = true;
@@ -158,8 +182,10 @@ public class StreamRecordWriter<T extends IOReadableWritable> extends RecordWrit
 		public void run() {
 			while (running && !outputGate.isClosed()) {
 				try {
-					flush();
-					Thread.sleep(timeout);
+					synchronized (outputGate) {
+						flush();
+						Thread.sleep(timeout);
+					}
 				} catch (Exception e) {
 					throw new RuntimeException(e);
 				}

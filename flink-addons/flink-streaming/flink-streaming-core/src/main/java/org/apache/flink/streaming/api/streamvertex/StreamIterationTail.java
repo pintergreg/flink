@@ -21,8 +21,12 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.flink.api.java.tuple.Tuple;
+import org.apache.flink.streaming.api.invokable.StreamInvokable;
 import org.apache.flink.streaming.api.streamrecord.StreamRecord;
+import org.apache.flink.streaming.api.streamrecord.StreamRecordSerializer;
 import org.apache.flink.streaming.io.BlockingQueueBroker;
+import org.apache.flink.streaming.io.CoReaderIterator;
+import org.apache.flink.util.MutableObjectIterator;
 import org.apache.flink.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,8 +51,8 @@ public class StreamIterationTail<IN extends Tuple> extends StreamVertex<IN, IN> 
 		try {
 			inputHandler = new InputHandler<IN>(this);
 
-			iterationId = configuration.getIterationId();
-			iterationWaitTime = configuration.getIterationWaitTime();
+			iterationId = getConfiguration().getIterationId();
+			iterationWaitTime = getConfiguration().getIterationWaitTime();
 			shouldWait = iterationWaitTime > 0;
 			dataChannel = BlockingQueueBroker.instance().get(iterationId.toString());
 		} catch (Exception e) {
@@ -98,7 +102,34 @@ public class StreamIterationTail<IN extends Tuple> extends StreamVertex<IN, IN> 
 		}
 	}
 
+	// TODO
+
 	@Override
 	protected void setInvokable() {
+	}
+
+	@Override
+	protected StreamInvokable<IN, IN> getInvokable() {
+		return null;
+	}
+
+	@Override
+	public void initializeInvoke() {
+
+	}
+
+	@Override
+	public <X> MutableObjectIterator<X> getInput(int index) {
+		return null;
+	}
+
+	@Override
+	public <X> StreamRecordSerializer<X> getInputSerializer(int index) {
+		return null;
+	}
+
+	@Override
+	public <X, Y> CoReaderIterator<X, Y> getCoReader() {
+		return null;
 	}
 }

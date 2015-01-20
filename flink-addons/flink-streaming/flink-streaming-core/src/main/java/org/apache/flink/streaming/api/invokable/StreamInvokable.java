@@ -25,10 +25,12 @@ import org.apache.flink.api.common.functions.RuntimeContext;
 import org.apache.flink.api.common.functions.util.FunctionUtils;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.streaming.api.collector.AbstractStreamCollector;
+import org.apache.flink.streaming.api.collector.ft.AckerCollector;
+import org.apache.flink.streaming.api.invokable.ft.FailException;
 import org.apache.flink.streaming.api.streamrecord.StreamRecord;
 import org.apache.flink.streaming.api.streamrecord.StreamRecordSerializer;
 import org.apache.flink.streaming.api.streamvertex.StreamTaskContext;
-import org.apache.flink.util.Collector;
 import org.apache.flink.util.MutableObjectIterator;
 import org.apache.flink.util.StringUtils;
 import org.slf4j.Logger;
@@ -38,8 +40,7 @@ import org.slf4j.LoggerFactory;
  * The StreamInvokable represents the base class for all invokables in the
  * streaming topology.
  *
- * @param <OUT>
- *            The output type of the invokable
+ * @param <OUT> The output type of the invokable
  */
 public abstract class StreamInvokable<IN, OUT> implements Serializable {
 
@@ -52,9 +53,9 @@ public abstract class StreamInvokable<IN, OUT> implements Serializable {
 	protected StreamRecordSerializer<IN> inSerializer;
 	protected TypeSerializer<IN> objectSerializer;
 	protected StreamRecord<IN> nextRecord;
-	protected boolean isMutable;
 
-	protected Collector<OUT> collector;
+	protected AckerCollector ackerCollector;
+	protected AbstractStreamCollector<OUT, ?> collector;
 	protected Function userFunction;
 	protected volatile boolean isRunning;
 
@@ -64,11 +65,12 @@ public abstract class StreamInvokable<IN, OUT> implements Serializable {
 
 	/**
 	 * Initializes the {@link StreamInvokable} for input and output handling
-	 * 
-	 * @param taskContext
-	 *            StreamTaskContext representing the vertex
+	 *
+	 * @param taskContext StreamTaskContext representing the vertex
 	 */
 	public void setup(StreamTaskContext<OUT> taskContext) {
+		this.ackerCollector = taskContext.getAckerCollector();
+
 		this.collector = taskContext.getOutputCollector();
 		this.recordIterator = taskContext.getInput(0);
 		this.inSerializer = taskContext.getInputSerializer(0);
@@ -86,9 +88,9 @@ public abstract class StreamInvokable<IN, OUT> implements Serializable {
 	public abstract void invoke() throws Exception;
 
 	/*
-	 * Reads the next record from the reader iterator and stores it in the
-	 * nextRecord variable
-	 */
+	* Reads the next record from the reader iterator and stores it in the
+	* nextRecord variable
+	*/
 	protected StreamRecord<IN> readNext() {
 		this.nextRecord = inSerializer.createInstance();
 		try {
@@ -109,7 +111,12 @@ public abstract class StreamInvokable<IN, OUT> implements Serializable {
 	 */
 	protected void callUserFunctionAndLogException() {
 		try {
+			setAnchorRecord();
 			callUserFunction();
+			ackAnchorRecord();
+		} catch (FailException e) {
+			ackerCollector.setFailFlag(true);
+			ackerCollector.collect(nextRecord.getId());
 		} catch (Exception e) {
 			if (LOG.isErrorEnabled()) {
 				LOG.error("Calling user function failed due to: {}",
@@ -121,9 +128,8 @@ public abstract class StreamInvokable<IN, OUT> implements Serializable {
 	/**
 	 * Open method to be used if the user defined function extends the
 	 * RichFunction class
-	 * 
-	 * @param parameters
-	 *            The configuration parameters for the operator
+	 *
+	 * @param parameters The configuration parameters for the operator
 	 */
 	public void open(Configuration parameters) throws Exception {
 		isRunning = true;
@@ -133,7 +139,6 @@ public abstract class StreamInvokable<IN, OUT> implements Serializable {
 	/**
 	 * Close method to be used if the user defined function extends the
 	 * RichFunction class
-	 * 
 	 */
 	public void close() throws Exception {
 		isRunning = false;
@@ -147,5 +152,13 @@ public abstract class StreamInvokable<IN, OUT> implements Serializable {
 
 	protected IN copy(IN record) {
 		return objectSerializer.copy(record);
+	}
+
+	protected void ackAnchorRecord() {
+		ackerCollector.collect(nextRecord.getId());
+	}
+
+	protected void setAnchorRecord() {
+		collector.setAnchorRecord(nextRecord.getId());
 	}
 }

@@ -15,35 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.flink.streaming.api.invokable.operator;
+package org.apache.flink.streaming.partitioner;
 
-import org.apache.flink.api.common.functions.FilterFunction;
-import org.apache.flink.streaming.api.invokable.StreamInvokable;
+import java.io.Serializable;
 
-public class FilterInvokable<IN> extends StreamInvokable<IN, IN> {
+import org.apache.flink.runtime.io.network.api.ChannelSelector;
+import org.apache.flink.runtime.plugable.SerializationDelegate;
+import org.apache.flink.streaming.api.ft.layer.util.SemiDeserializedStreamRecord;
+
+public class FailedRecordPartitioner implements
+		ChannelSelector<SerializationDelegate<SemiDeserializedStreamRecord>>, Serializable {
 
 	private static final long serialVersionUID = 1L;
 
-	FilterFunction<IN> filterFunction;
-	private boolean collect;
-
-	public FilterInvokable(FilterFunction<IN> filterFunction) {
-		super(filterFunction);
-		this.filterFunction = filterFunction;
-	}
-
+	// TODO refactor!
+	
 	@Override
-	public void invoke() throws Exception {
-		while (readNext() != null) {
-			callUserFunctionAndLogException();
-		}
+	public int[] selectChannels(SerializationDelegate<SemiDeserializedStreamRecord> record,
+			int numberOfOutputChannels) {
+		return new int[] { Math.abs(record.getInstance().getHashCode() % numberOfOutputChannels) };
 	}
 
-	@Override
-	protected void callUserFunction() throws Exception {
-		collect = filterFunction.filter(copy(nextRecord.getObject()));
-		if (collect) {
-			collector.collect(nextRecord.getObject());
-		}
-	}
 }
