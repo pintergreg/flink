@@ -19,11 +19,11 @@ package org.apache.flink.streaming.api.streamvertex;
 
 import java.util.ArrayList;
 
-import org.apache.flink.streaming.api.streamrecord.StreamRecord;
 import org.apache.flink.api.java.tuple.Tuple1;
+import org.apache.flink.runtime.io.network.api.RecordWriter;
 import org.apache.flink.runtime.operators.DataSourceTask;
 import org.apache.flink.runtime.plugable.SerializationDelegate;
-import org.apache.flink.runtime.io.network.api.RecordWriter;
+import org.apache.flink.streaming.api.streamrecord.StreamRecord;
 
 public class MockRecordWriter extends RecordWriter<SerializationDelegate<StreamRecord<Tuple1<Integer>>>> {
 
