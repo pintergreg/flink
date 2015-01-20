@@ -17,9 +17,12 @@
 
 package org.apache.flink.streaming.api.streamvertex;
 
+import org.apache.flink.runtime.io.network.api.MutableRecordReader;
+import org.apache.flink.runtime.plugable.DeserializationDelegate;
 import org.apache.flink.streaming.api.collector.StreamTaskCollector;
-import org.apache.flink.streaming.api.collector.ft.TaskAckerCollector;
+import org.apache.flink.streaming.api.ft.context.FTTaskContext;
 import org.apache.flink.streaming.api.invokable.StreamInvokable;
+import org.apache.flink.streaming.api.streamrecord.StreamRecord;
 import org.apache.flink.streaming.api.streamrecord.StreamRecordSerializer;
 import org.apache.flink.streaming.io.CoReaderIterator;
 import org.apache.flink.util.MutableObjectIterator;
@@ -28,23 +31,30 @@ public class StreamTaskVertex<IN, OUT> extends StreamVertex<IN, OUT> {
 
 	protected InputHandler<IN> inputHandler;
 	private StreamInvokable<IN, OUT> userInvokable;
-	
+
 	@Override
-	protected void setInputsOutputs() {		
+	protected void setInputsOutputs() {
 		inputHandler = new InputHandler<IN>(this);
-		ackerCollector = new TaskAckerCollector(inputHandler.getPersistanceInput());
-		collector = new StreamTaskCollector<OUT>(this, ackerCollector);
+
+		setFaultToleranceContext();
+
+		collector = new StreamTaskCollector<OUT>(this, ftContext);
 	}
 
 	@Override
 	protected void setInvokable() {
 		userInvokable = getConfiguration().getUserInvokable(getUserClassLoader());
-		userInvokable.setup(this);
+		userInvokable.setup(this, ftContext);
 	}
 
 	@Override
 	protected StreamInvokable<IN, OUT> getInvokable() {
 		return userInvokable;
+	}
+
+	@Override
+	protected void createFTContext() {
+		ftContext = new FTTaskContext(getPersistenceInput());
 	}
 
 	@Override
@@ -74,6 +84,10 @@ public class StreamTaskVertex<IN, OUT> extends StreamVertex<IN, OUT> {
 	@Override
 	public <X, Y> CoReaderIterator<X, Y> getCoReader() {
 		throw new IllegalArgumentException("CoReader not available");
+	}
+
+	public MutableRecordReader<DeserializationDelegate<StreamRecord<IN>>> getPersistenceInput() {
+		return inputHandler.getPersistanceInput();
 	}
 
 }

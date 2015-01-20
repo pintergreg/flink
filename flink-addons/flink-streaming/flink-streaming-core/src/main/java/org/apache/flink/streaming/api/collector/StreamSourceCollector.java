@@ -25,8 +25,7 @@ import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.runtime.io.network.serialization.DataOutputSerializer;
 import org.apache.flink.runtime.plugable.SerializationDelegate;
-import org.apache.flink.streaming.api.collector.ft.AckerCollector;
-import org.apache.flink.streaming.api.collector.ft.PersistenceCollector;
+import org.apache.flink.streaming.api.ft.context.FTSourceContext;
 import org.apache.flink.streaming.api.ft.layer.util.RecordId;
 import org.apache.flink.streaming.api.ft.layer.util.SemiDeserializedStreamRecord;
 import org.apache.flink.streaming.api.streamvertex.StreamVertex;
@@ -37,17 +36,16 @@ public class StreamSourceCollector<T> extends
 	protected DataOutputSerializer temporaryOutputView;
 	protected SemiDeserializedStreamRecord semiDeserializedStreamRecord;
 
-	protected PersistenceCollector persistenceCollector;
-
 	protected SerializationDelegate<SemiDeserializedStreamRecord> serializationDelegate;
 
 	protected TypeSerializer<T> objectSerializer;
 
-	public StreamSourceCollector(StreamVertex<?, T> streamComponent, AckerCollector ackerCollector,
-			PersistenceCollector persistenceCollector) {
-		super(streamComponent, ackerCollector);
+	private FTSourceContext ftSourceContext;
 
-		this.persistenceCollector = persistenceCollector;
+	public StreamSourceCollector(StreamVertex<?, T> streamComponent, FTSourceContext ftContext) {
+		super(streamComponent, ftContext);
+
+		this.ftSourceContext = ftContext;
 
 		this.serializationDelegate = SemiDeserializedStreamRecord.createSerializationDelegate();
 
@@ -66,7 +64,7 @@ public class StreamSourceCollector<T> extends
 
 	public StreamSourceCollector(StreamSourceCollector<T> other) {
 		super(other);
-		this.persistenceCollector = other.persistenceCollector;
+		this.ftSourceContext = other.ftSourceContext;
 		this.outSerializer = other.outSerializer;
 
 		this.serializationDelegate = other.serializationDelegate;
@@ -82,7 +80,7 @@ public class StreamSourceCollector<T> extends
 
 		serializationDelegate.setInstance(semiDeserializedStreamRecord);
 
-		persistenceCollector.collect(semiDeserializedStreamRecord);
+		ftSourceContext.persist(semiDeserializedStreamRecord);
 
 		return serializationDelegate;
 	}
@@ -114,7 +112,7 @@ public class StreamSourceCollector<T> extends
 
 	@Override
 	public void setAnchorRecord(RecordId id) {
-
+		// intentionally left blank
 	}
 
 }

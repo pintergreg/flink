@@ -18,7 +18,7 @@
 package org.apache.flink.streaming.api.streamvertex;
 
 import org.apache.flink.streaming.api.collector.StreamTaskCollector;
-import org.apache.flink.streaming.api.collector.ft.TaskAckerCollector;
+import org.apache.flink.streaming.api.ft.context.FTTaskContext;
 import org.apache.flink.streaming.api.invokable.operator.co.CoInvokable;
 import org.apache.flink.streaming.api.streamrecord.StreamRecordSerializer;
 import org.apache.flink.streaming.io.CoReaderIterator;
@@ -36,16 +36,23 @@ public class CoStreamVertex<IN1, IN2, OUT> extends StreamVertex<IN1, OUT> {
 
 	@Override
 	protected void setInputsOutputs() {
+
 		coInputHandler = new CoInputHandler<IN1, IN2>(this);
-		ackerCollector = new TaskAckerCollector(coInputHandler.getPersistanceInput());
-		collector = new StreamTaskCollector<OUT>(this, ackerCollector);
+
+		setFaultToleranceContext();
+
+		collector = new StreamTaskCollector<OUT>(this, ftContext);
+	}
+
+	protected void createFTContext() {
+		ftContext = new FTTaskContext(coInputHandler.getPersistanceInput());
 	}
 
 	@Override
 	protected void setInvokable() {
 		userInvokable = getConfiguration().getUserInvokable(getUserClassLoader());
 
-		userInvokable.setup(this);
+		userInvokable.setup(this, ftContext);
 	}
 
 	@Override

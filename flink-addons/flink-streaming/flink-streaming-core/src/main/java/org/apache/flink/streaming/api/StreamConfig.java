@@ -64,6 +64,7 @@ public final class StreamConfig {
 	// DEFAULT VALUES
 
 	private static final long DEFAULT_TIMEOUT = 100;
+	public static final String FAULT_TOLERANCE_TURNED_ON = "FAULT TOLERANCE TURNED ON";
 
 	// CONFIG METHODS
 
@@ -317,6 +318,14 @@ public final class StreamConfig {
 		} catch (Exception e) {
 			throw new RuntimeException("Could not load operator state");
 		}
+	}
+
+	public void setFaultToleranceTurnedOnFlag(boolean faultToleranceIsTurnedOn) {
+		config.setBoolean(FAULT_TOLERANCE_TURNED_ON, faultToleranceIsTurnedOn);
+	}
+
+	public boolean getFaultToleranceTurnedOnFlag() {
+		return config.getBoolean(FAULT_TOLERANCE_TURNED_ON, true);
 	}
 
 }

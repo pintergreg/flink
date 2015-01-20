@@ -29,6 +29,7 @@ import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.streaming.api.StreamConfig;
 import org.apache.flink.streaming.api.collector.AbstractStreamCollector;
 import org.apache.flink.streaming.api.collector.ft.AckerCollector;
+import org.apache.flink.streaming.api.ft.context.NoFTContext;
 import org.apache.flink.streaming.api.invokable.operator.co.CoInvokable;
 import org.apache.flink.streaming.api.streamrecord.StreamRecord;
 import org.apache.flink.streaming.api.streamrecord.StreamRecordSerializer;
@@ -156,7 +157,7 @@ public class MockCoContext<IN1, IN2, OUT> implements StreamTaskContext<OUT> {
 	public static <IN1, IN2, OUT> List<OUT> createAndExecute(CoInvokable<IN1, IN2, OUT> invokable,
 			List<IN1> input1, List<IN2> input2) {
 		MockCoContext<IN1, IN2, OUT> mockContext = new MockCoContext<IN1, IN2, OUT>(input1, input2);
-		invokable.setup(mockContext);
+		invokable.setup(mockContext, new NoFTContext());
 
 		try {
 			invokable.open(null);

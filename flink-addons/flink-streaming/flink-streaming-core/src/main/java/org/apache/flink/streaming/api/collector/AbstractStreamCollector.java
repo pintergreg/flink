@@ -27,7 +27,7 @@ import org.apache.flink.core.io.IOReadableWritable;
 import org.apache.flink.runtime.io.network.api.ChannelSelector;
 import org.apache.flink.runtime.io.network.api.RecordWriter;
 import org.apache.flink.streaming.api.StreamConfig;
-import org.apache.flink.streaming.api.collector.ft.AckerCollector;
+import org.apache.flink.streaming.api.ft.context.FTContext;
 import org.apache.flink.streaming.api.ft.layer.util.RecordId;
 import org.apache.flink.streaming.api.streamrecord.StreamRecord;
 import org.apache.flink.streaming.api.streamvertex.StreamVertex;
@@ -51,7 +51,8 @@ public abstract class AbstractStreamCollector<T, OUT extends IOReadableWritable>
 
 	private static final Logger LOG = LoggerFactory.getLogger(AbstractStreamCollector.class);
 
-	protected AckerCollector ackerCollector;
+	private FTContext ftContext;
+
 	protected List<RecordWriter<OUT>> outputs;
 	protected Map<String, List<RecordWriter<OUT>>> outputMap;
 	protected RecordId anchorRecord;
@@ -64,10 +65,11 @@ public abstract class AbstractStreamCollector<T, OUT extends IOReadableWritable>
 	 *            Serialization delegate used for serialization
 	 */
 
-	public AbstractStreamCollector(StreamVertex<?, T> streamComponent, AckerCollector ackerCollector) {
+	public AbstractStreamCollector(StreamVertex<?, T> streamComponent, FTContext ftContext) {
 		outputs = new ArrayList<RecordWriter<OUT>>();
 		StreamConfig configuration = new StreamConfig(streamComponent.getTaskConfiguration());
-		this.ackerCollector = ackerCollector;
+
+		this.ftContext = ftContext;
 
 		try {
 			outSerializer = configuration.getTypeSerializerOut1(streamComponent.getUserClassLoader());
@@ -134,7 +136,7 @@ public abstract class AbstractStreamCollector<T, OUT extends IOReadableWritable>
 		this.outputs = other.outputs;
 		this.outputMap = other.outputMap;
 		this.anchorRecord = other.anchorRecord;
-		this.ackerCollector = other.ackerCollector;
+		this.ftContext = other.ftContext;
 	}
 
 	/**
@@ -250,7 +252,8 @@ public abstract class AbstractStreamCollector<T, OUT extends IOReadableWritable>
 			InterruptedException {
 		RecordId newRecordId = setOutRecordId(outRecord, anchorRecord);
 		output.emit(outRecord);
-		ackerCollector.collect(newRecordId);
+
+		ftContext.xor(newRecordId);
 	}
 
 	public void setAnchorRecord(RecordId anchorRecord) {

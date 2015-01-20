@@ -26,7 +26,7 @@ import org.apache.flink.api.common.functions.util.FunctionUtils;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.collector.AbstractStreamCollector;
-import org.apache.flink.streaming.api.collector.ft.AckerCollector;
+import org.apache.flink.streaming.api.ft.context.FTContext;
 import org.apache.flink.streaming.api.invokable.ft.FailException;
 import org.apache.flink.streaming.api.streamrecord.StreamRecord;
 import org.apache.flink.streaming.api.streamrecord.StreamRecordSerializer;
@@ -54,7 +54,8 @@ public abstract class StreamInvokable<IN, OUT> implements Serializable {
 	protected TypeSerializer<IN> objectSerializer;
 	protected StreamRecord<IN> nextRecord;
 
-	protected AckerCollector ackerCollector;
+	protected FTContext ftContext;
+
 	protected AbstractStreamCollector<OUT, ?> collector;
 	protected Function userFunction;
 	protected volatile boolean isRunning;
@@ -68,8 +69,8 @@ public abstract class StreamInvokable<IN, OUT> implements Serializable {
 	 *
 	 * @param taskContext StreamTaskContext representing the vertex
 	 */
-	public void setup(StreamTaskContext<OUT> taskContext) {
-		this.ackerCollector = taskContext.getAckerCollector();
+	public void setup(StreamTaskContext<OUT> taskContext, FTContext ftContext) {
+		this.ftContext = ftContext;
 
 		this.collector = taskContext.getOutputCollector();
 		this.recordIterator = taskContext.getInput(0);
@@ -115,8 +116,8 @@ public abstract class StreamInvokable<IN, OUT> implements Serializable {
 			callUserFunction();
 			ackAnchorRecord();
 		} catch (FailException e) {
-			ackerCollector.setFailFlag(true);
-			ackerCollector.collect(nextRecord.getId());
+			ftContext.setFailFlag(true);
+			ftContext.xor(nextRecord);
 		} catch (Exception e) {
 			if (LOG.isErrorEnabled()) {
 				LOG.error("Calling user function failed due to: {}",
@@ -155,7 +156,7 @@ public abstract class StreamInvokable<IN, OUT> implements Serializable {
 	}
 
 	protected void ackAnchorRecord() {
-		ackerCollector.collect(nextRecord.getId());
+		ftContext.xor(nextRecord);
 	}
 
 	protected void setAnchorRecord() {

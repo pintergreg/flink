@@ -18,7 +18,7 @@
 package org.apache.flink.streaming.api.collector;
 
 import org.apache.flink.runtime.plugable.SerializationDelegate;
-import org.apache.flink.streaming.api.collector.ft.AckerCollector;
+import org.apache.flink.streaming.api.ft.context.FTContext;
 import org.apache.flink.streaming.api.ft.layer.util.RecordId;
 import org.apache.flink.streaming.api.streamrecord.StreamRecord;
 import org.apache.flink.streaming.api.streamvertex.StreamVertex;
@@ -40,10 +40,12 @@ public class StreamTaskCollector<T> extends
 	 * Creates a new StreamCollector
 	 *
 	 * @param channelID             Channel ID of the Task
-	 * @param serializationDelegate Serialization delegate used for serialization
+	 * @param serializationDelegate
+	 * @param streamComponent
+	 * @param ackerCollector
 	 */
-	public StreamTaskCollector(StreamVertex<?, T> streamComponent, AckerCollector ackerCollector) {
-		super(streamComponent, ackerCollector);
+	public StreamTaskCollector(StreamVertex<?, T> streamComponent, FTContext ftContext) {
+		super(streamComponent, ftContext);
 
 		serializationDelegate = new SerializationDelegate<StreamRecord<T>>(outSerializer);
 		serializationDelegate.setInstance(outSerializer != null ? outSerializer.createInstance() : null);

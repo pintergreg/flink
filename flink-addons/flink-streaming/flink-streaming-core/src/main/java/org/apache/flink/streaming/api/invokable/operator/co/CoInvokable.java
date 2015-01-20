@@ -19,6 +19,7 @@ package org.apache.flink.streaming.api.invokable.operator.co;
 
 import org.apache.flink.api.common.functions.Function;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.streaming.api.ft.context.FTContext;
 import org.apache.flink.streaming.api.invokable.StreamInvokable;
 import org.apache.flink.streaming.api.streamrecord.StreamRecord;
 import org.apache.flink.streaming.api.streamrecord.StreamRecordSerializer;
@@ -45,11 +46,13 @@ public abstract class CoInvokable<IN1, IN2, OUT> extends StreamInvokable<IN1, OU
 	protected TypeSerializer<IN1> serializer1;
 	protected TypeSerializer<IN2> serializer2;
 
+	private FTContext ftContext;
+
 	@Override
-	public void setup(StreamTaskContext<OUT> taskContext) {
+	public void setup(StreamTaskContext<OUT> taskContext, FTContext ftContext) {
 		this.collector = taskContext.getOutputCollector();
 
-		this.ackerCollector = taskContext.getAckerCollector();
+		this.ftContext = ftContext;
 
 		this.recordIterator = taskContext.getCoReader();
 
@@ -137,11 +140,11 @@ public abstract class CoInvokable<IN1, IN2, OUT> extends StreamInvokable<IN1, OU
 	}
 
 	protected void ackAnchorRecord1() {
-		ackerCollector.collect(reuse1.getId());
+		ftContext.xor(reuse1);
 	}
 
 	protected void ackAnchorRecord2() {
-		ackerCollector.collect(reuse2.getId());
+		ftContext.xor(reuse2);
 	}
 
 	protected void setAnchorRecord1() {

@@ -53,8 +53,8 @@ public class SinkInvokable<IN> extends StreamInvokable<IN, IN> {
 			callUserFunction();
 			ackAnchorRecord();
 		} catch (FailException e) {
-			ackerCollector.setFailFlag(true);
-			ackerCollector.collect(nextRecord.getId());
+			ftContext.setFailFlag(true);
+			ftContext.xor(nextRecord);
 		} catch (Exception e) {
 			if (LOG.isErrorEnabled()) {
 				LOG.error("Calling user function failed due to: {}",

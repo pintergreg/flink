@@ -21,6 +21,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.flink.api.java.tuple.Tuple;
+import org.apache.flink.streaming.api.ft.context.NoFTContext;
 import org.apache.flink.streaming.api.invokable.StreamInvokable;
 import org.apache.flink.streaming.api.streamrecord.StreamRecord;
 import org.apache.flink.streaming.api.streamrecord.StreamRecordSerializer;
@@ -111,6 +112,12 @@ public class StreamIterationTail<IN extends Tuple> extends StreamVertex<IN, IN> 
 	@Override
 	protected StreamInvokable<IN, IN> getInvokable() {
 		return null;
+	}
+
+	@Override
+	protected void createFTContext() {
+		// FT not implemented for iterations
+		ftContext = new NoFTContext();
 	}
 
 	@Override

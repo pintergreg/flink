@@ -24,6 +24,8 @@ import org.apache.flink.runtime.jobgraph.tasks.AbstractInvokable;
 import org.apache.flink.streaming.api.StreamConfig;
 import org.apache.flink.streaming.api.collector.AbstractStreamCollector;
 import org.apache.flink.streaming.api.collector.ft.AckerCollector;
+import org.apache.flink.streaming.api.ft.context.FTContext;
+import org.apache.flink.streaming.api.ft.context.NoFTContext;
 import org.apache.flink.streaming.api.invokable.StreamInvokable;
 import org.apache.flink.streaming.state.OperatorState;
 import org.slf4j.Logger;
@@ -34,13 +36,12 @@ public abstract class StreamVertex<IN, OUT> extends AbstractInvokable implements
 
 	private static int numTasks;
 
-	private StreamConfig configuration;
+	protected StreamConfig configuration;
 	protected int instanceID;
 	protected String name;
 	private static int numVertices = 0;
 
 	protected String functionName;
-	protected AckerCollector ackerCollector;
 
 	protected AbstractStreamCollector<OUT, ?> collector;
 
@@ -48,6 +49,9 @@ public abstract class StreamVertex<IN, OUT> extends AbstractInvokable implements
 	private Map<String, OperatorState<?>> states;
 
 	protected ClassLoader userClassLoader;
+
+	protected AckerCollector ackerCollector;
+	protected FTContext ftContext;
 
 	public StreamVertex() {
 		numTasks = newVertex();
@@ -93,6 +97,16 @@ public abstract class StreamVertex<IN, OUT> extends AbstractInvokable implements
 		invokable.invoke();
 		invokable.close();
 	}
+
+	protected void setFaultToleranceContext() {
+		if (configuration.getFaultToleranceTurnedOnFlag()) {
+			createFTContext();
+		} else {
+			ftContext = new NoFTContext();
+		}
+	}
+
+	protected abstract void createFTContext();
 
 	public String getName() {
 		return name;

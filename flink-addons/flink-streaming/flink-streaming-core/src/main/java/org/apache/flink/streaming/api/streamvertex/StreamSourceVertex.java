@@ -17,40 +17,32 @@
 
 package org.apache.flink.streaming.api.streamvertex;
 
-import org.apache.flink.runtime.plugable.SerializationDelegate;
 import org.apache.flink.streaming.api.collector.StreamSourceCollector;
-import org.apache.flink.streaming.api.collector.ft.PersistenceCollector;
-import org.apache.flink.streaming.api.collector.ft.SourceAckerCollector;
-import org.apache.flink.streaming.api.ft.layer.util.SemiDeserializedStreamRecord;
+import org.apache.flink.streaming.api.ft.context.FTSourceContext;
 import org.apache.flink.streaming.api.invokable.SourceInvokable;
 import org.apache.flink.streaming.api.invokable.StreamInvokable;
 import org.apache.flink.streaming.api.streamrecord.StreamRecordSerializer;
 import org.apache.flink.streaming.io.CoReaderIterator;
-import org.apache.flink.streaming.io.StreamRecordWriter;
-import org.apache.flink.streaming.partitioner.PersistencePartitioner;
 import org.apache.flink.util.MutableObjectIterator;
 
 public class StreamSourceVertex<OUT> extends StreamVertex<OUT, OUT> {
 
 	private SourceInvokable<OUT> sourceInvokable;
-	private PersistenceCollector persistenceCollector;
-	private StreamRecordWriter<SerializationDelegate<SemiDeserializedStreamRecord>> ftWriter;
-	
+
+	private FTSourceContext ftSourceContext;
+
 	@Override
 	protected void setInputsOutputs() {
-		PersistencePartitioner partitioner = new PersistencePartitioner();
-		ftWriter = new StreamRecordWriter<SerializationDelegate<SemiDeserializedStreamRecord>>(this, partitioner, 100L);
+		setFaultToleranceContext();
 
-		persistenceCollector = new PersistenceCollector(ftWriter);
-		ackerCollector = new SourceAckerCollector(ftWriter);
-
-		collector = new StreamSourceCollector<OUT>(this, ackerCollector, persistenceCollector);
+		collector = new StreamSourceCollector<OUT>(this, ftSourceContext); //ackerCollector, persistenceCollector);
 	}
 
 	@Override
 	protected void setInvokable() {
 		sourceInvokable = getConfiguration().getUserInvokable(getUserClassLoader());
-		sourceInvokable.setup(this);
+		
+		sourceInvokable.setup(this, ftContext);
 	}
 
 	@Override
@@ -59,8 +51,14 @@ public class StreamSourceVertex<OUT> extends StreamVertex<OUT, OUT> {
 	}
 
 	@Override
+	protected void createFTContext() {
+		ftSourceContext = new FTSourceContext(this);
+		ftContext = ftSourceContext;
+	}
+
+	@Override
 	public void initializeInvoke() {
-		ftWriter.initializeSerializers();
+		ftContext.initialize();
 	}
 
 	@Override

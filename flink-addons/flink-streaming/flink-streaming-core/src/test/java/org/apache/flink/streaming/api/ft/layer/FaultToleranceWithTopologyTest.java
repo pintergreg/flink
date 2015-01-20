@@ -37,10 +37,10 @@ import org.apache.flink.runtime.jobgraph.tasks.AbstractInvokable;
 import org.apache.flink.runtime.plugable.SerializationDelegate;
 import org.apache.flink.streaming.api.JobGraphBuilder;
 import org.apache.flink.streaming.api.collector.StreamTaskCollector;
-import org.apache.flink.streaming.api.collector.ft.AckerCollector;
-import org.apache.flink.streaming.api.collector.ft.TaskAckerCollector;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.LocalStreamEnvironment;
+import org.apache.flink.streaming.api.ft.context.FTContext;
+import org.apache.flink.streaming.api.ft.context.FTTaskContext;
 import org.apache.flink.streaming.api.ft.layer.util.FTLayerConfig;
 import org.apache.flink.streaming.api.ft.layer.util.RecordId;
 import org.apache.flink.streaming.api.ft.layer.util.RecordWithHashCode;
@@ -120,8 +120,8 @@ public class FaultToleranceWithTopologyTest {
 		@Override
 		protected void setInputsOutputs() {
 			inputHandler = new InputHandler<IN>(this);
-			ackerCollector = new TaskAckerCollector(inputHandler.getPersistanceInput());
-			collector = new MockStreamTaskCollector<OUT>(this, ackerCollector);
+			FTTaskContext ftTaskContext = new FTTaskContext(this.getPersistenceInput());
+			collector = new MockStreamTaskCollector<OUT>(this, ftTaskContext);
 		}
 	}
 
@@ -129,8 +129,8 @@ public class FaultToleranceWithTopologyTest {
 		private static final Logger LOG = LoggerFactory.getLogger(MockStreamTaskCollector.class);
 
 		public MockStreamTaskCollector(StreamVertex<?, T> streamComponent,
-				AckerCollector ackerCollector) {
-			super(streamComponent, ackerCollector);
+				FTContext ftContext) {
+			super(streamComponent, ftContext);
 		}
 
 		public MockStreamTaskCollector(StreamTaskCollector<T> other) {
