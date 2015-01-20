@@ -6,7 +6,7 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,27 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.flink.streaming.api.windowing.policy;
+package org.apache.flink.streaming.api.ft.layer.util;
 
-import static org.junit.Assert.assertEquals;
+public class RecordWithHashCode {
+	private byte[] serializedRecord;
+	private int hashCode;
 
-import org.junit.Test;
+	public RecordWithHashCode(byte[] serializedRecord, int hashCode) {
+		this.serializedRecord = serializedRecord;
+		this.hashCode = hashCode;
+	}
 
-public class TumblingEvictionPolicyTest {
+	public byte[] getSerializedRecord() {
+		return serializedRecord;
+	}
 
-	@Test
-	public void testTumblingEviction() {
-		EvictionPolicy<Integer> policy = new TumblingEvictionPolicy<Integer>();
+	public int getHashCode() {
+		return hashCode;
+	}
 
-		int counter = 0;
-
-		for (int i = 0; i < 10; i++) {
-			for (int j = 0; j < i; j++) {
-				assertEquals(0, policy.notifyEviction(0, false, counter++));
-			}
-			assertEquals(counter, policy.notifyEviction(0, true, counter));
-			counter = 1;
+	public String toString() {
+		String result = "[";
+		for (int i = 0; i < serializedRecord.length; i++) {
+			result += ", " + serializedRecord[i];
 		}
+		result = result.replaceFirst(", ", "");
+		result += "]";
+		return result;
 	}
 
 }

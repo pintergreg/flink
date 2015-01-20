@@ -15,27 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.flink.streaming.api.windowing.policy;
+package org.apache.flink.streaming.api.ft.layer.util;
 
-import static org.junit.Assert.assertEquals;
+public interface RecordReplayer {
 
-import org.junit.Test;
-
-public class TumblingEvictionPolicyTest {
-
-	@Test
-	public void testTumblingEviction() {
-		EvictionPolicy<Integer> policy = new TumblingEvictionPolicy<Integer>();
-
-		int counter = 0;
-
-		for (int i = 0; i < 10; i++) {
-			for (int j = 0; j < i; j++) {
-				assertEquals(0, policy.notifyEviction(0, false, counter++));
-			}
-			assertEquals(counter, policy.notifyEviction(0, true, counter));
-			counter = 1;
-		}
-	}
+	void replayRecord(long sourceId, SemiDeserializedStreamRecord sourceRecord);
 
 }
