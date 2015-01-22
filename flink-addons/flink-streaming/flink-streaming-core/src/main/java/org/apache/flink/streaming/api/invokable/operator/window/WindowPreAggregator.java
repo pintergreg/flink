@@ -50,9 +50,9 @@ public class WindowPreAggregator<IN> extends
 			IN nextElement = nextObject.f0;
 			Integer windowID = nextObject.f1;
 			Integer numToEvict = nextObject.f2;
-
-			evict(numToEvict);
+			
 			emit(windowID);
+			evict(numToEvict);
 			addToBuffer(nextElement);
 
 		}
