@@ -77,6 +77,8 @@ public class MultiCastTest {
 		//testing multicast 2 sendMessageToMultipleRecipients
 		testMulticast(numOfNodes, edgeList, edgeList.size(), expectedNumOfBlockedMessages, 2, 2);
 
+		testMulticast(numOfNodes, edgeList, edgeList.size(), expectedNumOfBlockedMessages, 2, 3);
+
 	}
 
 	@Test
@@ -147,8 +149,14 @@ public class MultiCastTest {
 						.withPlainEdges(edges, new TestUpdater(),
 								new TestMessager2SendMessageToMultipleRecipients(), 1);
 				result = initialVertices.runOperation(iteration);
+			} else if (subTestId == 3) {
+				throw new UnsupportedOperationException("withValuedEdges not yet implemented in MC2");
+//				VertexCentricIteration2<Long, VertexVal, Message, EdgeVal> iteration = VertexCentricIteration2
+//						.withValuedEdges(edges, new TestUpdater(),
+//								new TestMessager2ValuedEdges(), 1);
+//				result = initialVertices.runOperation(iteration);
 			} else {
-				throw new RuntimeException("For multicast 2 the subtest id should be 0, 1 or 2");
+				throw new RuntimeException("For multicast 2 the subtest id should be 0, 1, 2, 3");
 			}
 		} else {
 			throw new RuntimeException("The value of <whichMulticast>  should be 1, or 2");
@@ -196,6 +204,10 @@ public class MultiCastTest {
 	
 	public static final class VertexVal {
 		public Integer dummy = 1;
+	}
+
+	public static final class EdgeVal {
+		public Integer dummy = 3;
 	}
 
 	public static final class Message {
@@ -257,7 +269,6 @@ public class MultiCastTest {
 
 
 	public static final class TestMessager2 extends MessagingFunction2<Long, VertexVal, Message, NullValue> {
-		boolean multiRecipients = false;
 		@Override
 		public void sendMessages(Long vertexId, VertexVal componentId) {
 			Message m = new Message(vertexId);
@@ -270,7 +281,6 @@ public class MultiCastTest {
 	}
 
 	public static final class TestMessager2SendMessageTo extends MessagingFunction2<Long, VertexVal, Message, NullValue> {
-		boolean multiRecipients = false;
 		@Override
 		public void sendMessages(Long vertexId, VertexVal componentId) {
 			Message m = new Message(vertexId);
@@ -281,7 +291,6 @@ public class MultiCastTest {
 	}
 
 	public static final class TestMessager2SendMessageToMultipleRecipients extends MessagingFunction2<Long, VertexVal, Message, NullValue> {
-		boolean multiRecipients = false;
 		@Override
 		public void sendMessages(Long vertexId, VertexVal componentId) {
 			Message m = new Message(vertexId);
@@ -290,6 +299,16 @@ public class MultiCastTest {
 				recipients.addRecipient(edge.target());
 			}
 			int numOfBlockedMessages = sendMessageToMultipleRecipients(recipients, m);
+			numOfBlockedMessagesToSend.addAndGet(-numOfBlockedMessages);
+		}
+	}
+
+	public static final class TestMessager2ValuedEdges extends MessagingFunction2<Long, VertexVal, Message, EdgeVal> {
+		@Override
+		public void sendMessages(Long vertexId, VertexVal componentId) {
+			Message m = new Message(vertexId);
+
+			int numOfBlockedMessages = sendMessageToAllNeighbors(m);
 			numOfBlockedMessagesToSend.addAndGet(-numOfBlockedMessages);
 		}
 	}
