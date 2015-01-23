@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -47,14 +48,16 @@ public class StreamingJobGraphGenerator {
 	private static final Logger LOG = LoggerFactory.getLogger(StreamingJobGraphGenerator.class);
 
 	private StreamGraph streamGraph;
-
-	private Map<String, AbstractJobVertex> streamVertices;
 	private JobGraph jobGraph;
+	private Map<String, AbstractJobVertex> streamVertices;
+	private Set<String> sourceVertices;
 	private Collection<String> builtNodes;
 
 	private Map<String, Map<String, StreamConfig>> chainedConfigs;
 	private Map<String, StreamConfig> vertexConfigs;
 	private Map<String, String> chainedNames;
+
+	private final FTLayerBuilder ftBuilder = new NOpFTLayer();
 
 	public StreamingJobGraphGenerator(StreamGraph streamGraph) {
 		this.streamGraph = streamGraph;
@@ -66,16 +69,19 @@ public class StreamingJobGraphGenerator {
 		this.chainedConfigs = new HashMap<String, Map<String, StreamConfig>>();
 		this.vertexConfigs = new HashMap<String, StreamConfig>();
 		this.chainedNames = new HashMap<String, String>();
+		this.sourceVertices = new HashSet(streamGraph.getSourceVertices());
+		ftBuilder.createFTLayerVertex(1);
 	}
 
 	public JobGraph createJobGraph(String jobName) {
 		jobGraph = new JobGraph(jobName);
 		init();
 
-		for (String sourceName : streamGraph.getSources()) {
+		for (String sourceName : sourceVertices) {
 			createChain(sourceName, sourceName);
 		}
 
+		ftBuilder.setSourceSuccessives();
 		setSlotSharing();
 
 		return jobGraph;
@@ -178,6 +184,7 @@ public class StreamingJobGraphGenerator {
 		streamVertices.put(vertexName, vertex);
 		builtNodes.add(vertexName);
 		jobGraph.addVertex(vertex);
+		ftBuilder.connectWithFTLayer(vertexName);
 
 		return new StreamConfig(vertex.getConfiguration());
 	}
@@ -264,10 +271,11 @@ public class StreamingJobGraphGenerator {
 				&& outInvokable != null
 				&& outInvokable.getChainingStrategy() == ChainingStrategy.ALWAYS
 				&& (headInvokable.getChainingStrategy() == ChainingStrategy.HEAD || headInvokable
-						.getChainingStrategy() == ChainingStrategy.ALWAYS)
+				.getChainingStrategy() == ChainingStrategy.ALWAYS)
 				&& streamGraph.getOutPartitioner(vertexName, outName).getStrategy() == PartitioningStrategy.FORWARD
 				&& streamGraph.getParallelism(vertexName) == streamGraph.getParallelism(outName)
-				&& streamGraph.chaining;
+				&& streamGraph.chaining
+				&& ftBuilder.isChainingEnabled(vertexName, outName);
 	}
 
 	private void setSlotSharing() {
@@ -285,5 +293,21 @@ public class StreamingJobGraphGenerator {
 			ccg.addVertex(head);
 			ccg.addVertex(tail);
 		}
+	}
+
+	public StreamGraph getStreamGraph() {
+		return streamGraph;
+	}
+
+	public JobGraph getJobGraph() {
+		return jobGraph;
+	}
+
+	public Map<String, AbstractJobVertex> getStreamVertices() {
+		return streamVertices;
+	}
+
+	public Set<String> getSourceVertices() {
+		return sourceVertices;
 	}
 }

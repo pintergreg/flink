@@ -37,9 +37,7 @@ import org.apache.flink.streaming.state.OperatorState;
 import org.apache.flink.util.InstantiationUtil;
 
 public class StreamConfig implements Serializable {
-
 	private static final long serialVersionUID = 1L;
-
 	private static final String INPUT_TYPE = "inputType_";
 	private static final String NUMBER_OF_OUTPUTS = "numberOfOutputs";
 	private static final String NUMBER_OF_INPUTS = "numberOfInputs";
@@ -63,13 +61,9 @@ public class StreamConfig implements Serializable {
 	private static final String ITERATON_WAIT = "iterationWait";
 	private static final String OUTPUTS = "outVertexNames";
 	private static final String EDGES_IN_ORDER = "rwOrder";
-
 	// DEFAULT VALUES
-
 	private static final long DEFAULT_TIMEOUT = 100;
-
 	// CONFIG METHODS
-
 	private Configuration config;
 
 	public StreamConfig(Configuration config) {
@@ -159,7 +153,6 @@ public class StreamConfig implements Serializable {
 	public void setUserInvokable(StreamInvokable<?, ?> invokableObject) {
 		if (invokableObject != null) {
 			config.setClass(USER_FUNCTION, invokableObject.getClass());
-
 			try {
 				config.setBytes(SERIALIZEDUDF, SerializationUtils.serialize(invokableObject));
 			} catch (SerializationException e) {
@@ -169,7 +162,7 @@ public class StreamConfig implements Serializable {
 		}
 	}
 
-	@SuppressWarnings({ "unchecked" })
+	@SuppressWarnings({"unchecked"})
 	public <T> T getUserInvokable(ClassLoader cl) {
 		try {
 			return (T) InstantiationUtil.readObjectFromConfig(this.config, SERIALIZEDUDF, cl);
@@ -225,7 +218,6 @@ public class StreamConfig implements Serializable {
 	}
 
 	public <T> void setPartitioner(String output, StreamPartitioner<T> partitionerObject) {
-
 		config.setBytes(PARTITIONER_OBJECT + output,
 				SerializationUtils.serialize(partitionerObject));
 	}
@@ -292,7 +284,6 @@ public class StreamConfig implements Serializable {
 	}
 
 	public void setOutEdgesInOrder(List<Tuple2<String, String>> outEdgeList) {
-
 		config.setBytes(EDGES_IN_ORDER, SerializationUtils.serialize((Serializable) outEdgeList));
 	}
 
@@ -351,10 +342,8 @@ public class StreamConfig implements Serializable {
 	@SuppressWarnings("unchecked")
 	public Map<String, StreamConfig> getTransitiveChainedTaskConfigs(ClassLoader cl) {
 		try {
-
 			Map<String, StreamConfig> confs = (Map<String, StreamConfig>) InstantiationUtil
 					.readObjectFromConfig(this.config, CHAINED_TASK_CONFIG, cl);
-
 			return confs == null ? new HashMap<String, StreamConfig>() : confs;
 		} catch (Exception e) {
 			throw new RuntimeException("Could not instantiate configuration.");
@@ -371,9 +360,7 @@ public class StreamConfig implements Serializable {
 
 	@Override
 	public String toString() {
-
 		ClassLoader cl = getClass().getClassLoader();
-
 		StringBuilder builder = new StringBuilder();
 		builder.append("\n=======================");
 		builder.append("Stream Config");
@@ -387,9 +374,7 @@ public class StreamConfig implements Serializable {
 			builder.append("\n\t" + outputname + ": "
 					+ getPartitioner(cl, outputname).getClass().getSimpleName());
 		}
-
 		builder.append("\nChained subtasks: " + getChainedOutputs(cl));
-
 		try {
 			builder.append("\nInvokable: " + getUserInvokable(cl).getClass().getSimpleName());
 		} catch (Exception e) {
@@ -400,7 +385,6 @@ public class StreamConfig implements Serializable {
 			builder.append("\n\n\n---------------------\nChained task configs\n---------------------\n");
 			builder.append(getTransitiveChainedTaskConfigs(cl)).toString();
 		}
-
 		return builder.toString();
 	}
 }

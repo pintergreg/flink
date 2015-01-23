@@ -18,6 +18,7 @@
 package org.apache.flink.streaming.api.ft.layer.util;
 
 import java.io.IOException;
+import java.util.ArrayList;
 
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.util.InstantiationUtil;
@@ -45,7 +46,7 @@ public class FTLayerConfig {
 		config.setInteger(NUMBER_OF_SOURCES, numberOfSources);
 	}
 
-	public int[][] getSourceSuccesives() {
+	public int[][] getSourceSuccessives() {
 		try {
 			return (int[][]) InstantiationUtil.deserializeObject(config.getBytes(
 					SOURCE_SUCCESSIVES, new byte[0]), Thread.currentThread()
@@ -55,7 +56,7 @@ public class FTLayerConfig {
 		}
 	}
 
-	public void setSourceSuccesives(int[][] sourceSuccesives) {
+	public void setSourceSuccessives(ArrayList<ArrayList<Integer>> sourceSuccesives) {
 		try {
 			InstantiationUtil.writeObjectToConfig(sourceSuccesives, config, SOURCE_SUCCESSIVES);
 		} catch (IOException e) {
@@ -70,11 +71,11 @@ public class FTLayerConfig {
 	public void setNumberOfOutputs(int numberOfOutputs) {
 		config.setInteger(NUMBER_OF_OUTPUTS, numberOfOutputs);
 	}
-	
+
 	public long getBufferTimeout() {
 		return config.getLong(BUFFER_TIMEOUT, 0L);
 	}
-	
+
 	public void setBufferTimeout(long timeout) {
 		config.setLong(BUFFER_TIMEOUT, timeout);
 	}

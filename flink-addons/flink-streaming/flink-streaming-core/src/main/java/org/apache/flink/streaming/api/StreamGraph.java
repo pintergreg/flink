@@ -32,6 +32,7 @@ import java.util.Set;
 import org.apache.flink.api.common.io.InputFormat;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.compiler.plan.StreamingPlan;
+import org.apache.flink.runtime.jobgraph.AbstractJobVertex;
 import org.apache.flink.runtime.jobgraph.JobGraph;
 import org.apache.flink.runtime.jobgraph.tasks.AbstractInvokable;
 import org.apache.flink.streaming.api.collector.OutputSelector;
@@ -62,6 +63,9 @@ public class StreamGraph extends StreamingPlan {
 	private String jobName = DEAFULT_JOB_NAME;
 
 	// Graph attributes
+	private Map<String, AbstractJobVertex> streamVertices;
+	private Set<String> sourceVertices;
+	protected Set<String> taskVertices;
 	private Map<String, Integer> operatorParallelisms;
 	private Map<String, Long> bufferTimeouts;
 	private Map<String, List<String>> outEdgeLists;
@@ -85,8 +89,6 @@ public class StreamGraph extends StreamingPlan {
 	private Map<String, Map<String, OperatorState<?>>> operatorStates;
 	private Map<String, InputFormat<String, ?>> inputFormatLists;
 
-	private Set<String> sources;
-
 	public StreamGraph() {
 
 		initGraph();
@@ -97,6 +99,9 @@ public class StreamGraph extends StreamingPlan {
 	}
 
 	public void initGraph() {
+		streamVertices = new HashMap<String, AbstractJobVertex>();
+		sourceVertices = new HashSet<String>();
+		taskVertices = new HashSet<String>();
 		operatorParallelisms = new HashMap<String, Integer>();
 		bufferTimeouts = new HashMap<String, Long>();
 		outEdgeLists = new HashMap<String, List<String>>();
@@ -119,7 +124,22 @@ public class StreamGraph extends StreamingPlan {
 		iterationTimeouts = new HashMap<String, Long>();
 		operatorStates = new HashMap<String, Map<String, OperatorState<?>>>();
 		inputFormatLists = new HashMap<String, InputFormat<String, ?>>();
-		sources = new HashSet<String>();
+	}
+
+	public <IN, OUT> void addSourceVertex(String vertexName,
+			StreamInvokable<IN, OUT> invokableObject, TypeInformation<IN> inTypeInfo,
+			TypeInformation<OUT> outTypeInfo, String operatorName, int parallelism) {
+		sourceVertices.add(vertexName);
+		addStreamVertex(vertexName, invokableObject, inTypeInfo, outTypeInfo, operatorName,
+				parallelism);
+	}
+
+	public <IN, OUT> void addTaskVertex(String vertexName,
+			StreamInvokable<IN, OUT> invokableObject, TypeInformation<IN> inTypeInfo,
+			TypeInformation<OUT> outTypeInfo, String operatorName, int parallelism) {
+		taskVertices.add(vertexName);
+		addStreamVertex(vertexName, invokableObject, inTypeInfo, outTypeInfo, operatorName,
+				parallelism);
 	}
 
 	/**
@@ -154,14 +174,6 @@ public class StreamGraph extends StreamingPlan {
 		if (LOG.isDebugEnabled()) {
 			LOG.debug("Vertex: {}", vertexName);
 		}
-	}
-
-	public <IN, OUT> void addSourceVertex(String vertexName,
-			StreamInvokable<IN, OUT> invokableObject, TypeInformation<IN> inTypeInfo,
-			TypeInformation<OUT> outTypeInfo, String operatorName, int parallelism) {
-		addStreamVertex(vertexName, invokableObject, inTypeInfo, outTypeInfo, operatorName,
-				parallelism);
-		sources.add(vertexName);
 	}
 
 	/**
@@ -201,7 +213,7 @@ public class StreamGraph extends StreamingPlan {
 			LOG.debug("ITERATION SOURCE: {}", vertexName);
 		}
 
-		sources.add(vertexName);
+		sourceVertices.add(vertexName);
 	}
 
 	/**
@@ -383,7 +395,7 @@ public class StreamGraph extends StreamingPlan {
 	 * @param vertexName
 	 *            Name of the vertex for which the output selector will be set
 	 * @param outputSelector
-	 *            The user defined output selector.
+	 *            The outputselector object
 	 */
 	public <T> void setOutputSelector(String vertexName, OutputSelector<T> outputSelector) {
 		outputSelectors.get(vertexName).add(outputSelector);
@@ -475,8 +487,12 @@ public class StreamGraph extends StreamingPlan {
 		this.chaining = chaining;
 	}
 
-	public Collection<String> getSources() {
-		return sources;
+	public Collection<String> getSourceVertices() {
+		return sourceVertices;
+	}
+
+	public Set<String> getTaskVertices() {
+		return taskVertices;
 	}
 
 	public List<String> getOutEdges(String vertexName) {
@@ -497,8 +513,8 @@ public class StreamGraph extends StreamingPlan {
 				outEdgeLists.get(upStreamVertex).indexOf(downStreamVertex));
 	}
 
-	public List<String> getSelectedNames(String upStreamVertex, String downStreamVertex) {
 
+	public List<String> getSelectedNames(String upStreamVertex, String downStreamVertex) {
 		return selectedNames.get(upStreamVertex).get(
 				outEdgeLists.get(upStreamVertex).indexOf(downStreamVertex));
 	}
@@ -559,7 +575,7 @@ public class StreamGraph extends StreamingPlan {
 				node.put("id", Integer.valueOf(id));
 				node.put("type", getOperatorName(id));
 
-				if (sources.contains(id)) {
+				if (sourceVertices.contains(id)) {
 					node.put("pact", "Data Source");
 				} else {
 					node.put("pact", "Data Stream");
@@ -617,4 +633,5 @@ public class StreamGraph extends StreamingPlan {
 			}
 		}
 	}
+
 }
