@@ -168,16 +168,6 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 		// this.messageType = mf.getMessageType();
 	}
 
-//	@SuppressWarnings("rawtypes")
-//	private TypeInformation<MessageWithHeader> getMessageType(
-//			MessagingFunction2<VertexKey, VertexValue, Message, EdgeValue> mf) {
-//
-//		TypeInformation<VertexKey> keyType = TypeExtractor.createTypeInfo(
-//				MessagingFunction2.class, mf.getClass(), 0, null, null);
-//		TypeInformation<Message> msgType = TypeExtractor.createTypeInfo(
-//				MessagingFunction2.class, mf.getClass(), 2, null, null);
-//		return MessageWithHeader.getTypeInfo(keyType, msgType);
-//	}
 
 	/**
 	 * Registers a new aggregator. Aggregators registered here are available
@@ -361,7 +351,7 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 		} else {
 			edgesWithChannelId = edgesWithValue
 					// the following is essentially a projection, but I think it
-					// cannot be done as a projection
+					// cannot be done as a projection (due to generics)
 					// .project(0,1).types(VertexKey.class, VertexKey.class)
 					.map(new MapFunction<Tuple3<VertexKey, VertexKey, EdgeValue>, Tuple2<VertexKey, VertexKey>>() {
 						private static final long serialVersionUID = 1L;
@@ -385,9 +375,7 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 				//again a projection that has to be implemented as a map due to the generics
 				.map(new ProjectFields<VertexKey>()).name("MachineId-SmallestNodeId map");
 
-		//hashKeys.print();
-		//TODO: hashKeys are not necessarily a small DataSet!!!
-		//I think they are !!! The number of rows is equal to the degree of paralellism. (Attila)
+		//hashKeys is small: the number of rows is equal to the degree of paralellism. (Attila)
 		DataSet<Tuple4<VertexKey, VertexKey, Integer, VertexKey>> edgesWithReplesentativeVertex = 
 				edgesWithChannelId.joinWithTiny(hashKeys).where(2).equalTo(0)
 				.with(new DummyJoinFunc<VertexKey>()).name("Edges with a representative of the target");
@@ -444,29 +432,29 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 		// Messages with sender info only
 		// unpacking messages with sender info only
 		DataSet<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>> messagesWithoutRecipients = messages.filter(
-				new FilterMsgsWithoutRecipients<VertexKey, Message>());
+				new FilterMsgsBasedOnRecipientList<VertexKey, Message>(false)).name("Messages without recipient list");
 
 		DataSet<Tuple2<VertexKey, Message>> messagesWithoutRecipientsUnpacked = edgesWithReplesentativeVertex
 				.coGroup(messagesWithoutRecipients)
 				.where(3)
 				.equalTo(new ReprVertexSelector<VertexKey, Message>())
 				.with(new UnpackMessageCoGroup1<VertexKey, Message>(
-						unpackedMessageTupleTypeInfo)).name("Unpacked messages");
+						unpackedMessageTupleTypeInfo)).name("Messages without recipient list unpacked");
 		// Messages with sender info only  -- end
 
 		// Messages with recipient list
 		// unpacking messages with recipient info
 		DataSet<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>> messagesWithRecipients = messages.filter(
-				new FilterMsgsWithRecipients<VertexKey, Message>());
+				new FilterMsgsBasedOnRecipientList<VertexKey, Message>(true)).name("Messages with recipient list");;
 
 		FlatMapOperator<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>, Tuple2<VertexKey, Message>> messagesWithRecipientsUnpacked = messagesWithRecipients
 				.flatMap(
 						new UnpackMessageMC1<VertexKey, Message>(
-								unpackedMessageTupleTypeInfo));
+								unpackedMessageTupleTypeInfo)).name("Messages with recipient list unpacked");
 		// Messages with recipient list -- end
 
 		// Union of the two tye messages
-		DataSet<Tuple2<VertexKey, Message>> messages2 = messagesWithoutRecipientsUnpacked.union(messagesWithRecipientsUnpacked);
+		DataSet<Tuple2<VertexKey, Message>> messages2 = messagesWithoutRecipientsUnpacked.union(messagesWithRecipientsUnpacked).name("Unpacked messages");
 		
 		
 		VertexUpdateUdf<VertexKey, VertexValue, Message> updateUdf = new VertexUpdateUdf<VertexKey, VertexValue, Message>(
@@ -490,29 +478,25 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 
 	}
 
-	public static class FilterMsgsWithoutRecipients<VertexKey, Message>
+	public static class FilterMsgsBasedOnRecipientList<VertexKey, Message>
 			implements
 			FilterFunction<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>> {
 		private static final long serialVersionUID = 1L;
-
-		@Override
-		public boolean filter(
-				Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>> value)
-				throws Exception {
-			return value.f1.getSomeRecipients().length == 0;
+		
+		private boolean withRecipients;
+		
+		public FilterMsgsBasedOnRecipientList(boolean withRecipients){
+			this.withRecipients = withRecipients;
 		}
-	}
-
-	public static class FilterMsgsWithRecipients<VertexKey, Message>
-			implements
-			FilterFunction<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>> {
-		private static final long serialVersionUID = 1L;
-
 		@Override
 		public boolean filter(
 				Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>> value)
 				throws Exception {
-			return value.f1.getSomeRecipients().length > 0;
+			if (withRecipients) {
+				return value.f1.getSomeRecipients().length > 0;
+			} else {
+				return value.f1.getSomeRecipients().length == 0;
+			}
 		}
 	}
 
