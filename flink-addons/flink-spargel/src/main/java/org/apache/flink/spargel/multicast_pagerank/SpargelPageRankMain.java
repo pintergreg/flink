@@ -64,7 +64,13 @@ public class SpargelPageRankMain implements Serializable{
 		ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
 
 		loadInput(env);
-		
+		System.out.println("Parameters:" );
+		System.out.println("<whichMulticast>: " + whichMulticast);
+		System.out.println("<degreeOfParalellism>: " + degreeOfParallelism);
+		System.out.println("<maxNumberOfIterations>: "  + maxNumberOfIterations);
+		System.out.println("<edgeListInputPath>: " + edgeListInputPath);
+		System.out.println("<outputPath>: " + outputPath);
+	
 		DataSet<Tuple2<Long, Double>> nodeRanks = 
 				new SpargelPageRankComputer(DAMPENING_FACTOR, epsilonForConvergence, whichMulticast)
 		.computePageRank(nodes, edges, outNeighbourList, maxNumberOfIterations);
@@ -99,7 +105,8 @@ public class SpargelPageRankMain implements Serializable{
 			maxNumberOfIterations = 20;
 			// number of cores
 			degreeOfParallelism = 1;
-
+			
+			whichMulticast = 0;
 			// set of nodes
 			
 			nodes = env.generateSequence(0, numOfVertices - 1);

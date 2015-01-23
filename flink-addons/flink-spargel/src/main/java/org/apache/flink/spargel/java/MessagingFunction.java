@@ -100,7 +100,7 @@ public abstract class MessagingFunction<VertexKey extends Comparable<VertexKey>,
 	 * 
 	 * @param m The message to send.
 	 */
-	public void sendMessageToAllNeighbors(Message m) {
+	public int sendMessageToAllNeighbors(Message m) {
 		if (edgesUsed) {
 			throw new IllegalStateException("Can use either 'getOutgoingEdges()' or 'sendMessageToAllTargets()' exactly once.");
 		}
@@ -108,13 +108,15 @@ public abstract class MessagingFunction<VertexKey extends Comparable<VertexKey>,
 		edgesUsed = true;
 		
 		outValue.f1 = m;
-		
+		int numOfMessagedSent = 0;
 		while (edges.hasNext()) {
 			Tuple next = (Tuple) edges.next();
 			VertexKey k = next.getField(1);
 			outValue.f0 = k;
+			numOfMessagedSent++;
 			out.collect(outValue);
 		}
+		return numOfMessagedSent;
 	}
 
 	
@@ -194,7 +196,7 @@ public abstract class MessagingFunction<VertexKey extends Comparable<VertexKey>,
 	
 	private IterationRuntimeContext runtimeContext;
 	
-	private Iterator<?> edges;
+	protected Iterator<?> edges;
 	
 	private Collector<Tuple2<VertexKey, Message>> out;
 	
@@ -202,7 +204,7 @@ public abstract class MessagingFunction<VertexKey extends Comparable<VertexKey>,
 	
 	private EdgesIteratorWithEdgeValue<VertexKey, EdgeValue> edgeWithValueIter;
 	
-	private boolean edgesUsed;
+	protected boolean edgesUsed;
 	
 	
 	void init(IterationRuntimeContext context, boolean hasEdgeValue) {
