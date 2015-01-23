@@ -38,6 +38,8 @@ public class PageRankUtil {
 
 	public static DataSet<Tuple1<Long>> getNumOfPages(DataSet<Long> nodes) {
 		DataSet<Tuple1<Long>> numOfPages = nodes.map(new MapFunction<Long, Tuple1<Long>>() {
+			private static final long serialVersionUID = 1L;
+
 			@Override
 			public Tuple1<Long> map(Long value) throws Exception {
 				return new Tuple1<Long>(1L);
@@ -110,12 +112,15 @@ public class PageRankUtil {
 				.coGroup(nodes)
 				.where(0)
 				.equalTo(new KeySelector<Long, Long>() {
+					private static final long serialVersionUID = 1L;
+
 					@Override
 					public Long getKey(Long value) throws Exception {
 						return value;
 					}
 				})
 				.with(new CoGroupFunction<Tuple2<Long, long[]>, Long, Tuple2<Long, long[]>>() {
+					private static final long serialVersionUID = 1L;
 					private Iterator<Tuple2<Long, long[]>> it1; 
 					@Override
 					public void coGroup(Iterable<Tuple2<Long, long[]>> first,

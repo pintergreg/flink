@@ -137,6 +137,8 @@ public class SpargelPageRankMain implements Serializable{
 			
 			nodes = outNeighbourList
 					.map(new MapFunction<Tuple2<Long, long[]>, Long>() {
+						private static final long serialVersionUID = 1L;
+
 						@Override
 						public Long map(Tuple2<Long, long[]> value)
 								throws Exception {
@@ -146,6 +148,7 @@ public class SpargelPageRankMain implements Serializable{
 
 			edges = outNeighbourList
 					.flatMap(new FlatMapFunction<Tuple2<Long, long[]>, Tuple2<Long, Long>>() {
+						private static final long serialVersionUID = 1L;
 
 						@Override
 						public void flatMap(Tuple2<Long, long[]> value,
