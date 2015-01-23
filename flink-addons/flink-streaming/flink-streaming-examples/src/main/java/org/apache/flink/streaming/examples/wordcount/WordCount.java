@@ -17,6 +17,7 @@
 
 package org.apache.flink.streaming.examples.wordcount;
 
+
 import java.util.StringTokenizer;
 
 import org.apache.flink.api.common.functions.FlatMapFunction;
