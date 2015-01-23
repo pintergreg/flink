@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.flink.streaming.scala.examples.windowing
+package org.apache.flink.streaming.scala.examples.Windowing
 
 import java.util.concurrent.TimeUnit._
 

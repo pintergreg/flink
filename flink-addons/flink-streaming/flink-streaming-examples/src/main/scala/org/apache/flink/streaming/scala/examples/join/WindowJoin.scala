@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.flink.streaming.scala.examples.windowing
+package org.apache.flink.streaming.scala.examples.join
 
 import org.apache.flink.streaming.api.scala._
 

@@ -2,9 +2,25 @@ package org.apache.flink.streaming.scala.examples.wordcount
 
 import org.apache.flink.examples.java.wordcount.util.WordCountData
 import org.apache.flink.streaming.api.scala._
+
 /**
- * Created by kidio on 23/01/15.
+ * This example shows an implementation of WordCount without using the Tuple2
+ * type, but a custom class.
+ *
+ * <p>
+ * Usage: <code>WordCount &lt;text path&gt; &lt;result path&gt;</code><br>
+ * If no parameters are provided, the program is run with default data from
+ * {@link WordCountData}.
+ *
+ * <p>
+ * This example shows how to:
+ * <ul>
+ * <li>use POJO data types,
+ * <li>write a simple Flink program,
+ * <li>write and use user-defined functions.
+ * </ul>
  */
+
 object PojoExample {
   case class Word (word: String, frequency: Int)
 
