@@ -170,7 +170,11 @@ public abstract class MessagingFunction2<VertexKey extends Comparable<VertexKey>
 			if (!channelSet.contains(channel)) {
 				channelSet.add(channel);
 				outValue.f1.setChannelId(channel);
-				outValue.f1.setReprVertexOfPartition(hashKeys.get(channel));
+				// we directly send the message to the smallest node in the partition!!!
+				// terrific idea :)
+				outValue.f0 = hashKeys.get(channel);
+				// For sure we also put this in the header
+				outValue.f1.setReprVertexOfPartition(outValue.f0);
 				out.collect(outValue);
 				numOfBlockedMessages ++;
 				//System.out.println(outValue);

@@ -124,17 +124,16 @@ public class OutputCollector<T> implements Collector<T>
 	public int getChannel(T record) {
 		if (writers.length > 1) {
 			throw new 
-			UnsupportedOperationException("The number of writers should be 1");
+			UnsupportedOperationException("getChannel should only be called when the number of writers is surely 1");
 		}
 		this.delegate.setInstance(record);
 		
 		int[] channels = this.writers[0].getChannelSelector().selectChannels(this.delegate, this.writers[0].getNumChannels());
 		if (channels.length > 1) {
-			throw new RuntimeException("Number of channels  > 1");
+			throw new 
+			UnsupportedOperationException("getChannel should only be called when the number of channels is surely 1");
 		}
 		return channels[0];
-		
-		
 	}
 
 
