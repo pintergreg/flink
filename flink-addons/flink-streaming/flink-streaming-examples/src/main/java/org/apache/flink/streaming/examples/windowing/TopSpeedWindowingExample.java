@@ -64,6 +64,7 @@ public class TopSpeedWindowingExample {
 
 		topSpeeds.print();
 		env.execute("CarTopSpeedWindowingExample");
+		
 	}
 
 	private static class CarSource implements
