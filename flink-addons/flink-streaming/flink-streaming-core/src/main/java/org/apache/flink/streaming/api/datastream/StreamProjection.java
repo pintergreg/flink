@@ -18,6 +18,7 @@
 package org.apache.flink.streaming.api.datastream;
 
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.api.java.tuple.Tuple1;
 import org.apache.flink.api.java.tuple.Tuple10;
@@ -45,6 +46,7 @@ import org.apache.flink.api.java.tuple.Tuple7;
 import org.apache.flink.api.java.tuple.Tuple8;
 import org.apache.flink.api.java.tuple.Tuple9;
 import org.apache.flink.api.java.typeutils.TupleTypeInfo;
+import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.streaming.api.invokable.operator.ProjectInvokable;
 
 public class StreamProjection<IN> {
@@ -52,6 +54,8 @@ public class StreamProjection<IN> {
 	private DataStream<IN> dataStream;
 	private int[] fieldIndexes;
 	private TypeInformation<IN> inTypeInfo;
+
+	private KeySelector<IN, ?> keySelector;
 
 	protected StreamProjection(DataStream<IN> dataStream, int[] fieldIndexes) {
 		this.dataStream = dataStream;
@@ -62,14 +66,23 @@ public class StreamProjection<IN> {
 		}
 	}
 
+	protected StreamProjection(DataStream<IN> dataStream, KeySelector<IN, ?> keySelector) {
+		this.dataStream = dataStream;
+		this.inTypeInfo = dataStream.getType();
+		this.keySelector = keySelector;
+//		if (!inTypeInfo.isTupleType()) {
+//			throw new RuntimeException("Only Tuple DataStreams can be projected");
+//		}
+	}
+
 	/**
 	 * Projects a {@link Tuple} {@link DataStream} to the previously selected
 	 * fields. Requires the classes of the fields of the resulting Tuples.
-	 * 
+	 *
 	 * @param type0
 	 *            The class of field '0' of the result Tuples.
 	 * @return The projected DataStream.
-	 * 
+	 *
 	 * @see Tuple
 	 * @see DataStream
 	 */
@@ -90,13 +103,38 @@ public class StreamProjection<IN> {
 	/**
 	 * Projects a {@link Tuple} {@link DataStream} to the previously selected
 	 * fields. Requires the classes of the fields of the resulting Tuples.
-	 * 
+	 *
+	 * @param type0
+	 *            The class of field '0' of the result Tuples.
+	 * @return The projected DataStream.
+	 *
+	 * @see Tuple
+	 * @see DataStream
+	 */
+	public <T0> SingleOutputStreamOperator<Tuple1<T0>, ?> typesNew(Class<T0> type0) {
+		Class<?>[] types = { type0 };
+//		if (types.length != this.fieldIndexes.length) {
+//			throw new IllegalArgumentException(
+//					"Numbers of projected fields and types do not match.");
+//		}
+
+		@SuppressWarnings("unchecked")
+		TypeInformation<Tuple1<T0>> outType = (TypeInformation<Tuple1<T0>>) extractFieldTypes(
+				fieldIndexes, types, inTypeInfo);
+		return dataStream.transform("projection", outType, new ProjectInvokable<IN, Tuple1<T0>>(
+				keySelector, outType));
+	}
+
+	/**
+	 * Projects a {@link Tuple} {@link DataStream} to the previously selected
+	 * fields. Requires the classes of the fields of the resulting Tuples.
+	 *
 	 * @param type0
 	 *            The class of field '0' of the result Tuples.
 	 * @param type1
 	 *            The class of field '1' of the result Tuples.
 	 * @return The projected DataStream.
-	 * 
+	 *
 	 * @see Tuple
 	 * @see DataStream
 	 */
@@ -118,7 +156,7 @@ public class StreamProjection<IN> {
 	/**
 	 * Projects a {@link Tuple} {@link DataStream} to the previously selected
 	 * fields. Requires the classes of the fields of the resulting Tuples.
-	 * 
+	 *
 	 * @param type0
 	 *            The class of field '0' of the result Tuples.
 	 * @param type1
@@ -126,7 +164,7 @@ public class StreamProjection<IN> {
 	 * @param type2
 	 *            The class of field '2' of the result Tuples.
 	 * @return The projected DataStream.
-	 * 
+	 *
 	 * @see Tuple
 	 * @see DataStream
 	 */
@@ -148,7 +186,7 @@ public class StreamProjection<IN> {
 	/**
 	 * Projects a {@link Tuple} {@link DataStream} to the previously selected
 	 * fields. Requires the classes of the fields of the resulting Tuples.
-	 * 
+	 *
 	 * @param type0
 	 *            The class of field '0' of the result Tuples.
 	 * @param type1
@@ -158,7 +196,7 @@ public class StreamProjection<IN> {
 	 * @param type3
 	 *            The class of field '3' of the result Tuples.
 	 * @return The projected DataStream.
-	 * 
+	 *
 	 * @see Tuple
 	 * @see DataStream
 	 */
@@ -180,7 +218,7 @@ public class StreamProjection<IN> {
 	/**
 	 * Projects a {@link Tuple} {@link DataStream} to the previously selected
 	 * fields. Requires the classes of the fields of the resulting Tuples.
-	 * 
+	 *
 	 * @param type0
 	 *            The class of field '0' of the result Tuples.
 	 * @param type1
@@ -192,7 +230,7 @@ public class StreamProjection<IN> {
 	 * @param type4
 	 *            The class of field '4' of the result Tuples.
 	 * @return The projected DataStream.
-	 * 
+	 *
 	 * @see Tuple
 	 * @see DataStream
 	 */
@@ -213,7 +251,7 @@ public class StreamProjection<IN> {
 	/**
 	 * Projects a {@link Tuple} {@link DataStream} to the previously selected
 	 * fields. Requires the classes of the fields of the resulting Tuples.
-	 * 
+	 *
 	 * @param type0
 	 *            The class of field '0' of the result Tuples.
 	 * @param type1
@@ -227,7 +265,7 @@ public class StreamProjection<IN> {
 	 * @param type5
 	 *            The class of field '5' of the result Tuples.
 	 * @return The projected DataStream.
-	 * 
+	 *
 	 * @see Tuple
 	 * @see DataStream
 	 */
@@ -250,7 +288,7 @@ public class StreamProjection<IN> {
 	/**
 	 * Projects a {@link Tuple} {@link DataStream} to the previously selected
 	 * fields. Requires the classes of the fields of the resulting Tuples.
-	 * 
+	 *
 	 * @param type0
 	 *            The class of field '0' of the result Tuples.
 	 * @param type1
@@ -266,7 +304,7 @@ public class StreamProjection<IN> {
 	 * @param type6
 	 *            The class of field '6' of the result Tuples.
 	 * @return The projected DataStream.
-	 * 
+	 *
 	 * @see Tuple
 	 * @see DataStream
 	 */
@@ -291,7 +329,7 @@ public class StreamProjection<IN> {
 	/**
 	 * Projects a {@link Tuple} {@link DataStream} to the previously selected
 	 * fields. Requires the classes of the fields of the resulting Tuples.
-	 * 
+	 *
 	 * @param type0
 	 *            The class of field '0' of the result Tuples.
 	 * @param type1
@@ -309,7 +347,7 @@ public class StreamProjection<IN> {
 	 * @param type7
 	 *            The class of field '7' of the result Tuples.
 	 * @return The projected DataStream.
-	 * 
+	 *
 	 * @see Tuple
 	 * @see DataStream
 	 */
@@ -333,7 +371,7 @@ public class StreamProjection<IN> {
 	/**
 	 * Projects a {@link Tuple} {@link DataStream} to the previously selected
 	 * fields. Requires the classes of the fields of the resulting Tuples.
-	 * 
+	 *
 	 * @param type0
 	 *            The class of field '0' of the result Tuples.
 	 * @param type1
@@ -353,7 +391,7 @@ public class StreamProjection<IN> {
 	 * @param type8
 	 *            The class of field '8' of the result Tuples.
 	 * @return The projected DataStream.
-	 * 
+	 *
 	 * @see Tuple
 	 * @see DataStream
 	 */
@@ -377,7 +415,7 @@ public class StreamProjection<IN> {
 	/**
 	 * Projects a {@link Tuple} {@link DataStream} to the previously selected
 	 * fields. Requires the classes of the fields of the resulting Tuples.
-	 * 
+	 *
 	 * @param type0
 	 *            The class of field '0' of the result Tuples.
 	 * @param type1
@@ -399,7 +437,7 @@ public class StreamProjection<IN> {
 	 * @param type9
 	 *            The class of field '9' of the result Tuples.
 	 * @return The projected DataStream.
-	 * 
+	 *
 	 * @see Tuple
 	 * @see DataStream
 	 */
@@ -423,7 +461,7 @@ public class StreamProjection<IN> {
 	/**
 	 * Projects a {@link Tuple} {@link DataStream} to the previously selected
 	 * fields. Requires the classes of the fields of the resulting Tuples.
-	 * 
+	 *
 	 * @param type0
 	 *            The class of field '0' of the result Tuples.
 	 * @param type1
@@ -447,7 +485,7 @@ public class StreamProjection<IN> {
 	 * @param type10
 	 *            The class of field '10' of the result Tuples.
 	 * @return The projected DataStream.
-	 * 
+	 *
 	 * @see Tuple
 	 * @see DataStream
 	 */
@@ -473,7 +511,7 @@ public class StreamProjection<IN> {
 	/**
 	 * Projects a {@link Tuple} {@link DataStream} to the previously selected
 	 * fields. Requires the classes of the fields of the resulting Tuples.
-	 * 
+	 *
 	 * @param type0
 	 *            The class of field '0' of the result Tuples.
 	 * @param type1
@@ -499,7 +537,7 @@ public class StreamProjection<IN> {
 	 * @param type11
 	 *            The class of field '11' of the result Tuples.
 	 * @return The projected DataStream.
-	 * 
+	 *
 	 * @see Tuple
 	 * @see DataStream
 	 */
@@ -528,7 +566,7 @@ public class StreamProjection<IN> {
 	/**
 	 * Projects a {@link Tuple} {@link DataStream} to the previously selected
 	 * fields. Requires the classes of the fields of the resulting Tuples.
-	 * 
+	 *
 	 * @param type0
 	 *            The class of field '0' of the result Tuples.
 	 * @param type1
@@ -556,7 +594,7 @@ public class StreamProjection<IN> {
 	 * @param type12
 	 *            The class of field '12' of the result Tuples.
 	 * @return The projected DataStream.
-	 * 
+	 *
 	 * @see Tuple
 	 * @see DataStream
 	 */
@@ -585,7 +623,7 @@ public class StreamProjection<IN> {
 	/**
 	 * Projects a {@link Tuple} {@link DataStream} to the previously selected
 	 * fields. Requires the classes of the fields of the resulting Tuples.
-	 * 
+	 *
 	 * @param type0
 	 *            The class of field '0' of the result Tuples.
 	 * @param type1
@@ -615,7 +653,7 @@ public class StreamProjection<IN> {
 	 * @param type13
 	 *            The class of field '13' of the result Tuples.
 	 * @return The projected DataStream.
-	 * 
+	 *
 	 * @see Tuple
 	 * @see DataStream
 	 */
@@ -644,7 +682,7 @@ public class StreamProjection<IN> {
 	/**
 	 * Projects a {@link Tuple} {@link DataStream} to the previously selected
 	 * fields. Requires the classes of the fields of the resulting Tuples.
-	 * 
+	 *
 	 * @param type0
 	 *            The class of field '0' of the result Tuples.
 	 * @param type1
@@ -676,7 +714,7 @@ public class StreamProjection<IN> {
 	 * @param type14
 	 *            The class of field '14' of the result Tuples.
 	 * @return The projected DataStream.
-	 * 
+	 *
 	 * @see Tuple
 	 * @see DataStream
 	 */
@@ -706,7 +744,7 @@ public class StreamProjection<IN> {
 	/**
 	 * Projects a {@link Tuple} {@link DataStream} to the previously selected
 	 * fields. Requires the classes of the fields of the resulting Tuples.
-	 * 
+	 *
 	 * @param type0
 	 *            The class of field '0' of the result Tuples.
 	 * @param type1
@@ -740,7 +778,7 @@ public class StreamProjection<IN> {
 	 * @param type15
 	 *            The class of field '15' of the result Tuples.
 	 * @return The projected DataStream.
-	 * 
+	 *
 	 * @see Tuple
 	 * @see DataStream
 	 */
@@ -770,7 +808,7 @@ public class StreamProjection<IN> {
 	/**
 	 * Projects a {@link Tuple} {@link DataStream} to the previously selected
 	 * fields. Requires the classes of the fields of the resulting Tuples.
-	 * 
+	 *
 	 * @param type0
 	 *            The class of field '0' of the result Tuples.
 	 * @param type1
@@ -806,7 +844,7 @@ public class StreamProjection<IN> {
 	 * @param type16
 	 *            The class of field '16' of the result Tuples.
 	 * @return The projected DataStream.
-	 * 
+	 *
 	 * @see Tuple
 	 * @see DataStream
 	 */
@@ -836,7 +874,7 @@ public class StreamProjection<IN> {
 	/**
 	 * Projects a {@link Tuple} {@link DataStream} to the previously selected
 	 * fields. Requires the classes of the fields of the resulting Tuples.
-	 * 
+	 *
 	 * @param type0
 	 *            The class of field '0' of the result Tuples.
 	 * @param type1
@@ -874,7 +912,7 @@ public class StreamProjection<IN> {
 	 * @param type17
 	 *            The class of field '17' of the result Tuples.
 	 * @return The projected DataStream.
-	 * 
+	 *
 	 * @see Tuple
 	 * @see DataStream
 	 */
@@ -904,7 +942,7 @@ public class StreamProjection<IN> {
 	/**
 	 * Projects a {@link Tuple} {@link DataStream} to the previously selected
 	 * fields. Requires the classes of the fields of the resulting Tuples.
-	 * 
+	 *
 	 * @param type0
 	 *            The class of field '0' of the result Tuples.
 	 * @param type1
@@ -944,7 +982,7 @@ public class StreamProjection<IN> {
 	 * @param type18
 	 *            The class of field '18' of the result Tuples.
 	 * @return The projected DataStream.
-	 * 
+	 *
 	 * @see Tuple
 	 * @see DataStream
 	 */
@@ -975,7 +1013,7 @@ public class StreamProjection<IN> {
 	/**
 	 * Projects a {@link Tuple} {@link DataStream} to the previously selected
 	 * fields. Requires the classes of the fields of the resulting Tuples.
-	 * 
+	 *
 	 * @param type0
 	 *            The class of field '0' of the result Tuples.
 	 * @param type1
@@ -1017,7 +1055,7 @@ public class StreamProjection<IN> {
 	 * @param type19
 	 *            The class of field '19' of the result Tuples.
 	 * @return The projected DataStream.
-	 * 
+	 *
 	 * @see Tuple
 	 * @see DataStream
 	 */
@@ -1048,7 +1086,7 @@ public class StreamProjection<IN> {
 	/**
 	 * Projects a {@link Tuple} {@link DataStream} to the previously selected
 	 * fields. Requires the classes of the fields of the resulting Tuples.
-	 * 
+	 *
 	 * @param type0
 	 *            The class of field '0' of the result Tuples.
 	 * @param type1
@@ -1092,7 +1130,7 @@ public class StreamProjection<IN> {
 	 * @param type20
 	 *            The class of field '20' of the result Tuples.
 	 * @return The projected DataStream.
-	 * 
+	 *
 	 * @see Tuple
 	 * @see DataStream
 	 */
@@ -1124,7 +1162,7 @@ public class StreamProjection<IN> {
 	/**
 	 * Projects a {@link Tuple} {@link DataStream} to the previously selected
 	 * fields. Requires the classes of the fields of the resulting Tuples.
-	 * 
+	 *
 	 * @param type0
 	 *            The class of field '0' of the result Tuples.
 	 * @param type1
@@ -1170,7 +1208,7 @@ public class StreamProjection<IN> {
 	 * @param type21
 	 *            The class of field '21' of the result Tuples.
 	 * @return The projected DataStream.
-	 * 
+	 *
 	 * @see Tuple
 	 * @see DataStream
 	 */
@@ -1202,7 +1240,7 @@ public class StreamProjection<IN> {
 	/**
 	 * Projects a {@link Tuple} {@link DataStream} to the previously selected
 	 * fields. Requires the classes of the fields of the resulting Tuples.
-	 * 
+	 *
 	 * @param type0
 	 *            The class of field '0' of the result Tuples.
 	 * @param type1
@@ -1250,7 +1288,7 @@ public class StreamProjection<IN> {
 	 * @param type22
 	 *            The class of field '22' of the result Tuples.
 	 * @return The projected DataStream.
-	 * 
+	 *
 	 * @see Tuple
 	 * @see DataStream
 	 */
@@ -1283,7 +1321,7 @@ public class StreamProjection<IN> {
 	/**
 	 * Projects a {@link Tuple} {@link DataStream} to the previously selected
 	 * fields. Requires the classes of the fields of the resulting Tuples.
-	 * 
+	 *
 	 * @param type0
 	 *            The class of field '0' of the result Tuples.
 	 * @param type1
@@ -1333,7 +1371,7 @@ public class StreamProjection<IN> {
 	 * @param type23
 	 *            The class of field '23' of the result Tuples.
 	 * @return The projected DataStream.
-	 * 
+	 *
 	 * @see Tuple
 	 * @see DataStream
 	 */
@@ -1366,7 +1404,7 @@ public class StreamProjection<IN> {
 	/**
 	 * Projects a {@link Tuple} {@link DataStream} to the previously selected
 	 * fields. Requires the classes of the fields of the resulting Tuples.
-	 * 
+	 *
 	 * @param type0
 	 *            The class of field '0' of the result Tuples.
 	 * @param type1
@@ -1418,7 +1456,7 @@ public class StreamProjection<IN> {
 	 * @param type24
 	 *            The class of field '24' of the result Tuples.
 	 * @return The projected DataStream.
-	 * 
+	 *
 	 * @see Tuple
 	 * @see DataStream
 	 */
@@ -1453,19 +1491,30 @@ public class StreamProjection<IN> {
 			TypeInformation<?> inType) {
 
 		TupleTypeInfo<?> inTupleType = (TupleTypeInfo<?>) inType;
-		TypeInformation<?>[] fieldTypes = new TypeInformation[fields.length];
 
-		for (int i = 0; i < fields.length; i++) {
+		TypeInformation<?>[] fieldTypes;
 
-			if (inTupleType.getTypeAt(fields[i]).getTypeClass() != givenTypes[i]) {
-				throw new IllegalArgumentException(
-						"Given types do not match types of input data set.");
+		if (fields != null) {
+
+			fieldTypes = new TypeInformation[fields.length];
+			for (int i = 0; i < fields.length; i++) {
+
+				if (inTupleType.getTypeAt(fields[i]).getTypeClass() != givenTypes[i]) {
+					throw new IllegalArgumentException(
+							"Given types do not match types of input data set.");
+				}
+
+				fieldTypes[i] = inTupleType.getTypeAt(fields[i]);
 			}
+		} else {
 
-			fieldTypes[i] = inTupleType.getTypeAt(fields[i]);
+			fieldTypes = new TypeInformation[givenTypes.length];
+			for (int i = 0; i < givenTypes.length; i++) {
+				fieldTypes[i] = TypeExtractor.getForClass(givenTypes[i]);
+			}
 		}
-
 		return new TupleTypeInfo<Tuple>(fieldTypes);
 	}
+
 
 }

@@ -19,6 +19,7 @@ package org.apache.flink.streaming.api.invokable.operator;
 
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.invokable.StreamInvokable;
@@ -27,14 +28,23 @@ public class ProjectInvokable<IN, OUT extends Tuple> extends StreamInvokable<IN,
 	private static final long serialVersionUID = 1L;
 
 	transient OUT outTuple;
-	TypeSerializer<OUT> outTypeSerializer;
+	private TypeSerializer<OUT> outTypeSerializer;
 	int[] fields;
 	int numFields;
+
+	private KeySelector<IN, ?> keySelector;
+
 
 	public ProjectInvokable(int[] fields, TypeInformation<OUT> outTypeInformation) {
 		super(null);
 		this.fields = fields;
 		this.numFields = this.fields.length;
+		this.outTypeSerializer = outTypeInformation.createSerializer();
+	}
+
+	public ProjectInvokable(KeySelector<IN, ?> keySelector, TypeInformation<OUT> outTypeInformation) {
+		super(null);
+		this.keySelector = keySelector;
 		this.outTypeSerializer = outTypeInformation.createSerializer();
 	}
 
@@ -47,10 +57,10 @@ public class ProjectInvokable<IN, OUT extends Tuple> extends StreamInvokable<IN,
 
 	@Override
 	protected void callUserFunction() throws Exception {
-		for (int i = 0; i < this.numFields; i++) {
-			outTuple.setField(nextRecord.getField(fields[i]), i);
-		}
-		collector.collect(outTuple);
+//		for (int i = 0; i < this.numFields; i++) {
+//			outTuple.setField(nextRecord.getField(fields[i]), i);
+//		}
+		collector.collect( (OUT) nextRecord.getKey(keySelector));
 	}
 
 	@Override

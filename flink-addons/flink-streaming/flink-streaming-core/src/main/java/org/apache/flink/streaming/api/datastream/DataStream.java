@@ -552,6 +552,15 @@ public class DataStream<OUT> {
 		return new StreamProjection<OUT>(this.copy(), fieldIndexes);
 	}
 
+	public StreamProjection<OUT> project(Keys<OUT> keys) {
+		return new StreamProjection<OUT>(this.copy(), clean(KeySelectorUtil.getSelectorForKeys(keys,
+				getType())));
+	}
+
+	public StreamProjection<OUT> project(String... fields) {
+		return project(new Keys.ExpressionKeys<OUT>(fields, getType()));
+	}
+
 	/**
 	 * Initiates a temporal Cross transformation.<br/>
 	 * A Cross transformation combines the elements of two {@link DataStream}s
