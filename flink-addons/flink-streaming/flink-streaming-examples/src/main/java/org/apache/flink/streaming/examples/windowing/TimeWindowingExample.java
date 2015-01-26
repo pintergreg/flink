@@ -95,7 +95,7 @@ public class TimeWindowingExample {
 				if (counter > 9999) {
 					System.out.println("Source pauses now!");
 					Thread.sleep(5000);
-					System.out.println("Source continouse with emitting now!");
+					System.out.println("Source continues with emitting now!");
 					counter = 0;
 				}
 				collector.collect(rnd.nextInt(9) + 1);

@@ -80,7 +80,7 @@ object DeltaExtractExample {
 
       }else{
         System.err.println("Usage: DeltaExtractExample <result path>")
-        false
+        return false
       }
     } else {
       System.out.println("Executing DeltaExtractExample with generated data.")

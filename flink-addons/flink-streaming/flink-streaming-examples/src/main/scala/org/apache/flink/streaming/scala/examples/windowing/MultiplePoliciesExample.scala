@@ -65,7 +65,7 @@ object MultiplePoliciesExample {
     }
     emitStream()
   }
-  
+
 
   // *************************************************************************
   // UTIL METHODS
