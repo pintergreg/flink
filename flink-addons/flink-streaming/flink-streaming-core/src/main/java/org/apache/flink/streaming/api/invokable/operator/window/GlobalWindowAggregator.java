@@ -22,9 +22,10 @@ import java.util.Map;
 
 import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.streaming.api.invokable.StreamInvokable;
 
-public class GlobalWindowAggregator<IN> extends StreamInvokable<Tuple2<IN, Integer>, IN> {
+public class GlobalWindowAggregator<IN> extends StreamInvokable<Tuple3<IN, Integer, Boolean>, IN> {
 
 	private static final long serialVersionUID = 1L;
 
@@ -46,11 +47,18 @@ public class GlobalWindowAggregator<IN> extends StreamInvokable<Tuple2<IN, Integ
 
 			Integer windowID = nextObject.f1;
 			IN preAggregate = nextObject.f0;
+			Boolean isEmptyWindow = nextObject.f2;
 
 			Tuple2<IN, Integer> aggregate = aggregates.get(windowID);
 
 			if (aggregate != null) {
-				aggregate.f0 = reducer.reduce(aggregate.f0, preAggregate);
+				if (isEmptyWindow) {
+					if (aggregate.f0 != null) {
+						aggregate.f0 = reducer.reduce(aggregate.f0, preAggregate);
+					} else {
+						aggregate.f0 = preAggregate;
+					}
+				}
 				aggregate.f1--;
 				if (aggregate.f1 == 0) {
 					collector.collect(aggregate.f0);
@@ -58,7 +66,11 @@ public class GlobalWindowAggregator<IN> extends StreamInvokable<Tuple2<IN, Integ
 				}
 			} else {
 				aggregate = new Tuple2<IN, Integer>();
-				aggregate.f0 = preAggregate;
+				if (isEmptyWindow) {
+					aggregate.f0 = preAggregate;
+				} else {
+					aggregate.f0 = null;
+				}
 				aggregate.f1 = preAggregateParallelism - 1;
 				if (aggregate.f1 == 0) {
 					collector.collect(aggregate.f0);

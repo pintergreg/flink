@@ -21,12 +21,12 @@ import java.util.Iterator;
 import java.util.LinkedList;
 
 import org.apache.flink.api.common.functions.ReduceFunction;
-import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
+import org.apache.flink.api.java.tuple.Tuple4;
 import org.apache.flink.streaming.api.invokable.StreamInvokable;
 
 public class WindowPreAggregator<IN> extends
-		StreamInvokable<Tuple3<IN, Integer, Integer>, Tuple2<IN, Integer>> {
+		StreamInvokable<Tuple4<IN, Integer, Integer, Boolean>, Tuple3<IN, Integer, Boolean>> {
 
 	private static final long serialVersionUID = 1L;
 
@@ -35,12 +35,13 @@ public class WindowPreAggregator<IN> extends
 	private Integer currentWindowID;
 	private LinkedList<IN> buffer;
 
-	Tuple2<IN, Integer> output;
+	Tuple3<IN, Integer, Boolean> output;
 
 	public WindowPreAggregator(ReduceFunction<IN> reducer) {
 		super(reducer);
 		this.reducer = reducer;
 		this.buffer = new java.util.LinkedList<IN>();
+		this.output = new Tuple3<IN, Integer, Boolean>();
 	}
 
 	@Override
@@ -50,10 +51,13 @@ public class WindowPreAggregator<IN> extends
 			IN nextElement = nextObject.f0;
 			Integer windowID = nextObject.f1;
 			Integer numToEvict = nextObject.f2;
-			
+			Boolean isReal = nextObject.f3;
+
 			emit(windowID);
 			evict(numToEvict);
-			addToBuffer(nextElement);
+			if (isReal) {
+				addToBuffer(nextElement);
+			}
 
 		}
 	}
@@ -72,9 +76,7 @@ public class WindowPreAggregator<IN> extends
 	}
 
 	private void addToBuffer(IN element) {
-		if (element != null) {
-			buffer.add(element);
-		}
+		buffer.add(element);
 	}
 
 	protected void reduce() throws Exception {
@@ -101,7 +103,11 @@ public class WindowPreAggregator<IN> extends
 		if (reduced != null) {
 			output.f0 = reduced;
 			output.f1 = currentWindowID;
-
+			output.f2 = true;
+			collector.collect(output);
+		} else {
+			output.f1 = currentWindowID;
+			output.f2 = false;
 			collector.collect(output);
 		}
 

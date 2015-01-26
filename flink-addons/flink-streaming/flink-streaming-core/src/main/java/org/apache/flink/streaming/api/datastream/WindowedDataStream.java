@@ -28,8 +28,8 @@ import org.apache.flink.api.common.functions.RichReduceFunction;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.functions.KeySelector;
-import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
+import org.apache.flink.api.java.tuple.Tuple4;
 import org.apache.flink.api.java.typeutils.TupleTypeInfo;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.streaming.api.function.aggregation.AggregationFunction;
@@ -247,25 +247,26 @@ public class WindowedDataStream<OUT> {
 	 */
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public SingleOutputStreamOperator<OUT, ?> reduce(ReduceFunction<OUT> reduceFunction) {
-		StreamInvokable<OUT, Tuple3<OUT, Integer, Integer>> globalWindowTracker = new GlobalWindowTracker<OUT>(
-				getTriggers(), getEvicters());
+		StreamInvokable<OUT, Tuple4<OUT, Integer, Integer, Boolean>> globalWindowTracker = new GlobalWindowTracker<OUT>(
+				getTriggers(), getEvicters(), dataStream.environment.getDegreeOfParallelism());
 
-		TypeInformation<Tuple3<OUT, Integer, Integer>> type1 = new TupleTypeInfo(Tuple3.class,
-				getType(), BasicTypeInfo.INT_TYPE_INFO, BasicTypeInfo.INT_TYPE_INFO);
+		TypeInformation<Tuple4<OUT, Integer, Integer, Boolean>> type1 = new TupleTypeInfo(
+				Tuple4.class, getType(), BasicTypeInfo.INT_TYPE_INFO, BasicTypeInfo.INT_TYPE_INFO,
+				BasicTypeInfo.BOOLEAN_TYPE_INFO);
 
-		StreamInvokable<Tuple3<OUT, Integer, Integer>, Tuple2<OUT, Integer>> preAggregator = new WindowPreAggregator<OUT>(
+		StreamInvokable<Tuple4<OUT, Integer, Integer, Boolean>, Tuple3<OUT, Integer, Boolean>> preAggregator = new WindowPreAggregator<OUT>(
 				reduceFunction);
 
-		TypeInformation<Tuple2<OUT, Integer>> type2 = new TupleTypeInfo(Tuple2.class, getType(),
-				BasicTypeInfo.INT_TYPE_INFO);
+		TypeInformation<Tuple3<OUT, Integer, Boolean>> type2 = new TupleTypeInfo(Tuple3.class,
+				getType(), BasicTypeInfo.INT_TYPE_INFO, BasicTypeInfo.BOOLEAN_TYPE_INFO);
 
-		StreamInvokable<Tuple2<OUT, Integer>, OUT> globalAggregator = new GlobalWindowAggregator<OUT>(
+		StreamInvokable<Tuple3<OUT, Integer, Boolean>, OUT> globalAggregator = new GlobalWindowAggregator<OUT>(
 				reduceFunction, dataStream.environment.getDegreeOfParallelism());
 
 		return dataStream.transform("GlobalWindowTracker", type1, globalWindowTracker)
 				.setParallelism(1).distribute()
-				.transform("WindowPreAggregator", type2, preAggregator)
-				.transform("GlobalWindowAggregator", getType(), globalAggregator).setParallelism(1);
+				.transform("WindowPreAggregator", type2, preAggregator).groupBy(1)
+				.transform("GlobalWindowAggregator", getType(), globalAggregator);
 	}
 
 	/**

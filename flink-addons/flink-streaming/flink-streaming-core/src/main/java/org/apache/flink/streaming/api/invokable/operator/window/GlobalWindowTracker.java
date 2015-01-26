@@ -19,7 +19,7 @@ package org.apache.flink.streaming.api.invokable.operator.window;
 
 import java.util.LinkedList;
 
-import org.apache.flink.api.java.tuple.Tuple3;
+import org.apache.flink.api.java.tuple.Tuple4;
 import org.apache.flink.streaming.api.invokable.StreamInvokable;
 import org.apache.flink.streaming.api.windowing.policy.ActiveEvictionPolicy;
 import org.apache.flink.streaming.api.windowing.policy.ActiveTriggerCallback;
@@ -27,7 +27,8 @@ import org.apache.flink.streaming.api.windowing.policy.ActiveTriggerPolicy;
 import org.apache.flink.streaming.api.windowing.policy.EvictionPolicy;
 import org.apache.flink.streaming.api.windowing.policy.TriggerPolicy;
 
-public class GlobalWindowTracker<IN> extends StreamInvokable<IN, Tuple3<IN, Integer, Integer>> {
+public class GlobalWindowTracker<IN> extends
+		StreamInvokable<IN, Tuple4<IN, Integer, Integer, Boolean>> {
 
 	private static final long serialVersionUID = -8232375561456225043L;
 
@@ -39,11 +40,11 @@ public class GlobalWindowTracker<IN> extends StreamInvokable<IN, Tuple3<IN, Inte
 
 	private int currentBufferSize = 0;
 	private final int numberOfPreAggregators;
-	private int currentRoundRobinPositionForAdding = 0;
-	private int currentRoundRobinPositionForDeleting = 0;
+	private int nextChannelToEmit = 0;
+	private int firstInRound = 0;
 	private int currentWindowId = 0;
 
-	private Tuple3<IN, Integer, Integer> output = new Tuple3<IN, Integer, Integer>();
+	private Tuple4<IN, Integer, Integer, Boolean> output = new Tuple4<IN, Integer, Integer, Boolean>();
 
 	public GlobalWindowTracker(LinkedList<TriggerPolicy<IN>> triggerPolicies,
 			LinkedList<EvictionPolicy<IN>> evictionPolicies, int numberOfPreAggregators) {
@@ -104,13 +105,13 @@ public class GlobalWindowTracker<IN> extends StreamInvokable<IN, Tuple3<IN, Inte
 	public void invoke() throws Exception {
 		while (readNext() != null) {
 			// Prevent empty data streams
-			if (readNext() == null) {
+			if (nextRecord == null) {
 				throw new RuntimeException("DataStream must not be empty");
 			}
 
 			// Continuously run
 			while (nextRecord != null) {
-				processRealElement(nextRecord.getObject());
+				processRealElement(nextObject);
 
 				// Load next StreamRecord
 				readNext();
@@ -203,9 +204,7 @@ public class GlobalWindowTracker<IN> extends StreamInvokable<IN, Tuple3<IN, Inte
 	}
 
 	protected void emitFinalWindow() {
-		if (currentBufferSize > 0) {
-			submit(null, 0, true);
-		}
+		submit(null, 0, true);
 	}
 
 	protected void submit(IN element, int numToEvict, boolean trigger) {
@@ -214,44 +213,50 @@ public class GlobalWindowTracker<IN> extends StreamInvokable<IN, Tuple3<IN, Inte
 			// this is the simple case: only forward the real element
 
 			output.f0 = element;
-			output.f1 = 0;
+			output.f1 = currentWindowId;
 			output.f2 = -1;
+			output.f3 = true;
 
-			// TODO SUBMIT OUTPUT
+			collector.collect(output);
 
-			currentRoundRobinPositionForAdding++;
+			nextChannelToEmit = (nextChannelToEmit + 1) % numberOfPreAggregators;
 
 		} else {
 			if (trigger) {
-				output.f1 = currentWindowId++;
+				output.f1 = ++currentWindowId;
 			}
-			output.f2 = numToEvict / numberOfPreAggregators;
+			int baseEvict = numToEvict / numberOfPreAggregators;
 			int additionallyEvict = numToEvict % numberOfPreAggregators;
 
-			for (int i = 0; i <= numberOfPreAggregators; i++) {
+			for (int i = 0; i < numberOfPreAggregators; i++) {
+
+				output.f2 = baseEvict;
+
 				// Add element
-				if (i == currentRoundRobinPositionForAdding) {
+				if (i == 0 && element != null) {
 					output.f0 = element;
+					output.f3 = true;
 				} else {
-					output.f0 = null;
+					output.f3 = false;
 				}
 
-				// distribute the evictions
-				if (i < currentRoundRobinPositionForDeleting + additionallyEvict
-						|| i < additionallyEvict
-								- (numberOfPreAggregators - currentRoundRobinPositionForDeleting)) {
+				boolean cond1 = nextChannelToEmit < firstInRound + additionallyEvict
+						&& nextChannelToEmit >= firstInRound;
+				boolean cond2 = nextChannelToEmit < (firstInRound + additionallyEvict)
+						% numberOfPreAggregators;
+
+				if (additionallyEvict > 0 && (cond1 || cond2)) {
 					output.f2++;
 				}
 
-				// TODO SUBMIT OUTPUT
+				if (output.f3 || trigger || output.f2 > 0) {
+					collector.collect(output);
+					nextChannelToEmit = (nextChannelToEmit + 1) % numberOfPreAggregators;
+
+				}
 			}
-			if (element != null) {
-				// TODO in this case we did a whole round of element emissions,
-				// so we need to do one more emission to fit the expected
-				// position.
-				currentRoundRobinPositionForAdding++;
-			}
-			currentRoundRobinPositionForDeleting += numToEvict;
+
+			firstInRound = nextChannelToEmit;
 		}
 
 		// Remember the current size of the buffer
@@ -265,15 +270,5 @@ public class GlobalWindowTracker<IN> extends StreamInvokable<IN, Tuple3<IN, Inte
 		if (element != null) {
 			currentBufferSize++;
 		}
-
-		// Prevent the current Round Robin Position from overflow
-		if (currentRoundRobinPositionForAdding >= numberOfPreAggregators) {
-			currentRoundRobinPositionForAdding = 0;
-		}
-		if (currentRoundRobinPositionForDeleting >= numberOfPreAggregators) {
-			currentRoundRobinPositionForDeleting = currentRoundRobinPositionForDeleting
-					% numberOfPreAggregators;
-		}
 	}
-
 }
