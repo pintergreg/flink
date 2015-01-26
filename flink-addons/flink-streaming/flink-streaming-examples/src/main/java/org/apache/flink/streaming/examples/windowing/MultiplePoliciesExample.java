@@ -126,7 +126,6 @@ public class MultiplePoliciesExample {
 			if (args.length == 1) {
 				outputPath = args[0];
 			} else {
-				System.err.println("Usage: MultiplePoliciesExample <result path>");
 				return false;
 			}
 		} else {

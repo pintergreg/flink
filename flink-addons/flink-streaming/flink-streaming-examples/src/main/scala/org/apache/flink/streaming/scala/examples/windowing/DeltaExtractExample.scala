@@ -20,7 +20,7 @@ package org.apache.flink.streaming.scala.examples.windowing
 import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
 import org.apache.flink.streaming.api.scala.windowing.Delta
 import org.apache.flink.streaming.api.windowing.helper.Count
-import org.apache.flink.streaming.api._
+import org.apache.flink.streaming.api.scala._
 
 /**
  * This example gives an impression about how to use delta policies. It also
@@ -50,11 +50,11 @@ object DeltaExtractExample {
     if(fileOutput) {
       dstream.writeAsText(outputPath, 1)
     }else{
-      dstream.print()
+      dstream.print
     }
     
     env.execute("Delta Extract Example")
-    
+
   }
   
   // util func
