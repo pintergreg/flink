@@ -17,6 +17,13 @@
 
 package org.apache.flink.streaming.scala.examples.twitter
 
+import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
+import org.apache.flink.streaming.examples.twitter.util.TwitterStreamData
+import org.apache.flink.streaming.api.scala._
+import org.apache.flink.util.Collector
+
+import scala.util.parsing.json.JSON
+
 /**
  * Implements the "TwitterStream" program that computes a most used word
  * occurrence over JSON files in a streaming fashion.
@@ -47,6 +54,54 @@ object TwitterStream {
       return
     }
     
+    val env = StreamExecutionEnvironment.getExecutionEnvironment
+    
+    env.setBufferTimeout(1000)
+    
+    val streamSource = getTextDataStream(env)
+
+    val tweets = streamSource.flatMap(enTweetTokenize _)
+                  .map {(_,1)}
+                  .groupBy(0)
+                  .sum(1)
+
+        // emit result
+        if (fileOutput) {
+          tweets.writeAsText(outputPath, 1)
+        }
+        else {
+          tweets.print
+        }
+    
+        // execute program
+        env.execute("Twitter Streaming Example")
+
+  }
+  
+  def enTweetTokenize (tweet: String, out:Collector[String]) = {
+    val tweetObj = JSON.parseFull(tweet)
+    if (getJsonString(tweetObj, "lang").equals("en")){
+      val content = getJsonString(tweetObj,"text")
+      content.toLowerCase().split("\\W+") filter (_.nonEmpty) foreach(out.collect(_))
+    }
+
+  }
+  def getJsonString(jsonObj: Option[Any], field: String) :  String={
+    jsonObj match {
+      case Some(map : Map[String,Any])=> map.getOrElse(field, "f").toString
+      case None => "Not found"
+    }
+  }
+  
+  
+  
+  
+  private def getTextDataStream (env : StreamExecutionEnvironment) : DataStream[String] = {
+    if (fileOutput) {
+      env.readTextFile(textPath)
+    }else{
+      env.fromCollection(TwitterStreamData.TEXTS)
+    }
   }
 
   private def parseParameters(args: Array[String]) = {
@@ -67,7 +122,6 @@ object TwitterStream {
       System.out.println("  USAGE: TwitterStream <pathToPropertiesFile>")
     }
      true
-    
   }
 
   private var fileOutput : Boolean = false

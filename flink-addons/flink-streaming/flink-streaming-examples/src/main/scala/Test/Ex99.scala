@@ -2,6 +2,10 @@ package Test
 
 import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
 import org.apache.flink.streaming.api.scala._
+import org.apache.flink.streaming.examples.twitter.util.TwitterStreamData
+
+import scala.sys.process.BasicIO
+import scala.util.parsing.json.JSON
 
 
 /**
@@ -10,12 +14,16 @@ import org.apache.flink.streaming.api.scala._
  */
 object  Test {
   def main(args: Array[String]) {
-    val WORDS = Array("flink", "Streaming")
-
-    var env = StreamExecutionEnvironment.getExecutionEnvironment
-
-    env.fromCollection(WORDS).print()
-
-    env.execute()
+    System.out.println(getString(TwitterStreamData.TEXTS(1), "lang"))
   }
+
+  def getString(jsonText: String, field: String) :  String={
+    val result = JSON.parseFull(jsonText)
+    result match {
+      case Some(map :Map[String, Any]) => map.getOrElse(field,"f").toString
+      case None => "fail!"
+    }
+  }
+  
+  
 }

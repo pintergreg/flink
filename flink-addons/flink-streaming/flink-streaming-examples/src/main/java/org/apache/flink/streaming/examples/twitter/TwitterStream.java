@@ -81,9 +81,9 @@ public class TwitterStream {
 						return new Tuple2<String, Integer>(value, 1);
 					}
 				})
-				// group by words and sum their occurence
+				// group by words and sum their occurrence
 				.groupBy(0).sum(1)
-				// select word with maximum occurence
+				// select word with maximum occurrence
 				.flatMap(new SelectMaxOccurence());
 
 		// emit result
