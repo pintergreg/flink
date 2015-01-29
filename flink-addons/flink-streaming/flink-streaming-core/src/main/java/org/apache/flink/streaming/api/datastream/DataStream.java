@@ -1120,7 +1120,7 @@ public class DataStream<OUT> {
 		SingleOutputStreamOperator<R, ?> returnStream = new SingleOutputStreamOperator(environment,
 				operatorName, outTypeInfo, invokable);
 
-		streamGraph.addStreamVertex(returnStream.getId(), invokable, getType(), outTypeInfo,
+		streamGraph.addTaskVertex(returnStream.getId(), invokable, getType(), outTypeInfo,
 				operatorName, returnStream.getParallelism());
 
 		connectGraph(inputStream, returnStream.getId(), 0);
@@ -1182,8 +1182,8 @@ public class DataStream<OUT> {
 		DataStreamSink<OUT> returnStream = new DataStreamSink<OUT>(environment, "sink", getType(),
 				sinkInvokable);
 
-		streamGraph.addStreamVertex(returnStream.getId(), sinkInvokable, getType(), null,
-				"Stream Sink", returnStream.getParallelism());
+		streamGraph.addTaskVertex(returnStream.getId(), sinkInvokable, getType(), null,
+				"sink", returnStream.getParallelism());
 
 		this.connectGraph(this.copy(), returnStream.getId(), 0);
 

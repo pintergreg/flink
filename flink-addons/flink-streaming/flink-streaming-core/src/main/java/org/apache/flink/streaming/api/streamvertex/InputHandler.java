@@ -33,6 +33,7 @@ public class InputHandler<IN> {
 	private StreamRecordSerializer<IN> inputSerializer = null;
 	private MutableObjectIterator<StreamRecord<IN>> inputIter;
 	private MutableReader<IOReadableWritable> inputs;
+	private MutableRecordReader<IOReadableWritable> ftInput;
 
 	private StreamVertex<IN, ?> streamVertex;
 	private StreamConfig configuration;
@@ -57,11 +58,15 @@ public class InputHandler<IN> {
 
 			if (numberOfInputs < 2) {
 
-				inputs = new MutableRecordReader<IOReadableWritable>(streamVertex.getEnvironment().getReader(0));
+				inputs = new MutableRecordReader<IOReadableWritable>(streamVertex.getEnvironment()
+						.getReader(0));
+				ftInput = (MutableRecordReader<IOReadableWritable>) inputs;
 
 			} else {
 				UnionBufferReader reader = new UnionBufferReader(streamVertex.getEnvironment().getAllReaders());
 				inputs = new MutableRecordReader<IOReadableWritable>(reader);
+				ftInput = new MutableRecordReader<IOReadableWritable>(streamVertex.getEnvironment()
+						.getReader(0));
 			}
 
 			inputIter = createInputIterator();
@@ -92,5 +97,9 @@ public class InputHandler<IN> {
 
 	public MutableObjectIterator<StreamRecord<IN>> getInputIter() {
 		return inputIter;
+	}
+
+	public MutableRecordReader<IOReadableWritable> getPersistenceInput() {
+		return ftInput;
 	}
 }

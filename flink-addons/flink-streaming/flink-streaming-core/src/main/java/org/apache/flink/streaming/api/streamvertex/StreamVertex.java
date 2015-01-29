@@ -22,6 +22,8 @@ import java.util.Map;
 import org.apache.flink.runtime.execution.Environment;
 import org.apache.flink.runtime.jobgraph.tasks.AbstractInvokable;
 import org.apache.flink.streaming.api.StreamConfig;
+import org.apache.flink.streaming.api.ft.layer.AbstractFT;
+import org.apache.flink.streaming.api.ft.layer.NonFT;
 import org.apache.flink.streaming.api.invokable.ChainableInvokable;
 import org.apache.flink.streaming.api.invokable.StreamInvokable;
 import org.apache.flink.streaming.api.streamrecord.StreamRecordSerializer;
@@ -30,22 +32,26 @@ import org.apache.flink.streaming.state.OperatorState;
 import org.apache.flink.util.Collector;
 import org.apache.flink.util.MutableObjectIterator;
 
-public class StreamVertex<IN, OUT> extends AbstractInvokable implements StreamTaskContext<OUT> {
+public class StreamVertex<IN, OUT> extends AbstractInvokable implements
+		StreamTaskContext<OUT> {
 
-	private static int numTasks;
+	protected static int numTasks;
 
 	protected StreamConfig configuration;
 	protected int instanceID;
-	private static int numVertices = 0;
+	protected static int numVertices = 0;
 
-	private InputHandler<IN> inputHandler;
+	protected InputHandler<IN> inputHandler;
 	protected OutputHandler<OUT> outputHandler;
-	private StreamInvokable<IN, OUT> userInvokable;
+	protected StreamInvokable<IN, OUT> userInvokable;
 
-	private StreamingRuntimeContext context;
-	private Map<String, OperatorState<?>> states;
+	protected StreamingRuntimeContext context;
+	protected Map<String, OperatorState<?>> states;
 
 	protected ClassLoader userClassLoader;
+
+	protected AbstractFT<OUT> abstractFT;
+
 
 	public StreamVertex() {
 		userInvokable = null;
@@ -72,6 +78,10 @@ public class StreamVertex<IN, OUT> extends AbstractInvokable implements StreamTa
 		this.context = createRuntimeContext(getEnvironment().getTaskName(), this.states);
 	}
 
+	public void initializeInvoke() {
+		// TODO initialize serializers of ftWriters
+	}
+
 	protected <T> void invokeUserFunction(StreamInvokable<?, T> userInvokable) throws Exception {
 		userInvokable.setRuntimeContext(context);
 		userInvokable.open(getTaskConfiguration());
@@ -91,13 +101,15 @@ public class StreamVertex<IN, OUT> extends AbstractInvokable implements StreamTa
 	}
 
 	public void setInputsOutputs() {
+		abstractFT = new NonFT<OUT>();
 		inputHandler = new InputHandler<IN>(this);
-		outputHandler = new OutputHandler<OUT>(this);
+		outputHandler = new OutputHandler<OUT>(this, abstractFT);
+		// TODO set FT
 	}
 
 	protected void setInvokable() {
 		userInvokable = configuration.getUserInvokable(userClassLoader);
-		userInvokable.setup(this);
+		userInvokable.setup(this, abstractFT);
 	}
 
 	public String getName() {
@@ -116,6 +128,7 @@ public class StreamVertex<IN, OUT> extends AbstractInvokable implements StreamTa
 
 	@Override
 	public void invoke() throws Exception {
+		initializeInvoke();
 		outputHandler.invokeUserFunction("TASK", userInvokable);
 	}
 
@@ -153,4 +166,10 @@ public class StreamVertex<IN, OUT> extends AbstractInvokable implements StreamTa
 	public <X, Y> CoReaderIterator<X, Y> getCoReader() {
 		throw new IllegalArgumentException("CoReader not available");
 	}
+
+	@Override
+	public AbstractFT<OUT> getFT() {
+		return abstractFT;
+	}
+
 }

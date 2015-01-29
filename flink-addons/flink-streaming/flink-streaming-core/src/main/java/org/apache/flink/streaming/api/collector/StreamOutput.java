@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.flink.runtime.io.network.api.writer.RecordWriter;
 import org.apache.flink.runtime.plugable.SerializationDelegate;
+import org.apache.flink.streaming.api.ft.layer.AbstractFT;
 import org.apache.flink.streaming.api.streamrecord.StreamRecord;
 import org.apache.flink.streaming.io.StreamRecordWriter;
 import org.apache.flink.util.Collector;
@@ -36,11 +37,14 @@ public class StreamOutput<OUT> implements Collector<OUT> {
 	private SerializationDelegate<StreamRecord<OUT>> serializationDelegate;
 	private StreamRecord<OUT> streamRecord;
 	private int channelID;
+	private AbstractFT<?> abstractFT;
 
 	public StreamOutput(RecordWriter<SerializationDelegate<StreamRecord<OUT>>> output,
-			int channelID, SerializationDelegate<StreamRecord<OUT>> serializationDelegate) {
+			int channelID, SerializationDelegate<StreamRecord<OUT>> serializationDelegate,
+			AbstractFT<?> abstractFT) {
 
 		this.serializationDelegate = serializationDelegate;
+		this.abstractFT = abstractFT;
 
 		if (serializationDelegate != null) {
 			this.streamRecord = serializationDelegate.getInstance();
@@ -58,11 +62,13 @@ public class StreamOutput<OUT> implements Collector<OUT> {
 	@Override
 	public void collect(OUT record) {
 		streamRecord.setObject(record);
-		streamRecord.newId(channelID);
+		//streamRecord.newId(channelID);
 		serializationDelegate.setInstance(streamRecord);
 
 		try {
+			abstractFT.setOutRecordId(serializationDelegate);
 			output.emit(serializationDelegate);
+			abstractFT.xor(serializationDelegate.getInstance().getId());
 		} catch (Exception e) {
 			if (LOG.isErrorEnabled()) {
 				LOG.error("Emit failed due to: {}", StringUtils.stringifyException(e));

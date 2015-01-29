@@ -19,6 +19,8 @@ package org.apache.flink.streaming.api.invokable.operator.co;
 
 import org.apache.flink.api.common.functions.Function;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.streaming.api.ft.layer.AbstractFT;
+import org.apache.flink.streaming.api.ft.layer.event.FailException;
 import org.apache.flink.streaming.api.invokable.StreamInvokable;
 import org.apache.flink.streaming.api.streamrecord.StreamRecord;
 import org.apache.flink.streaming.api.streamrecord.StreamRecordSerializer;
@@ -46,7 +48,7 @@ public abstract class CoInvokable<IN1, IN2, OUT> extends StreamInvokable<IN1, OU
 	protected TypeSerializer<IN2> serializer2;
 
 	@Override
-	public void setup(StreamTaskContext<OUT> taskContext) {
+	public void setup(StreamTaskContext<OUT> taskContext, AbstractFT abstractFT) {
 		this.collector = taskContext.getOutputCollector();
 
 		this.recordIterator = taskContext.getCoReader();
@@ -59,6 +61,7 @@ public abstract class CoInvokable<IN1, IN2, OUT> extends StreamInvokable<IN1, OU
 
 		this.serializer1 = srSerializer1.getObjectSerializer();
 		this.serializer2 = srSerializer2.getObjectSerializer();
+		this.abstractFT = abstractFT;
 	}
 
 	protected void resetReuseAll() {
@@ -102,15 +105,24 @@ public abstract class CoInvokable<IN1, IN2, OUT> extends StreamInvokable<IN1, OU
 
 	protected void initialize1() {
 
-	};
+	}
+
+	;
 
 	protected void initialize2() {
 
-	};
+	}
+
+	;
 
 	protected void callUserFunctionAndLogException1() {
 		try {
+			abstractFT.setAnchorRecord(reuse1);
 			callUserFunction1();
+			abstractFT.xor(reuse1.getId());
+		} catch (FailException e) {
+			abstractFT.fail();
+			abstractFT.xor(reuse1.getId());
 		} catch (Exception e) {
 			if (LOG.isErrorEnabled()) {
 				LOG.error("Calling user function failed due to: {}",
@@ -121,7 +133,12 @@ public abstract class CoInvokable<IN1, IN2, OUT> extends StreamInvokable<IN1, OU
 
 	protected void callUserFunctionAndLogException2() {
 		try {
+			abstractFT.setAnchorRecord(reuse2);
 			callUserFunction2();
+			abstractFT.xor(reuse2.getId());
+		} catch (FailException e) {
+			abstractFT.fail();
+			abstractFT.xor(reuse2.getId());
 		} catch (Exception e) {
 			if (LOG.isErrorEnabled()) {
 				LOG.error("Calling user function failed due to: {}",

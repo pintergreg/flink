@@ -21,52 +21,48 @@ import java.io.Serializable;
 
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple;
+import org.apache.flink.streaming.api.ft.layer.util.RecordId;
 
 /**
  * Object for wrapping a tuple or other object with ID used for sending records
  * between streaming task in Apache Flink stream processing.
  */
-public class StreamRecord<T> implements Serializable {
+public class StreamRecord<T> implements IdentifiableStreamRecord, Serializable {
 	private static final long serialVersionUID = 1L;
 
-	private UID uid;
-	private T streamObject;
+	protected RecordId id;
+	protected T streamObject;
 	public boolean isTuple;
 
 	/**
 	 * Creates an empty StreamRecord
 	 */
 	public StreamRecord() {
-		uid = new UID();
+		id = new RecordId();
 	}
-
 	/**
 	 * @return The ID of the object
 	 */
-	public UID getId() {
-		return uid;
-	}
-
-	/**
-	 * Creates a new ID for the StreamRecord using the given channelID
-	 * 
-	 * @param channelID
-	 *            ID of the emitting task
-	 * @return The StreamRecord object
-	 */
-	public StreamRecord<T> newId(int channelID) {
-		uid = new UID(channelID);
-		return this;
+	@Override
+	public RecordId getId() {
+		return id;
 	}
 
 	/**
 	 * Sets the ID of the StreamRecord
-	 * 
+	 *
 	 * @param id
 	 *            id to set
 	 */
-	public void setId(UID id) {
-		this.uid = id;
+	@Override
+	public void setId(RecordId id) {
+		this.id = id;
+	}
+
+	@Override
+	public RecordId newId(long sourceRecordId) {
+		id = RecordId.newRecordId(sourceRecordId);
+		return id;
 	}
 
 	/**

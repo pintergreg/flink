@@ -15,32 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.flink.streaming.api.invokable;
+package org.apache.flink.streaming.api.ft.layer.util;
 
-import java.io.Serializable;
+import org.apache.flink.runtime.plugable.SerializationDelegate;
+import org.apache.flink.streaming.api.ft.layer.Anchorer;
+import org.apache.flink.streaming.api.streamrecord.IdentifiableStreamRecord;
 
-import org.apache.flink.streaming.api.function.source.SourceFunction;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+public class FTAnchorer implements Anchorer {
+	protected RecordId anchorRecordId;
 
-public class SourceInvokable<OUT> extends StreamInvokable<OUT, OUT> implements Serializable {
-	private static final long serialVersionUID = 1L;
-	private static final Logger LOG = LoggerFactory.getLogger(StreamInvokable.class);
-
-	private SourceFunction<OUT> sourceFunction;
-
-	public SourceInvokable(SourceFunction<OUT> sourceFunction) {
-		super(sourceFunction);
-		this.sourceFunction = sourceFunction;
+	@Override
+	public void setAnchorRecord(IdentifiableStreamRecord anchorRecord) {
+		if (anchorRecord != null) {
+			this.anchorRecordId = anchorRecord.getId();
+		}
 	}
 
 	@Override
-	public void invoke() {
-		callUserFunctionAndLogException();
+	public RecordId getAnchorRecord() {
+		return anchorRecordId;
 	}
 
 	@Override
-	protected void callUserFunction() throws Exception {
-		sourceFunction.invoke(collector);
+	public RecordId setOutRecordId(SerializationDelegate<? extends IdentifiableStreamRecord> outRecord) {
+		long sourceRecordId = anchorRecordId.getSourceRecordId();
+		return outRecord.getInstance().newId(sourceRecordId);
 	}
+
 }

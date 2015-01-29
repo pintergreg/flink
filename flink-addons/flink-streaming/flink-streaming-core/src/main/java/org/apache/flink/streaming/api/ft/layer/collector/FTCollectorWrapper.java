@@ -15,28 +15,37 @@
  * limitations under the License.
  */
 
-package org.apache.flink.streaming.api.invokable;
+package org.apache.flink.streaming.api.ft.layer.collector;
 
-import org.apache.flink.api.common.functions.Function;
 import org.apache.flink.streaming.api.ft.layer.AbstractFT;
-import org.apache.flink.streaming.api.streamrecord.StreamRecordSerializer;
+import org.apache.flink.streaming.api.ft.layer.util.RecordId;
+import org.apache.flink.streaming.api.streamrecord.StreamRecord;
 import org.apache.flink.util.Collector;
 
-public abstract class ChainableInvokable<IN, OUT> extends StreamInvokable<IN, OUT> implements
-		Collector<IN> {
+public class FTCollectorWrapper<T> implements Collector<T> {
 
-	private static final long serialVersionUID = 1L;
+	private Collector<T> outerCollector;
+	private AbstractFT<T> abstractFT;
+	private StreamRecord<T> streamRecord;
 
-	public ChainableInvokable(Function userFunction) {
-		super(userFunction);
-		setChainingStrategy(ChainingStrategy.ALWAYS);
+	public FTCollectorWrapper(Collector<T> outerCollector, AbstractFT<T> abstractFT) {
+		this.streamRecord = new StreamRecord<T>();
+		this.outerCollector = outerCollector;
+		this.abstractFT = abstractFT;
 	}
 
-	public void setup(Collector<OUT> collector, StreamRecordSerializer<IN> inSerializer,
-			AbstractFT abstractFT) {
-		this.collector = collector;
-		this.inSerializer = inSerializer;
-		this.objectSerializer = inSerializer.getObjectSerializer();
-		this.abstractFT = abstractFT;
+	@Override
+	public void collect(T record) {
+
+		streamRecord.setObject(record);
+		streamRecord.setId(RecordId.newSourceRecordId());
+		abstractFT.persist(streamRecord);
+		abstractFT.setAnchorRecord(streamRecord);
+		outerCollector.collect(record);
+	}
+
+	@Override
+	public void close() {
+		outerCollector.close();
 	}
 }

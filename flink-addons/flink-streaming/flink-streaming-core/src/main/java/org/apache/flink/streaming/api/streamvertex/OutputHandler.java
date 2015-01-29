@@ -31,6 +31,7 @@ import org.apache.flink.streaming.api.StreamConfig;
 import org.apache.flink.streaming.api.collector.CollectorWrapper;
 import org.apache.flink.streaming.api.collector.DirectedCollectorWrapper;
 import org.apache.flink.streaming.api.collector.StreamOutput;
+import org.apache.flink.streaming.api.ft.layer.AbstractFT;
 import org.apache.flink.streaming.api.invokable.ChainableInvokable;
 import org.apache.flink.streaming.api.invokable.StreamInvokable;
 import org.apache.flink.streaming.api.streamrecord.StreamRecord;
@@ -48,14 +49,16 @@ public class OutputHandler<OUT> {
 	private StreamConfig configuration;
 	private ClassLoader cl;
 	private Collector<OUT> outerCollector;
+	private Collector<OUT> wrappedOuterCollector;
 
 	public List<ChainableInvokable<?, ?>> chainedInvokables;
 
 	private Map<String, StreamOutput<?>> outputMap;
 	private Map<String, StreamConfig> chainedConfigs;
 	private List<Tuple2<String, String>> outEdgesInOrder;
+	private AbstractFT<OUT> abstractFT;
 
-	public OutputHandler(StreamVertex<?, OUT> vertex) {
+	public OutputHandler(StreamVertex<?, OUT> vertex, AbstractFT<OUT> abstractFT) {
 
 		// Initialize some fields
 		this.vertex = vertex;
@@ -63,6 +66,7 @@ public class OutputHandler<OUT> {
 		this.chainedInvokables = new ArrayList<ChainableInvokable<?, ?>>();
 		this.outputMap = new HashMap<String, StreamOutput<?>>();
 		this.cl = vertex.getUserCodeClassLoader();
+		this.abstractFT = abstractFT;
 
 		// We read the chained configs, and the order of record writer
 		// registrations by outputname
@@ -81,8 +85,9 @@ public class OutputHandler<OUT> {
 
 		// We create the outer collector that will be passed to the first task
 		// in the chain
-		this.outerCollector = createChainedCollector(configuration);
 
+		this.outerCollector = createChainedCollector(configuration);
+		this.wrappedOuterCollector = abstractFT.wrap(outerCollector);
 	}
 
 	public Collection<StreamOutput<?>> getOutputs() {
@@ -93,14 +98,13 @@ public class OutputHandler<OUT> {
 	 * This method builds up a nested collector which encapsulates all the
 	 * chained operators and their network output. The result of this recursive
 	 * call will be passed as collector to the first invokable in the chain.
-	 * 
-	 * @param chainedTaskConfig
-	 *            The configuration of the starting operator of the chain, we
-	 *            use this paramater to recursively build the whole chain
+	 *
+	 * @param chainedTaskConfig The configuration of the starting operator of the chain, we
+	 *                          use this paramater to recursively build the whole chain
 	 * @return Returns the collector for the chain starting from the given
-	 *         config
+	 * config
 	 */
-	@SuppressWarnings({ "unchecked", "rawtypes" })
+	@SuppressWarnings({"unchecked", "rawtypes"})
 	private Collector<OUT> createChainedCollector(StreamConfig chainedTaskConfig) {
 
 		boolean isDirectEmit = chainedTaskConfig.isDirectedEmit();
@@ -144,7 +148,8 @@ public class OutputHandler<OUT> {
 			ChainableInvokable chainableInvokable = chainedTaskConfig.getUserInvokable(vertex
 					.getUserCodeClassLoader());
 			chainableInvokable.setup(wrapper,
-					chainedTaskConfig.getTypeSerializerIn1(vertex.getUserCodeClassLoader()));
+					chainedTaskConfig.getTypeSerializerIn1(vertex.getUserCodeClassLoader()),
+					abstractFT);
 
 			chainedInvokables.add(chainableInvokable);
 			return chainableInvokable;
@@ -153,17 +158,15 @@ public class OutputHandler<OUT> {
 	}
 
 	public Collector<OUT> getCollector() {
-		return outerCollector;
+		return wrappedOuterCollector;
 	}
 
 	/**
 	 * We create the StreamOutput for the specific output given by the name, and
 	 * the configuration of its source task
-	 * 
-	 * @param outputVertex
-	 *            Name of the output to which the streamoutput will be set up
-	 * @param configuration
-	 *            The config of upStream task
+	 *
+	 * @param outputVertex  Name of the output to which the streamoutput will be set up
+	 * @param configuration The config of upStream task
 	 * @return
 	 */
 	private <T> StreamOutput<T> createStreamOutput(String outputVertex, StreamConfig configuration,
@@ -202,7 +205,7 @@ public class OutputHandler<OUT> {
 		}
 
 		StreamOutput<T> streamOutput = new StreamOutput<T>(output, vertex.instanceID,
-				outSerializationDelegate);
+				outSerializationDelegate, abstractFT);
 
 		if (LOG.isTraceEnabled()) {
 			LOG.trace("Partitioner set: {} with {} outputs for {}", outputPartitioner.getClass()

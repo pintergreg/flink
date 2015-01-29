@@ -17,6 +17,10 @@
 
 package org.apache.flink.streaming.io;
 
+import java.io.IOException;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+
 import org.apache.flink.core.io.IOReadableWritable;
 import org.apache.flink.runtime.event.task.TaskEvent;
 import org.apache.flink.runtime.io.network.api.reader.BufferReaderBase;
@@ -26,10 +30,6 @@ import org.apache.flink.runtime.io.network.api.serialization.AdaptiveSpanningRec
 import org.apache.flink.runtime.io.network.api.serialization.RecordDeserializer;
 import org.apache.flink.runtime.io.network.buffer.Buffer;
 import org.apache.flink.runtime.util.event.EventListener;
-
-import java.io.IOException;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * A CoRecordReader wraps {@link MutableRecordReader}s of two different input

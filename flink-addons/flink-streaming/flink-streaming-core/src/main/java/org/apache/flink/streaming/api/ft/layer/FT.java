@@ -15,28 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.flink.streaming.api.invokable;
+package org.apache.flink.streaming.api.ft.layer;
 
-import org.apache.flink.api.common.functions.Function;
-import org.apache.flink.streaming.api.ft.layer.AbstractFT;
-import org.apache.flink.streaming.api.streamrecord.StreamRecordSerializer;
+import org.apache.flink.streaming.api.ft.layer.collector.FTCollectorWrapper;
 import org.apache.flink.util.Collector;
 
-public abstract class ChainableInvokable<IN, OUT> extends StreamInvokable<IN, OUT> implements
-		Collector<IN> {
+public class FT<T> extends AbstractFT<T> {
 
-	private static final long serialVersionUID = 1L;
-
-	public ChainableInvokable(Function userFunction) {
-		super(userFunction);
-		setChainingStrategy(ChainingStrategy.ALWAYS);
+	public FT(Persister<T> persister, Xorer xorer, Anchorer anchorer) {
+		super(persister, xorer, anchorer);
 	}
 
-	public void setup(Collector<OUT> collector, StreamRecordSerializer<IN> inSerializer,
-			AbstractFT abstractFT) {
-		this.collector = collector;
-		this.inSerializer = inSerializer;
-		this.objectSerializer = inSerializer.getObjectSerializer();
-		this.abstractFT = abstractFT;
+	public void fail() {
+		xorer.setFailFlag(true);
 	}
+
+	@Override
+	public Collector<T> wrap(Collector<T> collector) {
+		return new FTCollectorWrapper(collector, this);
+	}
+
 }

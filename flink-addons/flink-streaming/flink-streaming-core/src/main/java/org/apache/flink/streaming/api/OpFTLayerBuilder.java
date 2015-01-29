@@ -17,6 +17,12 @@
 
 package org.apache.flink.streaming.api;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.flink.runtime.jobgraph.AbstractJobVertex;
 import org.apache.flink.runtime.jobgraph.DistributionPattern;
 import org.apache.flink.runtime.jobgraph.JobGraph;
@@ -27,14 +33,8 @@ import org.apache.flink.streaming.api.streamvertex.StreamVertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-public class OpFTLayer implements FTLayerBuilder {
-	private static final Logger LOG = LoggerFactory.getLogger(OpFTLayer.class);
+public class OpFTLayerBuilder implements FTLayerBuilder {
+	private static final Logger LOG = LoggerFactory.getLogger(OpFTLayerBuilder.class);
 
 	private StreamGraph streamGraph;
 	private JobGraph jobGraph;
@@ -45,7 +45,7 @@ public class OpFTLayer implements FTLayerBuilder {
 
 	private HashMap<String, Integer> ftLayerOutputs;
 
-	public OpFTLayer(StreamingJobGraphGenerator jobGraphGenerator) {
+	public OpFTLayerBuilder(StreamingJobGraphGenerator jobGraphGenerator) {
 		this.streamGraph = jobGraphGenerator.getStreamGraph();
 		this.jobGraph = jobGraphGenerator.getJobGraph();
 		this.streamVertices = jobGraphGenerator.getStreamVertices();
