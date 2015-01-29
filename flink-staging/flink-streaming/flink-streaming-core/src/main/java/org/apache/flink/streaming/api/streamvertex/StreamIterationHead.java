@@ -24,12 +24,13 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.flink.streaming.api.collector.StreamOutput;
+import org.apache.flink.streaming.api.ft.layer.NonFT;
 import org.apache.flink.streaming.api.streamrecord.StreamRecord;
 import org.apache.flink.streaming.io.BlockingQueueBroker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class StreamIterationHead<OUT> extends StreamVertex<OUT, OUT> {
+public class StreamIterationHead<OUT> extends StreamSourceVertex<OUT> {
 
 	private static final Logger LOG = LoggerFactory.getLogger(StreamIterationHead.class);
 
@@ -51,7 +52,8 @@ public class StreamIterationHead<OUT> extends StreamVertex<OUT, OUT> {
 
 	@Override
 	public void setInputsOutputs() {
-		outputHandler = new OutputHandler<OUT>(this);
+		abstractFT = new NonFT<OUT>();
+		outputHandler = new OutputHandler<OUT>(this, abstractFT);
 
 		iterationId = configuration.getIterationId();
 		iterationWaitTime = configuration.getIterationWaitTime();

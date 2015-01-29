@@ -15,32 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.flink.streaming.api.invokable;
+package org.apache.flink.streaming.api;
 
-import java.io.Serializable;
+public class NOpFTLayerBuilder implements FTLayerBuilder {
 
-import org.apache.flink.streaming.api.function.source.SourceFunction;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-public class SourceInvokable<OUT> extends StreamInvokable<OUT, OUT> implements Serializable {
-	private static final long serialVersionUID = 1L;
-	private static final Logger LOG = LoggerFactory.getLogger(StreamInvokable.class);
-
-	private SourceFunction<OUT> sourceFunction;
-
-	public SourceInvokable(SourceFunction<OUT> sourceFunction) {
-		super(sourceFunction);
-		this.sourceFunction = sourceFunction;
+	@Override
+	public boolean isChainingEnabled(String vertexName, String outName) {
+		return true;
 	}
 
 	@Override
-	public void invoke() {
-		callUserFunctionAndLogException();
+	public void createFTLayerVertex(int parallelism) {
 	}
 
 	@Override
-	protected void callUserFunction() throws Exception {
-		sourceFunction.invoke(collector);
+	public void connectWithFTLayer(String vertexName) {
+	}
+
+	@Override
+	public void setSourceSuccessives() {
 	}
 }

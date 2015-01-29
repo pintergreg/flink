@@ -15,32 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.flink.streaming.api.invokable;
+package org.apache.flink.streaming.api.ft.layer.util;
 
-import java.io.Serializable;
+import org.apache.flink.runtime.io.network.api.writer.RecordWriter;
+import org.apache.flink.streaming.api.ft.layer.Xorer;
+import org.apache.flink.streaming.api.ft.layer.event.XorEvent;
 
-import org.apache.flink.streaming.api.function.source.SourceFunction;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+public class SourceFTXorer extends Xorer {
 
-public class SourceInvokable<OUT> extends StreamInvokable<OUT, OUT> implements Serializable {
-	private static final long serialVersionUID = 1L;
-	private static final Logger LOG = LoggerFactory.getLogger(StreamInvokable.class);
+	RecordWriter<?> recordWriter;
 
-	private SourceFunction<OUT> sourceFunction;
-
-	public SourceInvokable(SourceFunction<OUT> sourceFunction) {
-		super(sourceFunction);
-		this.sourceFunction = sourceFunction;
+	public SourceFTXorer(RecordWriter<?> recordWriter) {
+		super();
+		this.recordWriter = recordWriter;
 	}
 
 	@Override
-	public void invoke() {
-		callUserFunctionAndLogException();
+	protected void emit(RecordId recordId) throws Exception {
+		recordWriter.broadcastEvent(new XorEvent(recordId, false));
 	}
 
 	@Override
-	protected void callUserFunction() throws Exception {
-		sourceFunction.invoke(collector);
+	protected void fail(RecordId recordId) throws Exception {
+		recordWriter.broadcastEvent(new XorEvent(recordId, true));
 	}
+
 }

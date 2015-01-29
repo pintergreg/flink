@@ -22,8 +22,9 @@ import java.nio.ByteBuffer;
 
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.runtime.plugable.SerializationDelegate;
+import org.apache.flink.streaming.api.streamrecord.IdentifiableStreamRecord;
 
-public class SemiDeserializedStreamRecord implements Serializable {
+public class SemiDeserializedStreamRecord implements IdentifiableStreamRecord, Serializable {
 
 	private static final long serialVersionUID = 1L;
 
@@ -61,12 +62,20 @@ public class SemiDeserializedStreamRecord implements Serializable {
 		this.hashCode = hashCode;
 	}
 
+	@Override
 	public RecordId getId() {
 		return id;
 	}
 
+	@Override
 	public void setId(RecordId id) {
 		this.id = id;
+	}
+
+	@Override
+	public RecordId newId(long sourceRecordId) {
+		id = RecordId.newRecordId(sourceRecordId);
+		return id;
 	}
 	
 	public byte[] getArray(){

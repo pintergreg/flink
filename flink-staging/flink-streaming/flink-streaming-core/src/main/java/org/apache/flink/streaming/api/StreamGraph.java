@@ -32,7 +32,6 @@ import java.util.Set;
 import org.apache.flink.api.common.io.InputFormat;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.compiler.plan.StreamingPlan;
-import org.apache.flink.runtime.jobgraph.AbstractJobVertex;
 import org.apache.flink.runtime.jobgraph.JobGraph;
 import org.apache.flink.runtime.jobgraph.tasks.AbstractInvokable;
 import org.apache.flink.streaming.api.collector.OutputSelector;
@@ -42,6 +41,7 @@ import org.apache.flink.streaming.api.streamrecord.StreamRecordSerializer;
 import org.apache.flink.streaming.api.streamvertex.CoStreamVertex;
 import org.apache.flink.streaming.api.streamvertex.StreamIterationHead;
 import org.apache.flink.streaming.api.streamvertex.StreamIterationTail;
+import org.apache.flink.streaming.api.streamvertex.StreamSourceVertex;
 import org.apache.flink.streaming.api.streamvertex.StreamVertex;
 import org.apache.flink.streaming.partitioner.StreamPartitioner;
 import org.apache.flink.streaming.state.OperatorState;
@@ -63,7 +63,6 @@ public class StreamGraph extends StreamingPlan {
 	private String jobName = DEAFULT_JOB_NAME;
 
 	// Graph attributes
-	private Map<String, AbstractJobVertex> streamVertices;
 	private Set<String> sourceVertices;
 	protected Set<String> taskVertices;
 	private Map<String, Integer> operatorParallelisms;
@@ -99,7 +98,6 @@ public class StreamGraph extends StreamingPlan {
 	}
 
 	public void initGraph() {
-		streamVertices = new HashMap<String, AbstractJobVertex>();
 		sourceVertices = new HashSet<String>();
 		taskVertices = new HashSet<String>();
 		operatorParallelisms = new HashMap<String, Integer>();
@@ -130,7 +128,8 @@ public class StreamGraph extends StreamingPlan {
 			StreamInvokable<IN, OUT> invokableObject, TypeInformation<IN> inTypeInfo,
 			TypeInformation<OUT> outTypeInfo, String operatorName, int parallelism) {
 		sourceVertices.add(vertexName);
-		addStreamVertex(vertexName, invokableObject, inTypeInfo, outTypeInfo, operatorName,
+		addStreamVertex(vertexName, StreamSourceVertex.class, invokableObject, inTypeInfo,
+				outTypeInfo, operatorName,
 				parallelism);
 	}
 
@@ -138,7 +137,8 @@ public class StreamGraph extends StreamingPlan {
 			StreamInvokable<IN, OUT> invokableObject, TypeInformation<IN> inTypeInfo,
 			TypeInformation<OUT> outTypeInfo, String operatorName, int parallelism) {
 		taskVertices.add(vertexName);
-		addStreamVertex(vertexName, invokableObject, inTypeInfo, outTypeInfo, operatorName,
+		addStreamVertex(vertexName, StreamVertex.class, invokableObject, inTypeInfo, outTypeInfo,
+				operatorName,
 				parallelism);
 	}
 
@@ -158,11 +158,11 @@ public class StreamGraph extends StreamingPlan {
 	 * @param parallelism
 	 *            Number of parallel instances created
 	 */
-	public <IN, OUT> void addStreamVertex(String vertexName,
-			StreamInvokable<IN, OUT> invokableObject, TypeInformation<IN> inTypeInfo,
+	public <IN, OUT> void addStreamVertex(String vertexName, Class<? extends AbstractInvokable>
+			vertexClass, StreamInvokable<IN, OUT> invokableObject, TypeInformation<IN> inTypeInfo,
 			TypeInformation<OUT> outTypeInfo, String operatorName, int parallelism) {
 
-		addVertex(vertexName, StreamVertex.class, invokableObject, operatorName, parallelism);
+		addVertex(vertexName, vertexClass, invokableObject, operatorName, parallelism);
 
 		StreamRecordSerializer<IN> inSerializer = inTypeInfo != null ? new StreamRecordSerializer<IN>(
 				inTypeInfo) : null;

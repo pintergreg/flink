@@ -15,32 +15,42 @@
  * limitations under the License.
  */
 
-package org.apache.flink.streaming.api.invokable;
+package org.apache.flink.streaming.api.ft.layer;
 
-import java.io.Serializable;
-
-import org.apache.flink.streaming.api.function.source.SourceFunction;
+import org.apache.flink.streaming.api.ft.layer.util.RecordId;
+import org.apache.flink.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SourceInvokable<OUT> extends StreamInvokable<OUT, OUT> implements Serializable {
-	private static final long serialVersionUID = 1L;
-	private static final Logger LOG = LoggerFactory.getLogger(StreamInvokable.class);
+public abstract class Xorer {
+	private static final Logger LOG = LoggerFactory.getLogger(Xorer.class);
+	private boolean failFlag;
 
-	private SourceFunction<OUT> sourceFunction;
-
-	public SourceInvokable(SourceFunction<OUT> sourceFunction) {
-		super(sourceFunction);
-		this.sourceFunction = sourceFunction;
+	public Xorer() {
+		this.failFlag = false;
 	}
 
-	@Override
-	public void invoke() {
-		callUserFunctionAndLogException();
+	public void setFailFlag(boolean isFailed) {
+		this.failFlag = isFailed;
 	}
 
-	@Override
-	protected void callUserFunction() throws Exception {
-		sourceFunction.invoke(collector);
+	public void xor(RecordId xorMessage) {
+		try {
+			if (!failFlag) {
+				emit(xorMessage);
+			} else {
+				failFlag = false;
+				fail(xorMessage);
+			}
+		} catch (Exception e) {
+			if (LOG.isErrorEnabled()) {
+				LOG.error("Emit to AckerTask failed due to: {}", StringUtils.stringifyException(e));
+			}
+		}
 	}
+
+	protected abstract void emit(RecordId recordId) throws Exception;
+
+	protected abstract void fail(RecordId recordId) throws Exception;
+
 }

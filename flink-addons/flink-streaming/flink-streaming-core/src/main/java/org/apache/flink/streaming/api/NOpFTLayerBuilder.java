@@ -17,7 +17,7 @@
 
 package org.apache.flink.streaming.api;
 
-public class NOpFTLayer implements FTLayerBuilder {
+public class NOpFTLayerBuilder implements FTLayerBuilder {
 
 	@Override
 	public boolean isChainingEnabled(String vertexName, String outName) {

@@ -62,7 +62,7 @@ public final class StreamRecordSerializer<T> extends TypeSerializer<StreamRecord
 			throw new RuntimeException("Cannot instantiate StreamRecord.", e);
 		}
 	}
-	
+
 	@Override
 	public StreamRecord<T> copy(StreamRecord<T> from) {
 		StreamRecord<T> rec = new StreamRecord<T>();
@@ -90,7 +90,7 @@ public final class StreamRecordSerializer<T> extends TypeSerializer<StreamRecord
 		value.getId().write(target);
 		typeSerializer.serialize(value.getObject(), target);
 	}
-	
+
 	@Override
 	public StreamRecord<T> deserialize(DataInputView source) throws IOException {
 		StreamRecord<T> record = new StreamRecord<T>();
@@ -102,6 +102,7 @@ public final class StreamRecordSerializer<T> extends TypeSerializer<StreamRecord
 
 	@Override
 	public StreamRecord<T> deserialize(StreamRecord<T> reuse, DataInputView source) throws IOException {
+		reuse.isTuple = this.isTuple;
 		reuse.getId().read(source);
 		reuse.setObject(typeSerializer.deserialize(reuse.getObject(), source));
 		return reuse;

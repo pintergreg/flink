@@ -15,31 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.flink.streaming.api.streamvertex;
+package org.apache.flink.streaming.api.ft.layer.util;
 
-import java.util.ArrayList;
-
-import org.apache.flink.api.java.tuple.Tuple1;
 import org.apache.flink.runtime.io.network.api.writer.RecordWriter;
-import org.apache.flink.runtime.operators.DataSourceTask;
 import org.apache.flink.runtime.plugable.SerializationDelegate;
+import org.apache.flink.streaming.api.ft.layer.Persister;
 import org.apache.flink.streaming.api.streamrecord.StreamRecord;
+import org.apache.flink.streaming.api.streamrecord.StreamRecordSerializer;
 
-public class MockRecordWriter extends RecordWriter<SerializationDelegate<StreamRecord<Tuple1<Integer>>>> {
+public class FTPersister<T> implements Persister<T> {
+	private RecordWriter<SerializationDelegate<StreamRecord<T>>> recordWriter;
+	private SerializationDelegate<StreamRecord<T>> serializationDelegate;
 
-	public ArrayList<Integer> emittedRecords;
-
-	public MockRecordWriter(DataSourceTask<?> inputBase, Class<StreamRecord<Tuple1<Integer>>> outputClass) {
-		super(inputBase.getEnvironment().getWriter(0));
+	public FTPersister(RecordWriter<SerializationDelegate<StreamRecord<T>>> recordWriter,
+			StreamRecordSerializer<T> serializer) {
+		this.recordWriter = recordWriter;
+		this.serializationDelegate = new SerializationDelegate<StreamRecord<T>>(
+				serializer);
 	}
 
-	public boolean initList() {
-		emittedRecords = new ArrayList<Integer>();
-		return true;
-	}
-	
 	@Override
-	public void emit(SerializationDelegate<StreamRecord<Tuple1<Integer>>> record) {
-		emittedRecords.add(record.getInstance().getObject().f0);
+	public void persist(StreamRecord<T> record) {
+		serializationDelegate.setInstance(record);
+		try {
+			recordWriter.emit(serializationDelegate);
+		} catch (Exception e) {
+			// TODO log or throw exception
+			e.printStackTrace();
+		}
 	}
 }

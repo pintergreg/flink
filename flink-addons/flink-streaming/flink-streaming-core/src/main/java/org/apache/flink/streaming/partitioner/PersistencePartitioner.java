@@ -15,32 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.flink.streaming.api.invokable;
+package org.apache.flink.streaming.partitioner;
+
 
 import java.io.Serializable;
 
-import org.apache.flink.streaming.api.function.source.SourceFunction;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.flink.core.io.IOReadableWritable;
+import org.apache.flink.runtime.io.network.api.writer.ChannelSelector;
 
-public class SourceInvokable<OUT> extends StreamInvokable<OUT, OUT> implements Serializable {
+public class PersistencePartitioner<T extends IOReadableWritable> implements
+		ChannelSelector<T>, Serializable {
+
 	private static final long serialVersionUID = 1L;
-	private static final Logger LOG = LoggerFactory.getLogger(StreamInvokable.class);
-
-	private SourceFunction<OUT> sourceFunction;
-
-	public SourceInvokable(SourceFunction<OUT> sourceFunction) {
-		super(sourceFunction);
-		this.sourceFunction = sourceFunction;
-	}
 
 	@Override
-	public void invoke() {
-		callUserFunctionAndLogException();
-	}
-
-	@Override
-	protected void callUserFunction() throws Exception {
-		sourceFunction.invoke(collector);
+	public int[] selectChannels(T record, int numChannels) {
+		return new int[] {0};
 	}
 }

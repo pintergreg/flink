@@ -17,18 +17,19 @@
 
 package org.apache.flink.streaming.api.streamvertex;
 
+import java.util.ArrayList;
+
 import org.apache.flink.runtime.io.network.api.reader.BufferReader;
 import org.apache.flink.runtime.io.network.api.reader.BufferReaderBase;
 import org.apache.flink.runtime.io.network.api.reader.UnionBufferReader;
 import org.apache.flink.runtime.plugable.DeserializationDelegate;
+import org.apache.flink.streaming.api.ft.layer.NonFT;
 import org.apache.flink.streaming.api.invokable.operator.co.CoInvokable;
 import org.apache.flink.streaming.api.streamrecord.StreamRecord;
 import org.apache.flink.streaming.api.streamrecord.StreamRecordSerializer;
 import org.apache.flink.streaming.io.CoReaderIterator;
 import org.apache.flink.streaming.io.CoRecordReader;
 import org.apache.flink.util.MutableObjectIterator;
-
-import java.util.ArrayList;
 
 public class CoStreamVertex<IN1, IN2, OUT> extends StreamVertex<IN1, OUT> {
 
@@ -57,7 +58,8 @@ public class CoStreamVertex<IN1, IN2, OUT> extends StreamVertex<IN1, OUT> {
 
 	@Override
 	public void setInputsOutputs() {
-		outputHandler = new OutputHandler<OUT>(this);
+		abstractFT = new NonFT<OUT>();
+		outputHandler = new OutputHandler<OUT>(this, abstractFT);
 
 		setConfigInputs();
 
@@ -68,7 +70,7 @@ public class CoStreamVertex<IN1, IN2, OUT> extends StreamVertex<IN1, OUT> {
 	@Override
 	protected void setInvokable() {
 		userInvokable = configuration.getUserInvokable(userClassLoader);
-		userInvokable.setup(this);
+		userInvokable.setup(this, abstractFT);
 	}
 
 	protected void setConfigInputs() throws StreamVertexException {

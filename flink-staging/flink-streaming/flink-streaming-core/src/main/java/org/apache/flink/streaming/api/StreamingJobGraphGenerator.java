@@ -58,7 +58,7 @@ public class StreamingJobGraphGenerator {
 	private Map<String, StreamConfig> vertexConfigs;
 	private Map<String, String> chainedNames;
 
-	private final FTLayerBuilder ftBuilder = new NOpFTLayer();
+	private final FTLayerBuilder ftBuilder = new NOpFTLayerBuilder();
 
 	public StreamingJobGraphGenerator(StreamGraph streamGraph) {
 		this.streamGraph = streamGraph;

@@ -15,32 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.flink.streaming.api.invokable;
+package org.apache.flink.streaming.api.ft.layer.util;
 
-import java.io.Serializable;
+import org.apache.flink.streaming.api.ft.layer.Xorer;
 
-import org.apache.flink.streaming.api.function.source.SourceFunction;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+public class NonFTXorer extends Xorer {
 
-public class SourceInvokable<OUT> extends StreamInvokable<OUT, OUT> implements Serializable {
-	private static final long serialVersionUID = 1L;
-	private static final Logger LOG = LoggerFactory.getLogger(StreamInvokable.class);
-
-	private SourceFunction<OUT> sourceFunction;
-
-	public SourceInvokable(SourceFunction<OUT> sourceFunction) {
-		super(sourceFunction);
-		this.sourceFunction = sourceFunction;
+	@Override
+	public void xor(RecordId message) {
 	}
 
 	@Override
-	public void invoke() {
-		callUserFunctionAndLogException();
+	protected void emit(RecordId recordId) throws Exception {
+
 	}
 
 	@Override
-	protected void callUserFunction() throws Exception {
-		sourceFunction.invoke(collector);
+	protected void fail(RecordId recordId) throws Exception {
+
 	}
 }

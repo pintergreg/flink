@@ -25,6 +25,8 @@ import org.apache.flink.api.common.functions.RuntimeContext;
 import org.apache.flink.api.common.functions.util.FunctionUtils;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.streaming.api.ft.layer.AbstractFT;
+import org.apache.flink.streaming.api.ft.layer.event.FailException;
 import org.apache.flink.streaming.api.streamrecord.StreamRecord;
 import org.apache.flink.streaming.api.streamrecord.StreamRecordSerializer;
 import org.apache.flink.streaming.api.streamvertex.StreamTaskContext;
@@ -37,9 +39,9 @@ import org.slf4j.LoggerFactory;
 /**
  * The StreamInvokable represents the base class for all invokables in the
  * streaming topology.
- * 
+ *
  * @param <OUT>
- *            The output type of the invokable
+ * 		The output type of the invokable
  */
 public abstract class StreamInvokable<IN, OUT> implements Serializable {
 
@@ -56,6 +58,7 @@ public abstract class StreamInvokable<IN, OUT> implements Serializable {
 	protected boolean isMutable;
 
 	protected Collector<OUT> collector;
+	protected AbstractFT abstractFT;
 	protected Function userFunction;
 	protected volatile boolean isRunning;
 
@@ -67,11 +70,11 @@ public abstract class StreamInvokable<IN, OUT> implements Serializable {
 
 	/**
 	 * Initializes the {@link StreamInvokable} for input and output handling
-	 * 
+	 *
 	 * @param taskContext
-	 *            StreamTaskContext representing the vertex
+	 * 		StreamTaskContext representing the vertex
 	 */
-	public void setup(StreamTaskContext<OUT> taskContext) {
+	public void setup(StreamTaskContext<OUT> taskContext, AbstractFT abstractFT) {
 		this.collector = taskContext.getOutputCollector();
 		this.recordIterator = taskContext.getInput(0);
 		this.inSerializer = taskContext.getInputSerializer(0);
@@ -80,6 +83,7 @@ public abstract class StreamInvokable<IN, OUT> implements Serializable {
 			this.objectSerializer = inSerializer.getObjectSerializer();
 		}
 		this.taskContext = taskContext;
+		this.abstractFT = abstractFT;
 	}
 
 	/**
@@ -118,7 +122,12 @@ public abstract class StreamInvokable<IN, OUT> implements Serializable {
 	 */
 	protected void callUserFunctionAndLogException() {
 		try {
+			abstractFT.setAnchorRecord(nextRecord);
 			callUserFunction();
+			abstractFT.xor(nextRecord.getId());
+		} catch (FailException e) {
+			abstractFT.fail();
+			abstractFT.xor(nextRecord.getId());
 		} catch (Exception e) {
 			if (LOG.isErrorEnabled()) {
 				LOG.error("Calling user function failed due to: {}",
@@ -130,9 +139,9 @@ public abstract class StreamInvokable<IN, OUT> implements Serializable {
 	/**
 	 * Open method to be used if the user defined function extends the
 	 * RichFunction class
-	 * 
+	 *
 	 * @param parameters
-	 *            The configuration parameters for the operator
+	 * 		The configuration parameters for the operator
 	 */
 	public void open(Configuration parameters) throws Exception {
 		isRunning = true;
@@ -142,7 +151,6 @@ public abstract class StreamInvokable<IN, OUT> implements Serializable {
 	/**
 	 * Close method to be used if the user defined function extends the
 	 * RichFunction class
-	 * 
 	 */
 	public void close() {
 		isRunning = false;

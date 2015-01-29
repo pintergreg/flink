@@ -15,28 +15,37 @@
  * limitations under the License.
  */
 
-package org.apache.flink.streaming.api.invokable;
+package org.apache.flink.streaming.api.ft.layer;
 
-import org.apache.flink.api.common.functions.Function;
-import org.apache.flink.streaming.api.ft.layer.AbstractFT;
-import org.apache.flink.streaming.api.streamrecord.StreamRecordSerializer;
+import org.apache.flink.streaming.api.ft.layer.collector.NonFTCollectorWrapper;
+import org.apache.flink.streaming.api.ft.layer.util.NonFTAnchorer;
+import org.apache.flink.streaming.api.ft.layer.util.NonFTPersister;
+import org.apache.flink.streaming.api.ft.layer.util.NonFTXorer;
+import org.apache.flink.streaming.api.ft.layer.util.RecordId;
 import org.apache.flink.util.Collector;
 
-public abstract class ChainableInvokable<IN, OUT> extends StreamInvokable<IN, OUT> implements
-		Collector<IN> {
+public class NonFT<T> extends AbstractFT<T> {
 
-	private static final long serialVersionUID = 1L;
-
-	public ChainableInvokable(Function userFunction) {
-		super(userFunction);
-		setChainingStrategy(ChainingStrategy.ALWAYS);
+	public NonFT() {
+		super(new NonFTPersister<T>(), new NonFTXorer(), new NonFTAnchorer());
 	}
 
-	public void setup(Collector<OUT> collector, StreamRecordSerializer<IN> inSerializer,
-			AbstractFT abstractFT) {
-		this.collector = collector;
-		this.inSerializer = inSerializer;
-		this.objectSerializer = inSerializer.getObjectSerializer();
-		this.abstractFT = abstractFT;
+	@Override
+	protected void emit(RecordId recordId) throws Exception {
 	}
+
+	@Override
+	protected void fail(RecordId recordId) throws Exception {
+	}
+
+	@Override
+	public Collector<T> wrap(Collector<T> collector) {
+		return new NonFTCollectorWrapper(collector);
+	}
+
+	@Override
+	public void fail() {
+	}
+
 }
+
