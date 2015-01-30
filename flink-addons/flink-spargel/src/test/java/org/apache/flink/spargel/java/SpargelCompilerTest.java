@@ -38,6 +38,7 @@ import org.apache.flink.runtime.operators.util.LocalStrategy;
 import org.apache.flink.spargel.java.examples.SpargelConnectedComponents.CCMessager;
 import org.apache.flink.spargel.java.examples.SpargelConnectedComponents.CCUpdater;
 import org.apache.flink.spargel.java.examples.SpargelConnectedComponents.IdAssigner;
+import org.apache.flink.spargel.java.multicast.MCEnum;
 import org.apache.flink.test.compiler.util.CompilerTestBase;
 import org.junit.Test;
 
@@ -57,7 +58,7 @@ public class SpargelCompilerTest extends CompilerTestBase {
 				DataSet<Tuple2<Long, Long>> edges = env.fromElements(new Tuple2<Long, Long>(1L, 2L));
 				
 				DataSet<Tuple2<Long, Long>> initialVertices = vertexIds.map(new IdAssigner());
-				DataSet<Tuple2<Long, Long>> result = initialVertices.runOperation(VertexCentricIteration.withPlainEdges(edges, new CCUpdater(), new CCMessager(), 100));
+				DataSet<Tuple2<Long, Long>> result = initialVertices.runOperation(VertexCentricIteration.withPlainEdges(edges, new CCUpdater(), new CCMessager(MCEnum.MC0), 100));
 				
 				result.print();
 			}
@@ -128,7 +129,7 @@ public class SpargelCompilerTest extends CompilerTestBase {
 				
 				DataSet<Tuple2<Long, Long>> initialVertices = vertexIds.map(new IdAssigner());
 				
-				VertexCentricIteration<Long, Long, Long, ?> vcIter = VertexCentricIteration.withPlainEdges(edges, new CCUpdater(), new CCMessager(), 100);
+				VertexCentricIteration<Long, Long, Long, ?> vcIter = VertexCentricIteration.withPlainEdges(edges, new CCUpdater(), new CCMessager(MCEnum.MC0), 100);
 				vcIter.addBroadcastSetForMessagingFunction(BC_VAR_NAME, bcVar);
 				vcIter.addBroadcastSetForUpdateFunction(BC_VAR_NAME, bcVar);
 				

@@ -31,6 +31,7 @@ import org.apache.flink.api.java.operators.DeltaIteration;
 import org.apache.flink.api.java.operators.DeltaIterationResultSet;
 import org.apache.flink.api.java.operators.TwoInputUdfOperator;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.spargel.java.multicast.MCEnum;
 import org.junit.Test;
 
 @SuppressWarnings("serial")
@@ -70,7 +71,7 @@ public class SpargelTranslationTest {
 				
 				
 				VertexCentricIteration<String, Double, Long, ?> vertexIteration = 
-						VertexCentricIteration.withPlainEdges(edges, new UpdateFunction(), new MessageFunctionNoEdgeValue(), NUM_ITERATIONS);
+						VertexCentricIteration.withPlainEdges(edges, new UpdateFunction(), new MessageFunctionNoEdgeValue(MCEnum.MC0), NUM_ITERATIONS);
 				vertexIteration.addBroadcastSetForMessagingFunction(BC_SET_MESSAGES_NAME, bcMessaging);
 				vertexIteration.addBroadcastSetForUpdateFunction(BC_SET_UPDATES_NAME, bcUpdate);
 				
@@ -149,7 +150,7 @@ public class SpargelTranslationTest {
 				
 				
 				VertexCentricIteration<String, Double, Long, ?> vertexIteration = 
-						VertexCentricIteration.withPlainEdges(edges, new UpdateFunction(), new MessageFunctionNoEdgeValue(), NUM_ITERATIONS);
+						VertexCentricIteration.withPlainEdges(edges, new UpdateFunction(), new MessageFunctionNoEdgeValue(MCEnum.MC0), NUM_ITERATIONS);
 				vertexIteration.addBroadcastSetForMessagingFunction(BC_SET_MESSAGES_NAME, bcVar);
 				vertexIteration.addBroadcastSetForUpdateFunction(BC_SET_UPDATES_NAME, bcVar);
 				
@@ -203,7 +204,11 @@ public class SpargelTranslationTest {
 		public void updateVertex(String vertexKey, Double vertexValue, MessageIterator<Long> inMessages) {}
 	}
 	
-	public static class MessageFunctionNoEdgeValue extends MessagingFunction<String, Double, Long, Object> {
+	public static class MessageFunctionNoEdgeValue extends MessagingFunction3<String, Double, Long, Object> {
+
+		public MessageFunctionNoEdgeValue(MCEnum whichMulticast) {
+			super(whichMulticast);
+		}
 
 		@Override
 		public void sendMessages(String vertexKey, Double vertexValue) {}

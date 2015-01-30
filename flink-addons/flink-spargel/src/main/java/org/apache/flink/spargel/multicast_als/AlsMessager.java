@@ -17,11 +17,16 @@
  */
 package org.apache.flink.spargel.multicast_als;
 
-import org.apache.flink.spargel.java.MessagingFunction;
+import org.apache.flink.spargel.java.MessagingFunction3;
+import org.apache.flink.spargel.java.multicast.MCEnum;
 import org.apache.flink.types.NullValue;
 
-public final class AlsMessager extends MessagingFunction<Integer, DoubleVectorWithMap, AlsCustomMessageForSpargel, NullValue> {
-	
+public final class AlsMessager extends MessagingFunction3<Integer, DoubleVectorWithMap, AlsCustomMessageForSpargel, NullValue> {
+	public AlsMessager(MCEnum whichMulticast) {
+		super(whichMulticast);
+	}
+
+	private static final long serialVersionUID = 1L;
 	private AlsCustomMessageForSpargel msg = new AlsCustomMessageForSpargel();
 	
 	@Override

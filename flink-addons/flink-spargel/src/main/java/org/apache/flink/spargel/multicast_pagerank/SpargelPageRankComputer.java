@@ -156,7 +156,7 @@ public class SpargelPageRankComputer implements Serializable {
 			iteration = 
 					VertexCentricIteration.withPlainEdges(edges,
 					new VertexRankUpdater(BETA),
-					new RankMessenger(epsilonForConvergence),  2 * maxNumberOfIterations);
+					new RankMessenger(epsilonForConvergence, MCEnum.MC0),  2 * maxNumberOfIterations);
 			VertexCentricIteration<Long, SpargelNode, Double, ?> iteration2 = 
 					(VertexCentricIteration<Long, SpargelNode, Double, ?>)iteration;
 			iteration2.addBroadcastSetForUpdateFunction(PageRankUtil.NUMOFPAGES, numOfPages);

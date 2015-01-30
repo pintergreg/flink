@@ -34,6 +34,7 @@ import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.spargel.java.MessageIterator;
 import org.apache.flink.spargel.java.MessagingFunction3;
 import org.apache.flink.spargel.java.OutgoingEdge;
+import org.apache.flink.spargel.java.VertexCentricIteration;
 import org.apache.flink.spargel.java.VertexCentricIteration1;
 import org.apache.flink.spargel.java.VertexCentricIteration2;
 import org.apache.flink.spargel.java.VertexUpdateFunction;
@@ -56,6 +57,7 @@ public class MultiCastTest {
 	
 	@Test
 	public void multicastSimpleTest() throws Exception {
+		System.out.println("multicastSimpleTest");
 		// some input data
 		int numOfNodes = 3;
 		List<Tuple2<Long, Long>> edgeList = new ArrayList<Tuple2<Long, Long>>();
@@ -68,6 +70,9 @@ public class MultiCastTest {
 		// edgeList.add(new Tuple2<Long, Long>(3L, 2L));
 		int expectedNumOfBlockedMessages = 2;
 
+		// testing multicast 0: messages are not blocked
+		testMulticast(numOfNodes, edgeList, edgeList.size(), edgeList.size(), 0, 0);
+
 		testMulticast(numOfNodes, edgeList, edgeList.size(), expectedNumOfBlockedMessages, 1, 0);
 
 		testMulticast(numOfNodes, edgeList, edgeList.size(), expectedNumOfBlockedMessages, 2, 0);
@@ -78,6 +83,7 @@ public class MultiCastTest {
 		//testing multicast 2 sendMessageToMultipleRecipients
 		testMulticast(numOfNodes, edgeList, edgeList.size(), expectedNumOfBlockedMessages, 2, 2);
 
+		// testing multicast 2 withValuedEdges
 		testMulticast(numOfNodes, edgeList, edgeList.size(), expectedNumOfBlockedMessages, 2, 3);
 
 
@@ -85,6 +91,7 @@ public class MultiCastTest {
 
 	@Test
 	public void multicastStressTest() throws Exception {
+		System.out.println("multicastStressTest");
 		int numOfNodes = 100;
 		List<Tuple2<Long, Long>> edgeList = new ArrayList<Tuple2<Long, Long>>();
 		for (int i = 0; i < numOfNodes; ++i) {
@@ -126,7 +133,16 @@ public class MultiCastTest {
 
 
 		DataSet<Tuple2<Long, VertexVal>> result = null;
-		if (whichMulticast == 1) {
+		if (whichMulticast == 0) {
+			if (subTestId == 0) {
+				VertexCentricIteration<Long, VertexVal, Message, ?> iteration = VertexCentricIteration
+						.withPlainEdges(edges, new TestUpdater(),
+								new TestMessager0(MCEnum.MC0), 1);
+				result = initialVertices.runOperation(iteration);
+			} else {
+				throw new RuntimeException("For multicast 0 the subtest id should be 0");
+			}
+		} else if (whichMulticast == 1) {
 			if (subTestId == 0) {
 				VertexCentricIteration1<Long, VertexVal, Message, ?> iteration = VertexCentricIteration1
 						.withPlainEdges(edges, new TestUpdater(),
@@ -174,7 +190,7 @@ public class MultiCastTest {
 				throw new RuntimeException("For multicast 2 the subtest id should be 0, 1, 2, 3");
 			}
 		} else {
-			throw new RuntimeException("The value of <whichMulticast>  should be 1, or 2");
+			throw new RuntimeException("The value of <whichMulticast>  should be 0, 1, or 2");
 		}
 
 		result.max(0).print();
@@ -184,10 +200,11 @@ public class MultiCastTest {
 		
 		checkMessages(whichMulticast, subTestId);
 		
-		
+		// The next line failed to print the error message for me once (but it still failed when it had to)
 		assertEquals("The number of blocked messages was not correct"
 					+ " (remaining: " + numOfBlockedMessagesToSend.get()
 					+ ")", 0, numOfBlockedMessagesToSend.get() );
+
 	}
 
 
@@ -263,6 +280,21 @@ public class MultiCastTest {
 				}
 			}
 			setNewVertexValue(vertexValue);
+		}
+	}
+
+	public static final class TestMessager0 extends MessagingFunction3<Long, VertexVal, Message, NullValue> {
+		public TestMessager0(MCEnum whichMulticast) {
+			super(whichMulticast);
+		}
+
+		@Override
+		public void sendMessages(Long vertexId, VertexVal componentId) {
+			Message m = new Message(vertexId);
+			
+			int numOfBlockedMessages = sendMessageToAllNeighbors(m);
+			numOfBlockedMessagesToSend.addAndGet(-numOfBlockedMessages);
+			
 		}
 	}
 

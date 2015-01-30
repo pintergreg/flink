@@ -23,9 +23,10 @@ import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.spargel.java.MessageIterator;
-import org.apache.flink.spargel.java.MessagingFunction;
+import org.apache.flink.spargel.java.MessagingFunction3;
 import org.apache.flink.spargel.java.VertexCentricIteration;
 import org.apache.flink.spargel.java.VertexUpdateFunction;
+import org.apache.flink.spargel.java.multicast.MCEnum;
 import org.apache.flink.types.NullValue;
 
 @SuppressWarnings({"serial", "unchecked"})
@@ -40,7 +41,7 @@ public class SpargelConnectedComponents {
 		
 		DataSet<Tuple2<Long, Long>> initialVertices = vertexIds.map(new IdAssigner());
 		
-		DataSet<Tuple2<Long, Long>> result = initialVertices.runOperation(VertexCentricIteration.withPlainEdges(edges, new CCUpdater(), new CCMessager(), 100));
+		DataSet<Tuple2<Long, Long>> result = initialVertices.runOperation(VertexCentricIteration.withPlainEdges(edges, new CCUpdater(), new CCMessager(MCEnum.MC0), 100));
 		
 		result.print();
 		env.execute("Spargel Connected Components");
@@ -59,7 +60,11 @@ public class SpargelConnectedComponents {
 		}
 	}
 	
-	public static final class CCMessager extends MessagingFunction<Long, Long, Long, NullValue> {
+	public static final class CCMessager extends MessagingFunction3<Long, Long, Long, NullValue> {
+		public CCMessager(MCEnum whichMulticast) {
+			super(whichMulticast);
+		}
+
 		@Override
 		public void sendMessages(Long vertexId, Long componentId) {
 			sendMessageToAllNeighbors(componentId);

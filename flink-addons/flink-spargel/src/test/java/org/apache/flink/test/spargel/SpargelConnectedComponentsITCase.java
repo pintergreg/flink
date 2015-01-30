@@ -29,6 +29,7 @@ import org.apache.flink.spargel.java.VertexCentricIteration;
 import org.apache.flink.spargel.java.examples.SpargelConnectedComponents.CCMessager;
 import org.apache.flink.spargel.java.examples.SpargelConnectedComponents.CCUpdater;
 import org.apache.flink.spargel.java.examples.SpargelConnectedComponents.IdAssigner;
+import org.apache.flink.spargel.java.multicast.MCEnum;
 import org.apache.flink.test.testdata.ConnectedComponentsData;
 import org.apache.flink.test.util.JavaProgramTestBase;
 
@@ -59,7 +60,7 @@ public class SpargelConnectedComponentsITCase extends JavaProgramTestBase {
 		DataSet<Tuple2<Long, Long>> edges = edgeString.map(new EdgeParser());
 		
 		DataSet<Tuple2<Long, Long>> initialVertices = vertexIds.map(new IdAssigner());
-		DataSet<Tuple2<Long, Long>> result = initialVertices.runOperation(VertexCentricIteration.withPlainEdges(edges, new CCUpdater(), new CCMessager(), 100));
+		DataSet<Tuple2<Long, Long>> result = initialVertices.runOperation(VertexCentricIteration.withPlainEdges(edges, new CCUpdater(), new CCMessager(MCEnum.MC0), 100));
 		
 		result.writeAsCsv(resultPath, "\n", " ");
 		env.execute("Spargel Connected Components");

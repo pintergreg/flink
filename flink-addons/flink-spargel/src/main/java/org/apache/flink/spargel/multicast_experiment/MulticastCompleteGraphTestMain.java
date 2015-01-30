@@ -27,7 +27,6 @@ import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.spargel.java.MessageIterator;
-import org.apache.flink.spargel.java.MessagingFunction;
 import org.apache.flink.spargel.java.MessagingFunction3;
 import org.apache.flink.spargel.java.OutgoingEdge;
 import org.apache.flink.spargel.java.VertexCentricIteration;
@@ -105,7 +104,7 @@ public class MulticastCompleteGraphTestMain {
 
 		if (whichMulticast == 0) {
 			VertexCentricIteration<Long, VertexVal, Message, ?> iteration = VertexCentricIteration
-					.withPlainEdges(edges, new CCUpdater(), new CCMessager(), numberOfIterations);
+					.withPlainEdges(edges, new CCUpdater(), new CCMessager(MCEnum.MC0), numberOfIterations);
 			result = initialVertices.runOperation(iteration);
 		} else if (whichMulticast == 1) {
 			VertexCentricIteration1<Long, VertexVal, Message, ?> iteration = VertexCentricIteration1
@@ -188,7 +187,10 @@ public class MulticastCompleteGraphTestMain {
 		}
 	}
 
-	public static final class CCMessager extends MessagingFunction<Long, VertexVal, Message, NullValue> {
+	public static final class CCMessager extends MessagingFunction3<Long, VertexVal, Message, NullValue> {
+		public CCMessager(MCEnum whichMulticast) {
+			super(whichMulticast);
+		}
 		private static final long serialVersionUID = 1L;
 		boolean multiRecipients = false;
 		@Override

@@ -139,12 +139,17 @@ public abstract class MessagingFunction3<VertexKey extends Comparable<VertexKey>
 	}
 
 	private Map<Integer, List<VertexKey>> recipientsInBlock = new HashMap<Integer, List<VertexKey>>();
-	private Collector<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>> out;
-	private Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>> outValue;
+	// Things for Multicast (MC1 and MC2)
+	private Collector<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>> outMC;
+	private Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>> outValueMC;
+
+	// Things for MC0
+	private Tuple2<VertexKey, Message> outValue;
+	private Collector<Tuple2<VertexKey, Message>> out;
 
 	public void setSender(VertexKey sender) {
 		if (whichMulticast == MCEnum.MC1 || whichMulticast == MCEnum.MC2) {
-			outValue.f1.setSender(sender);
+			outValueMC.f1.setSender(sender);
 		} else {
 			throw new UnsupportedOperationException(
 					"Operation only supported for MC1 and MC2.");
@@ -163,11 +168,11 @@ public abstract class MessagingFunction3<VertexKey extends Comparable<VertexKey>
 		if (whichMulticast == MCEnum.MC1 || whichMulticast == MCEnum.MC2) {
 			int numOfBlockedMessages = 0;
 			recipientsInBlock.clear();
-			outValue.f1.setMessage(m);
+			outValueMC.f1.setMessage(m);
 			for (VertexKey target : recipients) {
-				outValue.f0 = target;
-				int channel = ((OutputCollector<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>>) out)
-						.getChannel(outValue);
+				outValueMC.f0 = target;
+				int channel = ((OutputCollector<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>>) outMC)
+						.getChannel(outValueMC);
 				if (recipientsInBlock.get(channel) == null) {
 					recipientsInBlock.put(channel, new ArrayList<VertexKey>());
 				}
@@ -175,11 +180,11 @@ public abstract class MessagingFunction3<VertexKey extends Comparable<VertexKey>
 			}
 			for (Integer channel : recipientsInBlock.keySet()) {
 				List<VertexKey> targets = recipientsInBlock.get(channel);
-				outValue.f0 = targets.get(0);
-				outValue.f1.setSomeRecipients((VertexKey[]) targets
+				outValueMC.f0 = targets.get(0);
+				outValueMC.f1.setSomeRecipients((VertexKey[]) targets
 						.toArray(new Comparable[0]));
-				outValue.f1.setChannelId(channel);
-				out.collect(outValue);
+				outValueMC.f1.setChannelId(channel);
+				outMC.collect(outValueMC);
 				numOfBlockedMessages++;
 				// System.out.println(outValue);
 			}
@@ -226,31 +231,42 @@ public abstract class MessagingFunction3<VertexKey extends Comparable<VertexKey>
 		} else if (whichMulticast == MCEnum.MC2) {
 			int numOfBlockedMessages = 0;
 			channelSet.clear();
-			outValue.f1.setSomeRecipients(emptyArray);
-			outValue.f1.setMessage(m);
+			outValueMC.f1.setSomeRecipients(emptyArray);
+			outValueMC.f1.setMessage(m);
 			while (edges.hasNext()) {
 				Tuple next = (Tuple) edges.next();
 				VertexKey target = next.getField(1);
 
-				outValue.f0 = target;
+				outValueMC.f0 = target;
 				//This is a bit dodgy here
-				int channel = ((OutputCollector<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>>) out)
-						.getChannel(outValue);
+				int channel = ((OutputCollector<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>>) outMC)
+						.getChannel(outValueMC);
 				if (!channelSet.contains(channel)) {
 					channelSet.add(channel);
-					outValue.f1.setChannelId(channel);
+					outValueMC.f1.setChannelId(channel);
 					// we directly send the message to the smallest node in the partition!!!
 					// terrific idea :)
-					outValue.f0 = hashKeys.get(channel);
+					outValueMC.f0 = hashKeys.get(channel);
 					// For sure we also put this in the header
-					outValue.f1.setReprVertexOfPartition(outValue.f0);
-					out.collect(outValue);
+					outValueMC.f1.setReprVertexOfPartition(outValueMC.f0);
+					outMC.collect(outValueMC);
 					numOfBlockedMessages ++;
 					//System.out.println(outValue);
 				}
 			}
 			return numOfBlockedMessages;
-
+			
+		} else if (whichMulticast == MCEnum.MC0) {
+			outValue.f1 = m;
+			int numOfMessagedSent = 0;
+			while (edges.hasNext()) {
+				Tuple next = (Tuple) edges.next();
+				VertexKey k = next.getField(1);
+				outValue.f0 = k;
+				numOfMessagedSent++;
+				out.collect(outValue);
+			}
+			return numOfMessagedSent;
 		} else {
 			throw new UnsupportedOperationException(
 					"Operation not implemented yet");
@@ -274,6 +290,11 @@ public abstract class MessagingFunction3<VertexKey extends Comparable<VertexKey>
 			recipients.clear();
 			recipients.addRecipient(target);
 			return sendMessageToMultipleRecipients(recipients, m);
+		}else if (whichMulticast == MCEnum.MC0) {
+			outValue.f0 = target;
+			outValue.f1 = m;
+			out.collect(outValue);
+			return 1;
 		} else {
 			throw new UnsupportedOperationException(
 					"Operation not implemented yet");
@@ -346,11 +367,15 @@ public abstract class MessagingFunction3<VertexKey extends Comparable<VertexKey>
 
 	private boolean edgesUsed;
 
+	
+	
+
+
 	void init(IterationRuntimeContext context, boolean hasEdgeValue) {
 		this.runtimeContext = context;
 		if (whichMulticast == MCEnum.MC1 || whichMulticast == MCEnum.MC2) {
-			this.outValue = new Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>();
-			this.outValue.f1 = new MessageWithHeader<VertexKey, Message>();
+			this.outValueMC = new Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>();
+			this.outValueMC.f1 = new MessageWithHeader<VertexKey, Message>();
 			if (whichMulticast == MCEnum.MC2) {
 				Collection<Tuple2<Integer, VertexKey>> hashKeysBroadcastSet = context
 						.getBroadcastVariable(VertexCentricIteration2.HASH_KEYS_BROADCAST_SET);
@@ -358,6 +383,8 @@ public abstract class MessagingFunction3<VertexKey extends Comparable<VertexKey>
 					hashKeys.put(a.f0, a.f1);
 				}
 			}
+		} else if (whichMulticast == MCEnum.MC0) {
+			this.outValue = new Tuple2<VertexKey, Message>();
 		} else {
 			throw new UnsupportedOperationException(
 					"Operation not implemented yet");
@@ -370,12 +397,28 @@ public abstract class MessagingFunction3<VertexKey extends Comparable<VertexKey>
 		}
 	}
 
-	void set(
+	void setMC(
 			Iterator<?> edges,
 			Collector<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>> out) {
-		this.edges = edges;
-		this.out = out;
-		this.edgesUsed = false;
+		if (whichMulticast == MCEnum.MC1 || whichMulticast == MCEnum.MC2) {
+			this.edges = edges;
+			this.outMC = out;
+			this.edgesUsed = false;
+		} else {
+			throw new UnsupportedOperationException(
+					"Operation supported only for MC1 and MC2");
+		}
+	}
+
+	void set(Iterator<?> edges, Collector<Tuple2<VertexKey, Message>> out) {
+		if (whichMulticast == MCEnum.MC0) {
+			this.edges = edges;
+			this.out = out;
+			this.edgesUsed = false;
+		} else {
+			throw new UnsupportedOperationException(
+					"Operation supported only for MC0");
+		}
 	}
 
 	private static final class EdgesIteratorNoEdgeValue<VertexKey extends Comparable<VertexKey>, EdgeValue>

@@ -56,13 +56,13 @@ import org.apache.flink.util.Collector;
  *   <li>The {@link VertexUpdateFunction} receives incoming messages and may updates the state for
  *   the vertex. If a state is updated, messages are sent from this vertex. Initially, all vertices are
  *   considered updated.</li>
- *   <li>The {@link MessagingFunction} takes the new vertex state and sends messages along the outgoing
+ *   <li>The {@link MessagingFunction3} takes the new vertex state and sends messages along the outgoing
  *   edges of the vertex. The outgoing edges may optionally have an associated value, such as a weight.</li>
  * </ul>
  * <p>
  * Vertex-centric graph iterations are instantiated by the
- * {@link #withPlainEdges(DataSet, VertexUpdateFunction, MessagingFunction, int)} method, or the
- * {@link #withValuedEdges(DataSet, VertexUpdateFunction, MessagingFunction, int)} method, depending on whether
+ * {@link #withPlainEdges(DataSet, VertexUpdateFunction, MessagingFunction3, int)} method, or the
+ * {@link #withValuedEdges(DataSet, VertexUpdateFunction, MessagingFunction3, int)} method, depending on whether
  * the graph's edges are carrying values.
  *
  * @param <VertexKey> The type of the vertex key (the vertex identifier).
@@ -75,7 +75,7 @@ public class VertexCentricIteration<VertexKey extends Comparable<VertexKey>, Ver
 {
 	private final VertexUpdateFunction<VertexKey, VertexValue, Message> updateFunction;
 	
-	private final MessagingFunction<VertexKey, VertexValue, Message, EdgeValue> messagingFunction;
+	private final MessagingFunction3<VertexKey, VertexValue, Message, EdgeValue> MessagingFunction3;
 	
 	private final DataSet<Tuple2<VertexKey, VertexKey>> edgesWithoutValue;
 	
@@ -102,7 +102,7 @@ public class VertexCentricIteration<VertexKey extends Comparable<VertexKey>, Ver
 	// ----------------------------------------------------------------------------------
 	
 	private  VertexCentricIteration(VertexUpdateFunction<VertexKey, VertexValue, Message> uf,
-			MessagingFunction<VertexKey, VertexValue, Message, EdgeValue> mf,
+			MessagingFunction3<VertexKey, VertexValue, Message, EdgeValue> mf,
 			DataSet<Tuple2<VertexKey, VertexKey>> edgesWithoutValue,
 			int maximumNumberOfIterations)
 	{
@@ -121,7 +121,7 @@ public class VertexCentricIteration<VertexKey extends Comparable<VertexKey>, Ver
 			"Both tuple fields (source and target vertex id) must be of the data type that represents the vertex key and implement the java.lang.Comparable interface.");
 		
 		this.updateFunction = uf;
-		this.messagingFunction = mf;
+		this.MessagingFunction3 = mf;
 		this.edgesWithoutValue = edgesWithoutValue;
 		this.edgesWithValue = null;
 		this.maximumNumberOfIterations = maximumNumberOfIterations;
@@ -131,7 +131,7 @@ public class VertexCentricIteration<VertexKey extends Comparable<VertexKey>, Ver
 	}
 	
 	private VertexCentricIteration(VertexUpdateFunction<VertexKey, VertexValue, Message> uf,
-			MessagingFunction<VertexKey, VertexValue, Message, EdgeValue> mf,
+			MessagingFunction3<VertexKey, VertexValue, Message, EdgeValue> mf,
 			DataSet<Tuple3<VertexKey, VertexKey, EdgeValue>> edgesWithValue, 
 			int maximumNumberOfIterations,
 			boolean edgeHasValueMarker)
@@ -153,7 +153,7 @@ public class VertexCentricIteration<VertexKey extends Comparable<VertexKey>, Ver
 		Validate.isTrue(maximumNumberOfIterations > 0, "The maximum number of iterations must be at least one.");
 		
 		this.updateFunction = uf;
-		this.messagingFunction = mf;
+		this.MessagingFunction3 = mf;
 		this.edgesWithoutValue = null;
 		this.edgesWithValue = edgesWithValue;
 		this.maximumNumberOfIterations = maximumNumberOfIterations;
@@ -162,8 +162,8 @@ public class VertexCentricIteration<VertexKey extends Comparable<VertexKey>, Ver
 		this.messageType = getMessageType(mf);
 	}
 	
-	private TypeInformation<Message> getMessageType(MessagingFunction<VertexKey, VertexValue, Message, EdgeValue> mf) {
-		return TypeExtractor.createTypeInfo(MessagingFunction.class, mf.getClass(), 2, null, null);
+	private TypeInformation<Message> getMessageType(MessagingFunction3<VertexKey, VertexValue, Message, EdgeValue> mf) {
+		return TypeExtractor.createTypeInfo(MessagingFunction3.class, mf.getClass(), 2, null, null);
 	}
 	
 	/**
@@ -306,7 +306,7 @@ public class VertexCentricIteration<VertexKey extends Comparable<VertexKey>, Ver
 		
 		// set up the iteration operator
 		final String name = (this.name != null) ? this.name :
-			"Vertex-centric iteration (" + updateFunction + " | " + messagingFunction + ")";
+			"Vertex-centric iteration (" + updateFunction + " | " + MessagingFunction3 + ")";
 		final int[] zeroKeyPos = new int[] {0};
 	
 		final DeltaIteration<Tuple2<VertexKey, VertexValue>, Tuple2<VertexKey, VertexValue>> iteration =
@@ -323,11 +323,11 @@ public class VertexCentricIteration<VertexKey extends Comparable<VertexKey>, Ver
 		// build the messaging function (co group)
 		CoGroupOperator<?, ?, Tuple2<VertexKey, Message>> messages;
 		if (edgesWithoutValue != null) {
-			MessagingUdfNoEdgeValues<VertexKey, VertexValue, Message> messenger = new MessagingUdfNoEdgeValues<VertexKey, VertexValue, Message>(messagingFunction, messageTypeInfo);
+			MessagingUdfNoEdgeValues<VertexKey, VertexValue, Message> messenger = new MessagingUdfNoEdgeValues<VertexKey, VertexValue, Message>(MessagingFunction3, messageTypeInfo);
 			messages = this.edgesWithoutValue.coGroup(iteration.getWorkset()).where(0).equalTo(0).with(messenger);
 		}
 		else {
-			MessagingUdfWithEdgeValues<VertexKey, VertexValue, Message, EdgeValue> messenger = new MessagingUdfWithEdgeValues<VertexKey, VertexValue, Message, EdgeValue>(messagingFunction, messageTypeInfo);
+			MessagingUdfWithEdgeValues<VertexKey, VertexValue, Message, EdgeValue> messenger = new MessagingUdfWithEdgeValues<VertexKey, VertexValue, Message, EdgeValue>(MessagingFunction3, messageTypeInfo);
 			messages = this.edgesWithValue.coGroup(iteration.getWorkset()).where(0).equalTo(0).with(messenger);
 		}
 		
@@ -365,7 +365,7 @@ public class VertexCentricIteration<VertexKey extends Comparable<VertexKey>, Ver
 	 * 
 	 * @param edgesWithoutValue The data set containing edges. Edges are represented as 2-tuples: (source-id, target-id)
 	 * @param vertexUpdateFunction The function that updates the state of the vertices from the incoming messages.
-	 * @param messagingFunction The function that turns changed vertex states into messages along the edges.
+	 * @param MessagingFunction3 The function that turns changed vertex states into messages along the edges.
 	 * 
 	 * @param <VertexKey> The type of the vertex key (the vertex identifier).
 	 * @param <VertexValue> The type of the vertex value (the state of the vertex).
@@ -377,12 +377,12 @@ public class VertexCentricIteration<VertexKey extends Comparable<VertexKey>, Ver
 			VertexCentricIteration<VertexKey, VertexValue, Message, ?> withPlainEdges(
 					DataSet<Tuple2<VertexKey, VertexKey>> edgesWithoutValue,
 						VertexUpdateFunction<VertexKey, VertexValue, Message> vertexUpdateFunction,
-						MessagingFunction<VertexKey, VertexValue, Message, ?> messagingFunction,
+						MessagingFunction3<VertexKey, VertexValue, Message, ?> MessagingFunction3,
 						int maximumNumberOfIterations)
 	{
 		@SuppressWarnings("unchecked")
-		MessagingFunction<VertexKey, VertexValue, Message, Object> tmf = 
-								(MessagingFunction<VertexKey, VertexValue, Message, Object>) messagingFunction;
+		MessagingFunction3<VertexKey, VertexValue, Message, Object> tmf = 
+								(MessagingFunction3<VertexKey, VertexValue, Message, Object>) MessagingFunction3;
 		
 		return new VertexCentricIteration<VertexKey, VertexValue, Message, Object>(vertexUpdateFunction, tmf, edgesWithoutValue, maximumNumberOfIterations);
 	}
@@ -406,7 +406,7 @@ public class VertexCentricIteration<VertexKey extends Comparable<VertexKey>, Ver
 			VertexCentricIteration<VertexKey, VertexValue, Message, EdgeValue> withValuedEdges(
 					DataSet<Tuple3<VertexKey, VertexKey, EdgeValue>> edgesWithValue,
 					VertexUpdateFunction<VertexKey, VertexValue, Message> uf,
-					MessagingFunction<VertexKey, VertexValue, Message, EdgeValue> mf,
+					MessagingFunction3<VertexKey, VertexValue, Message, EdgeValue> mf,
 					int maximumNumberOfIterations)
 	{
 		return new VertexCentricIteration<VertexKey, VertexValue, Message, EdgeValue>(uf, mf, edgesWithValue, maximumNumberOfIterations, true);
@@ -496,15 +496,15 @@ public class VertexCentricIteration<VertexKey extends Comparable<VertexKey>, Ver
 	{
 		private static final long serialVersionUID = 1L;
 		
-		private final MessagingFunction<VertexKey, VertexValue, Message, ?> messagingFunction;
+		private final MessagingFunction3<VertexKey, VertexValue, Message, ?> MessagingFunction3;
 		
 		private transient TypeInformation<Tuple2<VertexKey, Message>> resultType;
 		
 		
-		private MessagingUdfNoEdgeValues(MessagingFunction<VertexKey, VertexValue, Message, ?> messagingFunction,
+		private MessagingUdfNoEdgeValues(MessagingFunction3<VertexKey, VertexValue, Message, ?> MessagingFunction3,
 				TypeInformation<Tuple2<VertexKey, Message>> resultType)
 		{
-			this.messagingFunction = messagingFunction;
+			this.MessagingFunction3 = MessagingFunction3;
 			this.resultType = resultType;
 		}
 		
@@ -517,23 +517,23 @@ public class VertexCentricIteration<VertexKey extends Comparable<VertexKey>, Ver
 			
 			if (stateIter.hasNext()) {
 				Tuple2<VertexKey, VertexValue> newVertexState = stateIter.next();
-				messagingFunction.set((Iterator<?>) edges.iterator(), out);
-				messagingFunction.sendMessages(newVertexState.f0, newVertexState.f1);
+				MessagingFunction3.set((Iterator<?>) edges.iterator(), out);
+				MessagingFunction3.sendMessages(newVertexState.f0, newVertexState.f1);
 			}
 		}
 		
 		@Override
 		public void open(Configuration parameters) throws Exception {
 			if (getIterationRuntimeContext().getSuperstepNumber() == 1) {
-				this.messagingFunction.init(getIterationRuntimeContext(), false);
+				this.MessagingFunction3.init(getIterationRuntimeContext(), false);
 			}
 			
-			this.messagingFunction.preSuperstep();
+			this.MessagingFunction3.preSuperstep();
 		}
 		
 		@Override
 		public void close() throws Exception {
-			this.messagingFunction.postSuperstep();
+			this.MessagingFunction3.postSuperstep();
 		}
 
 		@Override
@@ -551,15 +551,15 @@ public class VertexCentricIteration<VertexKey extends Comparable<VertexKey>, Ver
 	{
 		private static final long serialVersionUID = 1L;
 		
-		private final MessagingFunction<VertexKey, VertexValue, Message, EdgeValue> messagingFunction;
+		private final MessagingFunction3<VertexKey, VertexValue, Message, EdgeValue> MessagingFunction3;
 		
 		private transient TypeInformation<Tuple2<VertexKey, Message>> resultType;
 		
 		
-		private MessagingUdfWithEdgeValues(MessagingFunction<VertexKey, VertexValue, Message, EdgeValue> messagingFunction,
+		private MessagingUdfWithEdgeValues(MessagingFunction3<VertexKey, VertexValue, Message, EdgeValue> MessagingFunction3,
 				TypeInformation<Tuple2<VertexKey, Message>> resultType)
 		{
-			this.messagingFunction = messagingFunction;
+			this.MessagingFunction3 = MessagingFunction3;
 			this.resultType = resultType;
 		}
 
@@ -572,23 +572,23 @@ public class VertexCentricIteration<VertexKey extends Comparable<VertexKey>, Ver
 			
 			if (stateIter.hasNext()) {
 				Tuple2<VertexKey, VertexValue> newVertexState = stateIter.next();
-				messagingFunction.set((Iterator<?>) edges.iterator(), out);
-				messagingFunction.sendMessages(newVertexState.f0, newVertexState.f1);
+				MessagingFunction3.set((Iterator<?>) edges.iterator(), out);
+				MessagingFunction3.sendMessages(newVertexState.f0, newVertexState.f1);
 			}
 		}
 		
 		@Override
 		public void open(Configuration parameters) throws Exception {
 			if (getIterationRuntimeContext().getSuperstepNumber() == 1) {
-				this.messagingFunction.init(getIterationRuntimeContext(), true);
+				this.MessagingFunction3.init(getIterationRuntimeContext(), true);
 			}
 			
-			this.messagingFunction.preSuperstep();
+			this.MessagingFunction3.preSuperstep();
 		}
 		
 		@Override
 		public void close() throws Exception {
-			this.messagingFunction.postSuperstep();
+			this.MessagingFunction3.postSuperstep();
 		}
 		
 		@Override

@@ -54,7 +54,7 @@ public final class MessagingUdfNoEdgeValuesMC<VertexKey extends Comparable<Verte
 			Tuple2<VertexKey, VertexValue> newVertexState = stateIter
 					.next();
 
-			messagingFunction.set((Iterator<?>) edges.iterator(), out);
+			messagingFunction.setMC((Iterator<?>) edges.iterator(), out);
 			messagingFunction.setSender(newVertexState.f0);
 			messagingFunction.sendMessages(newVertexState.f0,
 					newVertexState.f1);

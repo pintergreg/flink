@@ -89,7 +89,7 @@ public class SpargelAls {
 		if (whichMulticast == 0) {
 			VertexCentricIteration<Integer, DoubleVectorWithMap, AlsCustomMessageForSpargel, ?> vc_iteration = VertexCentricIteration
 					.withPlainEdges(edges, new AlsUpdater(k, lambda,
-							whichSolver), new AlsMessager(), 2 * iteration + 1);
+							whichSolver), new AlsMessager(MCEnum.MC0), 2 * iteration + 1);
 			// Stephan's workaround: is it needed for big input?
 			vc_iteration.setSolutionSetUnmanagedMemory(true);
 
