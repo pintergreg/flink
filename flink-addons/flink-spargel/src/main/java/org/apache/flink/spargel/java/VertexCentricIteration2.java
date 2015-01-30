@@ -171,6 +171,41 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 		// this.messageType = mf.getMessageType();
 	}
 
+	private VertexCentricIteration2(VertexUpdateFunction<VertexKey, VertexValue, Message> uf,
+			MessagingFunction3<VertexKey, VertexValue, Message, EdgeValue> mf,
+			DataSet<Tuple3<VertexKey, VertexKey, EdgeValue>> edgesWithValue, 
+			int maximumNumberOfIterations,
+			boolean edgeHasValueMarker)
+	{
+		Validate.notNull(uf);
+		Validate.notNull(mf);
+		Validate.notNull(edgesWithValue);
+		Validate.isTrue(maximumNumberOfIterations > 0, "The maximum number of iterations must be at least one.");
+		
+		// check that the edges are actually a valid tuple set of vertex key types
+		TypeInformation<Tuple3<VertexKey, VertexKey, EdgeValue>> edgesType = edgesWithValue.getType();
+		Validate.isTrue(edgesType.isTupleType() && edgesType.getArity() == 3, "The edges data set (for edges with edge values) must consist of 3-tuples.");
+		
+		TupleTypeInfo<?> tupleInfo = (TupleTypeInfo<?>) edgesType;
+		Validate.isTrue(tupleInfo.getTypeAt(0).equals(tupleInfo.getTypeAt(1))
+			&& Comparable.class.isAssignableFrom(tupleInfo.getTypeAt(0).getTypeClass()),
+			"The first two tuple fields (source and target vertex id) must be of the data type that represents the vertex key and implement the java.lang.Comparable interface.");
+		
+		Validate.isTrue(maximumNumberOfIterations > 0, "The maximum number of iterations must be at least one.");
+		
+		this.updateFunction = uf;
+		this.messagingFunction = mf;
+		this.edgesWithoutValue = null;
+		this.edgesWithValue = edgesWithValue;
+		this.maximumNumberOfIterations = maximumNumberOfIterations;
+		this.aggregators = new HashMap<String, Aggregator<?>>();
+		
+		this.keyType = TypeExtractor.createTypeInfo(
+				MessagingFunction3.class, mf.getClass(), 0, null, null);
+		this.unPackedMessageType = TypeExtractor.createTypeInfo(
+				MessagingFunction3.class, mf.getClass(), 2, null, null);
+		this.packedMessageType = MessageWithHeader.getTypeInfo(this.keyType, this.unPackedMessageType);
+	}
 
 	/**
 	 * Registers a new aggregator. Aggregators registered here are available
@@ -374,19 +409,7 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 					// the following is essentially a projection, but I think it
 					// cannot be done as a projection (due to generics)
 					// .project(0,1).types(VertexKey.class, VertexKey.class)
-					.map(new MapFunction<Tuple3<VertexKey, VertexKey, EdgeValue>, Tuple2<VertexKey, VertexKey>>() {
-						private static final long serialVersionUID = 1L;
-						Tuple2<VertexKey, VertexKey> reuse = new Tuple2<VertexKey, VertexKey>();
-
-						@Override
-						public Tuple2<VertexKey, VertexKey> map(
-								Tuple3<VertexKey, VertexKey, EdgeValue> value)
-								throws Exception {
-							reuse.f0 = value.f0;
-							reuse.f1 = value.f1;
-							return reuse;
-						}
-					})
+					.map(new ProjectByMap<VertexKey, EdgeValue>())
 					.partitionByHash(1)
 					.map(new SubtaskIndexAdder<VertexKey>());
 		}
@@ -573,6 +596,18 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 		}
 	}
 
+	public static class ProjectByMap<VertexKey extends Comparable<VertexKey>, EdgeValue>  
+	implements
+	MapFunction<Tuple3<VertexKey, VertexKey, EdgeValue>, Tuple2<VertexKey, VertexKey>> {
+		private static final long serialVersionUID = 1L;
+
+		@Override
+		public Tuple2<VertexKey, VertexKey> map(
+				Tuple3<VertexKey, VertexKey, EdgeValue> value)
+				throws Exception {
+			return new Tuple2<VertexKey, VertexKey>(value.f0, value.f1);
+		}
+	}
 
 	public static class SubtaskIndexAdder<VertexKey extends Comparable<VertexKey>>
 			extends
@@ -644,6 +679,31 @@ public class VertexCentricIteration2<VertexKey extends Comparable<VertexKey>, Ve
 		return new VertexCentricIteration2<VertexKey, VertexValue, Message, Object>(
 				vertexUpdateFunction, tmf, edgesWithoutValue,
 				maximumNumberOfIterations);
+	}
+
+	/**
+	 * Creates a new vertex-centric iteration operator for graphs where the edges are associated with a value (such as
+	 * a weight or distance).
+	 * 
+	 * @param edgesWithValue The data set containing edges. Edges are represented as 2-tuples: (source-id, target-id)
+	 * @param uf The function that updates the state of the vertices from the incoming messages.
+	 * @param mf The function that turns changed vertex states into messages along the edges.
+	 * 
+	 * @param <VertexKey> The type of the vertex key (the vertex identifier).
+	 * @param <VertexValue> The type of the vertex value (the state of the vertex).
+	 * @param <Message> The type of the message sent between vertices along the edges.
+	 * @param <EdgeValue> The type of the values that are associated with the edges.
+	 * 
+	 * @return An in stance of the vertex-centric graph computation operator.
+	 */
+	public static final <VertexKey extends Comparable<VertexKey>, VertexValue, Message, EdgeValue>
+			VertexCentricIteration2<VertexKey, VertexValue, Message, EdgeValue> withValuedEdges(
+					DataSet<Tuple3<VertexKey, VertexKey, EdgeValue>> edgesWithValue,
+					VertexUpdateFunction<VertexKey, VertexValue, Message> uf,
+					MessagingFunction3<VertexKey, VertexValue, Message, EdgeValue> mf,
+					int maximumNumberOfIterations)
+	{
+		return new VertexCentricIteration2<VertexKey, VertexValue, Message, EdgeValue>(uf, mf, edgesWithValue, maximumNumberOfIterations, true);
 	}
 
 	// --------------------------------------------------------------------------------------------

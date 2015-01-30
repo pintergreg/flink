@@ -19,6 +19,7 @@ package org.apache.flink.spargel.java.multicast;
 
 import static org.junit.Assert.assertEquals;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +30,7 @@ import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.spargel.java.MessageIterator;
 import org.apache.flink.spargel.java.MessagingFunction3;
 import org.apache.flink.spargel.java.OutgoingEdge;
@@ -78,7 +80,6 @@ public class MultiCastTest {
 
 		testMulticast(numOfNodes, edgeList, edgeList.size(), expectedNumOfBlockedMessages, 2, 3);
 
-		testMulticast(numOfNodes, edgeList, edgeList.size(), expectedNumOfBlockedMessages, 2, 3);
 
 	}
 
@@ -151,11 +152,24 @@ public class MultiCastTest {
 								new TestMessager2SendMessageToMultipleRecipients(MCEnum.MC2), 1);
 				result = initialVertices.runOperation(iteration);
 			} else if (subTestId == 3) {
-				throw new UnsupportedOperationException("withValuedEdges not yet implemented in MC2");
-//				VertexCentricIteration2<Long, VertexVal, Message, EdgeVal> iteration = VertexCentricIteration2
-//						.withValuedEdges(edges, new TestUpdater(),
-//								new TestMessager2ValuedEdges(), 1);
-//				result = initialVertices.runOperation(iteration);
+				//throw new UnsupportedOperationException("withValuedEdges not yet implemented in MC2");
+				//edgesWithValue.print();
+				DataSet<Tuple3<Long, Long, EdgeVal>> edgesWithValue = edges.map(
+						new MapFunction<Tuple2<Long,Long>, Tuple3<Long, Long, EdgeVal>>() {
+							Tuple3<Long, Long, EdgeVal> reuse = new Tuple3<Long, Long, EdgeVal>(0L, 0L, new EdgeVal());
+						@Override
+						public Tuple3<Long, Long, EdgeVal> map(
+								Tuple2<Long, Long> value) throws Exception {
+							reuse.f0 = value.f0;
+							reuse.f1 = value.f1;
+							return reuse;
+						}
+					});
+
+				VertexCentricIteration2<Long, VertexVal, Message, EdgeVal> iteration = VertexCentricIteration2
+						.withValuedEdges(edgesWithValue, new TestUpdater(),
+								new TestMessager2ValuedEdges(MCEnum.MC2), 1);
+				result = initialVertices.runOperation(iteration);
 			} else {
 				throw new RuntimeException("For multicast 2 the subtest id should be 0, 1, 2, 3");
 			}
@@ -207,7 +221,7 @@ public class MultiCastTest {
 		public Integer dummy = 1;
 	}
 
-	public static final class EdgeVal {
+	public static final class EdgeVal implements Serializable{
 		public Integer dummy = 3;
 	}
 
