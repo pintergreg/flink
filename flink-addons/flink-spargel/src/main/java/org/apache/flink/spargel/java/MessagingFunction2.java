@@ -153,9 +153,10 @@ public abstract class MessagingFunction2<VertexKey extends Comparable<VertexKey>
 			throw new IllegalStateException("Can use either 'getOutgoingEdges()' or 'sendMessageToAllTargets()' exactly once.");
 		}
 		
-		int numOfBlockedMessages = 0;
 
 		edgesUsed = true;
+
+		int numOfBlockedMessages = 0;
 		channelSet.clear();
 		outValue.f1.setSomeRecipients(emptyArray);
 		outValue.f1.setMessage(m);

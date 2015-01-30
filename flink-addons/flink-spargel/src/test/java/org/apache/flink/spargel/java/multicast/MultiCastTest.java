@@ -32,6 +32,7 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.spargel.java.MessageIterator;
 import org.apache.flink.spargel.java.MessagingFunction1;
 import org.apache.flink.spargel.java.MessagingFunction2;
+import org.apache.flink.spargel.java.MessagingFunction3;
 import org.apache.flink.spargel.java.OutgoingEdge;
 import org.apache.flink.spargel.java.VertexCentricIteration1;
 import org.apache.flink.spargel.java.VertexCentricIteration2;
@@ -76,6 +77,8 @@ public class MultiCastTest {
 
 		//testing multicast 2 sendMessageToMultipleRecipients
 		testMulticast(numOfNodes, edgeList, edgeList.size(), expectedNumOfBlockedMessages, 2, 2);
+
+		testMulticast(numOfNodes, edgeList, edgeList.size(), expectedNumOfBlockedMessages, 2, 3);
 
 		testMulticast(numOfNodes, edgeList, edgeList.size(), expectedNumOfBlockedMessages, 2, 3);
 
@@ -128,7 +131,7 @@ public class MultiCastTest {
 			if (subTestId == 0) {
 				VertexCentricIteration1<Long, VertexVal, Message, ?> iteration = VertexCentricIteration1
 						.withPlainEdges(edges, new TestUpdater(),
-								new TestMessager1(), 1);
+								new TestMessager1(MCEnum.MC1), 1);
 				result = initialVertices.runOperation(iteration);
 			} else {
 				throw new RuntimeException("For multicast 1 the subtest id should be 0");
@@ -137,17 +140,17 @@ public class MultiCastTest {
 			if (subTestId == 0) {
 				VertexCentricIteration2<Long, VertexVal, Message, ?> iteration = VertexCentricIteration2
 						.withPlainEdges(edges, new TestUpdater(),
-								new TestMessager2(), 1);
+								new TestMessager2(MCEnum.MC2), 1);
 				result = initialVertices.runOperation(iteration);
 			} else if (subTestId == 1) {
 				VertexCentricIteration2<Long, VertexVal, Message, ?> iteration = VertexCentricIteration2
 						.withPlainEdges(edges, new TestUpdater(),
-								new TestMessager2SendMessageTo(), 1);
+								new TestMessager2SendMessageTo(MCEnum.MC2), 1);
 				result = initialVertices.runOperation(iteration);
 			} else if (subTestId == 2) {
 				VertexCentricIteration2<Long, VertexVal, Message, ?> iteration = VertexCentricIteration2
 						.withPlainEdges(edges, new TestUpdater(),
-								new TestMessager2SendMessageToMultipleRecipients(), 1);
+								new TestMessager2SendMessageToMultipleRecipients(MCEnum.MC2), 1);
 				result = initialVertices.runOperation(iteration);
 			} else if (subTestId == 3) {
 				throw new UnsupportedOperationException("withValuedEdges not yet implemented in MC2");
@@ -251,7 +254,10 @@ public class MultiCastTest {
 		}
 	}
 
-	public static final class TestMessager1 extends MessagingFunction1<Long, VertexVal, Message, NullValue> {
+	public static final class TestMessager1 extends MessagingFunction3<Long, VertexVal, Message, NullValue> {
+		public TestMessager1(MCEnum whichMulticast) {
+			super(whichMulticast);
+		}
 		boolean multiRecipients = false;
 		@Override
 		public void sendMessages(Long vertexId, VertexVal componentId) {
@@ -268,7 +274,11 @@ public class MultiCastTest {
 	}
 
 
-	public static final class TestMessager2 extends MessagingFunction2<Long, VertexVal, Message, NullValue> {
+	public static final class TestMessager2 extends MessagingFunction3<Long, VertexVal, Message, NullValue> {
+		public TestMessager2(MCEnum whichMulticast) {
+			super(whichMulticast);
+		}
+
 		@Override
 		public void sendMessages(Long vertexId, VertexVal componentId) {
 			Message m = new Message(vertexId);
@@ -280,7 +290,11 @@ public class MultiCastTest {
 		}
 	}
 
-	public static final class TestMessager2SendMessageTo extends MessagingFunction2<Long, VertexVal, Message, NullValue> {
+	public static final class TestMessager2SendMessageTo extends MessagingFunction3<Long, VertexVal, Message, NullValue> {
+		public TestMessager2SendMessageTo(MCEnum whichMulticast) {
+			super(whichMulticast);
+		}
+
 		@Override
 		public void sendMessages(Long vertexId, VertexVal componentId) {
 			Message m = new Message(vertexId);
@@ -290,7 +304,12 @@ public class MultiCastTest {
 		}
 	}
 
-	public static final class TestMessager2SendMessageToMultipleRecipients extends MessagingFunction2<Long, VertexVal, Message, NullValue> {
+	public static final class TestMessager2SendMessageToMultipleRecipients extends MessagingFunction3<Long, VertexVal, Message, NullValue> {
+		public TestMessager2SendMessageToMultipleRecipients(
+				MCEnum whichMulticast) {
+			super(whichMulticast);
+		}
+
 		@Override
 		public void sendMessages(Long vertexId, VertexVal componentId) {
 			Message m = new Message(vertexId);
@@ -303,7 +322,11 @@ public class MultiCastTest {
 		}
 	}
 
-	public static final class TestMessager2ValuedEdges extends MessagingFunction2<Long, VertexVal, Message, EdgeVal> {
+	public static final class TestMessager2ValuedEdges extends MessagingFunction3<Long, VertexVal, Message, EdgeVal> {
+		public TestMessager2ValuedEdges(MCEnum whichMulticast) {
+			super(whichMulticast);
+		}
+
 		@Override
 		public void sendMessages(Long vertexId, VertexVal componentId) {
 			Message m = new Message(vertexId);
