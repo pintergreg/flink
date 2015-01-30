@@ -18,6 +18,7 @@
 
 package org.apache.flink.spargel.java;
 
+
 /**
  * <tt>Edge</tt> objects represent edges between vertices. Edges are defined by their source and target
  * vertex id. Edges may have an associated value (for example a weight or a distance), if the

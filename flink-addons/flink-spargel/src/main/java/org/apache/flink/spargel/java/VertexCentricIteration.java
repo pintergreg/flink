@@ -75,7 +75,7 @@ public class VertexCentricIteration<VertexKey extends Comparable<VertexKey>, Ver
 {
 	private final VertexUpdateFunction<VertexKey, VertexValue, Message> updateFunction;
 	
-	private final MessagingFunction3<VertexKey, VertexValue, Message, EdgeValue> MessagingFunction3;
+	private final MessagingFunction3<VertexKey, VertexValue, Message, EdgeValue> messagingFunction;
 	
 	private final DataSet<Tuple2<VertexKey, VertexKey>> edgesWithoutValue;
 	
@@ -99,6 +99,7 @@ public class VertexCentricIteration<VertexKey extends Comparable<VertexKey>, Ver
 	
 	private boolean unmanagedSolutionSet;
 	
+	
 	// ----------------------------------------------------------------------------------
 	
 	private  VertexCentricIteration(VertexUpdateFunction<VertexKey, VertexValue, Message> uf,
@@ -108,9 +109,9 @@ public class VertexCentricIteration<VertexKey extends Comparable<VertexKey>, Ver
 	{
 		Validate.notNull(uf);
 		Validate.notNull(mf);
-		Validate.notNull(edgesWithoutValue);
 		Validate.isTrue(maximumNumberOfIterations > 0, "The maximum number of iterations must be at least one.");
-		
+
+		Validate.notNull(edgesWithoutValue);
 		// check that the edges are actually a valid tuple set of vertex key types
 		TypeInformation<Tuple2<VertexKey, VertexKey>> edgesType = edgesWithoutValue.getType();
 		Validate.isTrue(edgesType.isTupleType() && edgesType.getArity() == 2, "The edges data set (for edges without edge values) must consist of 2-tuples.");
@@ -120,14 +121,17 @@ public class VertexCentricIteration<VertexKey extends Comparable<VertexKey>, Ver
 			&& Comparable.class.isAssignableFrom(tupleInfo.getTypeAt(0).getTypeClass()),
 			"Both tuple fields (source and target vertex id) must be of the data type that represents the vertex key and implement the java.lang.Comparable interface.");
 		
-		this.updateFunction = uf;
-		this.MessagingFunction3 = mf;
 		this.edgesWithoutValue = edgesWithoutValue;
 		this.edgesWithValue = null;
+
+		this.updateFunction = uf;
+		this.messagingFunction = mf;
 		this.maximumNumberOfIterations = maximumNumberOfIterations;
 		this.aggregators = new HashMap<String, Aggregator<?>>();
 		
 		this.messageType = getMessageType(mf);
+		
+		
 	}
 	
 	private VertexCentricIteration(VertexUpdateFunction<VertexKey, VertexValue, Message> uf,
@@ -138,9 +142,9 @@ public class VertexCentricIteration<VertexKey extends Comparable<VertexKey>, Ver
 	{
 		Validate.notNull(uf);
 		Validate.notNull(mf);
-		Validate.notNull(edgesWithValue);
 		Validate.isTrue(maximumNumberOfIterations > 0, "The maximum number of iterations must be at least one.");
 		
+		Validate.notNull(edgesWithValue);
 		// check that the edges are actually a valid tuple set of vertex key types
 		TypeInformation<Tuple3<VertexKey, VertexKey, EdgeValue>> edgesType = edgesWithValue.getType();
 		Validate.isTrue(edgesType.isTupleType() && edgesType.getArity() == 3, "The edges data set (for edges with edge values) must consist of 3-tuples.");
@@ -149,17 +153,18 @@ public class VertexCentricIteration<VertexKey extends Comparable<VertexKey>, Ver
 		Validate.isTrue(tupleInfo.getTypeAt(0).equals(tupleInfo.getTypeAt(1))
 			&& Comparable.class.isAssignableFrom(tupleInfo.getTypeAt(0).getTypeClass()),
 			"The first two tuple fields (source and target vertex id) must be of the data type that represents the vertex key and implement the java.lang.Comparable interface.");
-		
-		Validate.isTrue(maximumNumberOfIterations > 0, "The maximum number of iterations must be at least one.");
-		
-		this.updateFunction = uf;
-		this.MessagingFunction3 = mf;
+
 		this.edgesWithoutValue = null;
 		this.edgesWithValue = edgesWithValue;
+		
+		
+		this.updateFunction = uf;
+		this.messagingFunction = mf;
 		this.maximumNumberOfIterations = maximumNumberOfIterations;
 		this.aggregators = new HashMap<String, Aggregator<?>>();
 		
 		this.messageType = getMessageType(mf);
+	
 	}
 	
 	private TypeInformation<Message> getMessageType(MessagingFunction3<VertexKey, VertexValue, Message, EdgeValue> mf) {
@@ -306,7 +311,7 @@ public class VertexCentricIteration<VertexKey extends Comparable<VertexKey>, Ver
 		
 		// set up the iteration operator
 		final String name = (this.name != null) ? this.name :
-			"Vertex-centric iteration (" + updateFunction + " | " + MessagingFunction3 + ")";
+			"Vertex-centric iteration (" + updateFunction + " | " + messagingFunction + ")";
 		final int[] zeroKeyPos = new int[] {0};
 	
 		final DeltaIteration<Tuple2<VertexKey, VertexValue>, Tuple2<VertexKey, VertexValue>> iteration =
@@ -323,15 +328,18 @@ public class VertexCentricIteration<VertexKey extends Comparable<VertexKey>, Ver
 		// build the messaging function (co group)
 		CoGroupOperator<?, ?, Tuple2<VertexKey, Message>> messages;
 		if (edgesWithoutValue != null) {
-			MessagingUdfNoEdgeValues<VertexKey, VertexValue, Message> messenger = new MessagingUdfNoEdgeValues<VertexKey, VertexValue, Message>(MessagingFunction3, messageTypeInfo);
-			messages = this.edgesWithoutValue.coGroup(iteration.getWorkset()).where(0).equalTo(0).with(messenger);
+			MessagingUdfNoEdgeValues<VertexKey, VertexValue, Message> messenger = new MessagingUdfNoEdgeValues<VertexKey, VertexValue, Message>(
+					messagingFunction, messageTypeInfo);
+			messages = this.edgesWithoutValue.coGroup(iteration.getWorkset())
+					.where(0).equalTo(0).with(messenger);
+		} else {
+			MessagingUdfWithEdgeValues<VertexKey, VertexValue, Message, EdgeValue> messenger = new MessagingUdfWithEdgeValues<VertexKey, VertexValue, Message, EdgeValue>(
+					messagingFunction, messageTypeInfo);
+			messages = this.edgesWithValue.coGroup(iteration.getWorkset())
+					.where(0).equalTo(0).with(messenger);
 		}
-		else {
-			MessagingUdfWithEdgeValues<VertexKey, VertexValue, Message, EdgeValue> messenger = new MessagingUdfWithEdgeValues<VertexKey, VertexValue, Message, EdgeValue>(MessagingFunction3, messageTypeInfo);
-			messages = this.edgesWithValue.coGroup(iteration.getWorkset()).where(0).equalTo(0).with(messenger);
-		}
-		
-		// configure coGroup message function with name and broadcast variables
+		// configure coGroup message function with name and broadcast
+		// variables
 		messages = messages.name("Messaging");
 		for (Tuple2<String, DataSet<?>> e : this.bcVarsMessaging) {
 			messages = messages.withBroadcastSet(e.f1, e.f0);
@@ -378,7 +386,8 @@ public class VertexCentricIteration<VertexKey extends Comparable<VertexKey>, Ver
 					DataSet<Tuple2<VertexKey, VertexKey>> edgesWithoutValue,
 						VertexUpdateFunction<VertexKey, VertexValue, Message> vertexUpdateFunction,
 						MessagingFunction3<VertexKey, VertexValue, Message, ?> MessagingFunction3,
-						int maximumNumberOfIterations)
+						int maximumNumberOfIterations
+					)
 	{
 		@SuppressWarnings("unchecked")
 		MessagingFunction3<VertexKey, VertexValue, Message, Object> tmf = 
@@ -496,15 +505,15 @@ public class VertexCentricIteration<VertexKey extends Comparable<VertexKey>, Ver
 	{
 		private static final long serialVersionUID = 1L;
 		
-		private final MessagingFunction3<VertexKey, VertexValue, Message, ?> MessagingFunction3;
+		private final MessagingFunction3<VertexKey, VertexValue, Message, ?> messagingFunction;
 		
 		private transient TypeInformation<Tuple2<VertexKey, Message>> resultType;
 		
 		
-		private MessagingUdfNoEdgeValues(MessagingFunction3<VertexKey, VertexValue, Message, ?> MessagingFunction3,
+		private MessagingUdfNoEdgeValues(MessagingFunction3<VertexKey, VertexValue, Message, ?> messagingFunction,
 				TypeInformation<Tuple2<VertexKey, Message>> resultType)
 		{
-			this.MessagingFunction3 = MessagingFunction3;
+			this.messagingFunction = messagingFunction;
 			this.resultType = resultType;
 		}
 		
@@ -517,23 +526,23 @@ public class VertexCentricIteration<VertexKey extends Comparable<VertexKey>, Ver
 			
 			if (stateIter.hasNext()) {
 				Tuple2<VertexKey, VertexValue> newVertexState = stateIter.next();
-				MessagingFunction3.set((Iterator<?>) edges.iterator(), out);
-				MessagingFunction3.sendMessages(newVertexState.f0, newVertexState.f1);
+				messagingFunction.set((Iterator<?>) edges.iterator(), out);
+				messagingFunction.sendMessages(newVertexState.f0, newVertexState.f1);
 			}
 		}
 		
 		@Override
 		public void open(Configuration parameters) throws Exception {
 			if (getIterationRuntimeContext().getSuperstepNumber() == 1) {
-				this.MessagingFunction3.init(getIterationRuntimeContext(), false);
+				this.messagingFunction.init(getIterationRuntimeContext(), false);
 			}
 			
-			this.MessagingFunction3.preSuperstep();
+			this.messagingFunction.preSuperstep();
 		}
 		
 		@Override
 		public void close() throws Exception {
-			this.MessagingFunction3.postSuperstep();
+			this.messagingFunction.postSuperstep();
 		}
 
 		@Override
@@ -551,15 +560,15 @@ public class VertexCentricIteration<VertexKey extends Comparable<VertexKey>, Ver
 	{
 		private static final long serialVersionUID = 1L;
 		
-		private final MessagingFunction3<VertexKey, VertexValue, Message, EdgeValue> MessagingFunction3;
+		private final MessagingFunction3<VertexKey, VertexValue, Message, EdgeValue> messagingFunction;
 		
 		private transient TypeInformation<Tuple2<VertexKey, Message>> resultType;
 		
 		
-		private MessagingUdfWithEdgeValues(MessagingFunction3<VertexKey, VertexValue, Message, EdgeValue> MessagingFunction3,
+		private MessagingUdfWithEdgeValues(MessagingFunction3<VertexKey, VertexValue, Message, EdgeValue> messagingFunction,
 				TypeInformation<Tuple2<VertexKey, Message>> resultType)
 		{
-			this.MessagingFunction3 = MessagingFunction3;
+			this.messagingFunction = messagingFunction;
 			this.resultType = resultType;
 		}
 
@@ -572,23 +581,23 @@ public class VertexCentricIteration<VertexKey extends Comparable<VertexKey>, Ver
 			
 			if (stateIter.hasNext()) {
 				Tuple2<VertexKey, VertexValue> newVertexState = stateIter.next();
-				MessagingFunction3.set((Iterator<?>) edges.iterator(), out);
-				MessagingFunction3.sendMessages(newVertexState.f0, newVertexState.f1);
+				messagingFunction.set((Iterator<?>) edges.iterator(), out);
+				messagingFunction.sendMessages(newVertexState.f0, newVertexState.f1);
 			}
 		}
 		
 		@Override
 		public void open(Configuration parameters) throws Exception {
 			if (getIterationRuntimeContext().getSuperstepNumber() == 1) {
-				this.MessagingFunction3.init(getIterationRuntimeContext(), true);
+				this.messagingFunction.init(getIterationRuntimeContext(), true);
 			}
 			
-			this.MessagingFunction3.preSuperstep();
+			this.messagingFunction.preSuperstep();
 		}
 		
 		@Override
 		public void close() throws Exception {
-			this.MessagingFunction3.postSuperstep();
+			this.messagingFunction.postSuperstep();
 		}
 		
 		@Override
