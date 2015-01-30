@@ -18,11 +18,12 @@
 package org.apache.flink.streaming.api.ft.layer.util;
 
 import org.apache.flink.streaming.api.ft.layer.Xorer;
+import org.apache.flink.streaming.api.streamrecord.IdentifiableStreamRecord;
 
 public class NonFTXorer extends Xorer {
 
 	@Override
-	public void xor(RecordId message) {
+	public void xor(IdentifiableStreamRecord record) {
 	}
 
 	@Override

@@ -36,12 +36,11 @@ public class FTCollectorWrapper<T> implements Collector<T> {
 
 	@Override
 	public void collect(T record) {
-
+		System.out.println("Emit of " + record + " in " + Thread.currentThread()   + " started.");
 		streamRecord.setObject(record);
-		streamRecord.setId(RecordId.newSourceRecordId());
 		abstractFT.persist(streamRecord);
-		abstractFT.setAnchorRecord(streamRecord);
 		outerCollector.collect(record);
+		System.out.println("Emit of " + record + " in " + this.getClass()   + " ended.");
 	}
 
 	@Override

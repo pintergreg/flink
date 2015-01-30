@@ -32,7 +32,16 @@ public class TaskFTXorer extends Xorer {
 
 	@Override
 	protected void emit(RecordId recordId) throws Exception {
-		recordReader.sendTaskEvent(new XorEvent(recordId, false));
+//		boolean sent = false;
+//		while (!sent) {
+//			try {
+				recordReader.sendTaskEvent(new XorEvent(recordId, false));
+//				sent = true;
+//			} catch (RuntimeException e) {
+//				System.out.println("event sleeping");
+//				Thread.sleep(100);
+//			}
+//		}
 	}
 
 	@Override

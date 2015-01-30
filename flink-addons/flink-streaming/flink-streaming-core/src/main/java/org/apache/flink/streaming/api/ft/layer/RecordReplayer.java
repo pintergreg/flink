@@ -15,20 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.flink.streaming.api.ft.layer.util;
+package org.apache.flink.streaming.api.ft.layer;
 
-import org.apache.flink.streaming.api.ft.layer.Persister;
-import org.apache.flink.streaming.api.streamrecord.StreamRecord;
+import org.apache.flink.streaming.api.ft.layer.util.SemiDeserializedStreamRecord;
 
-public class NonFTPersister<T> implements Persister<T> {
+public interface RecordReplayer {
 
-	@Override
-	public void persist(StreamRecord<T> record) {
+	void replayRecord(int sourceId, SemiDeserializedStreamRecord sourceRecord);
 
-	}
-
-	@Override
-	public void close() {
-
-	}
 }

@@ -15,20 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.flink.streaming.api.ft.layer.util;
+package org.apache.flink.streaming.partitioner;
 
-import org.apache.flink.streaming.api.ft.layer.Persister;
-import org.apache.flink.streaming.api.streamrecord.StreamRecord;
 
-public class NonFTPersister<T> implements Persister<T> {
+import org.apache.flink.runtime.io.network.api.writer.ChannelSelector;
+import org.apache.flink.runtime.plugable.SerializationDelegate;
+import org.apache.flink.streaming.api.ft.layer.util.SemiDeserializedStreamRecord;
+
+import java.io.Serializable;
+
+public class FailedRecordPartitioner implements
+		ChannelSelector<SerializationDelegate<SemiDeserializedStreamRecord>>, Serializable {
+
+	private static final long serialVersionUID = 1L;
+
+	// TODO refactor!
 
 	@Override
-	public void persist(StreamRecord<T> record) {
-
+	public int[] selectChannels(SerializationDelegate<SemiDeserializedStreamRecord> record,
+			int numberOfOutputChannels) {
+		return new int[]{Math.abs(record.getInstance().getHashCode() % numberOfOutputChannels)};
 	}
 
-	@Override
-	public void close() {
-
-	}
 }

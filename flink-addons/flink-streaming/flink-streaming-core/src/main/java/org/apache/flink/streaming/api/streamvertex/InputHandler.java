@@ -19,6 +19,7 @@ package org.apache.flink.streaming.api.streamvertex;
 
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.core.io.IOReadableWritable;
+import org.apache.flink.runtime.io.network.api.reader.BufferReader;
 import org.apache.flink.runtime.io.network.api.reader.MutableReader;
 import org.apache.flink.runtime.io.network.api.reader.MutableRecordReader;
 import org.apache.flink.runtime.io.network.api.reader.UnionBufferReader;
@@ -33,7 +34,7 @@ public class InputHandler<IN> {
 	private StreamRecordSerializer<IN> inputSerializer = null;
 	private MutableObjectIterator<StreamRecord<IN>> inputIter;
 	private MutableReader<IOReadableWritable> inputs;
-	private MutableRecordReader<IOReadableWritable> ftInput;
+//	private MutableRecordReader<IOReadableWritable> ftInput;
 
 	private StreamVertex<IN, ?> streamVertex;
 	private StreamConfig configuration;
@@ -56,17 +57,13 @@ public class InputHandler<IN> {
 		int numberOfInputs = configuration.getNumberOfInputs();
 		if (numberOfInputs > 0) {
 
-			if (numberOfInputs < 2) {
+			BufferReader[] allReaders = streamVertex.getEnvironment().getAllReaders();
 
-				inputs = new MutableRecordReader<IOReadableWritable>(streamVertex.getEnvironment()
-						.getReader(0));
-				ftInput = (MutableRecordReader<IOReadableWritable>) inputs;
-
+			if (allReaders.length < 2) {
+				inputs = new MutableRecordReader<IOReadableWritable>(streamVertex.getEnvironment().getReader(0));
 			} else {
-				UnionBufferReader reader = new UnionBufferReader(streamVertex.getEnvironment().getAllReaders());
+				UnionBufferReader reader = new UnionBufferReader(allReaders);
 				inputs = new MutableRecordReader<IOReadableWritable>(reader);
-				ftInput = new MutableRecordReader<IOReadableWritable>(streamVertex.getEnvironment()
-						.getReader(0));
 			}
 
 			inputIter = createInputIterator();
@@ -99,7 +96,4 @@ public class InputHandler<IN> {
 		return inputIter;
 	}
 
-	public MutableRecordReader<IOReadableWritable> getPersistenceInput() {
-		return ftInput;
-	}
 }

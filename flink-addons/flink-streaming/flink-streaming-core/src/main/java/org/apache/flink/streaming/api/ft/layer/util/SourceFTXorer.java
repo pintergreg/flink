@@ -17,15 +17,20 @@
 
 package org.apache.flink.streaming.api.ft.layer.util;
 
-import org.apache.flink.runtime.io.network.api.writer.RecordWriter;
+import org.apache.flink.runtime.plugable.SerializationDelegate;
 import org.apache.flink.streaming.api.ft.layer.Xorer;
 import org.apache.flink.streaming.api.ft.layer.event.XorEvent;
+import org.apache.flink.streaming.api.streamrecord.IdentifiableStreamRecord;
+import org.apache.flink.streaming.api.streamrecord.StreamRecord;
+import org.apache.flink.streaming.io.StreamRecordWriter;
 
 public class SourceFTXorer extends Xorer {
 
-	RecordWriter<?> recordWriter;
+	StreamRecordWriter<? extends SerializationDelegate<? extends IdentifiableStreamRecord>>
+	recordWriter;
 
-	public SourceFTXorer(RecordWriter<?> recordWriter) {
+	public SourceFTXorer(StreamRecordWriter<? extends SerializationDelegate<? extends
+			IdentifiableStreamRecord>> recordWriter) {
 		super();
 		this.recordWriter = recordWriter;
 	}

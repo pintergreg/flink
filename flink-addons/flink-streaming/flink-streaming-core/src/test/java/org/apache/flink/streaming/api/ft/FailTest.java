@@ -15,51 +15,56 @@
  * limitations under the License.
  */
 
-package org.apache.flink.streaming.api;
+package org.apache.flink.streaming.api.ft;
+
+import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.ft.layer.event.FailException;
+import org.apache.flink.streaming.api.function.sink.SinkFunction;
+import org.apache.flink.streaming.util.TestStreamEnvironment;
+import org.junit.Test;
 
 import java.io.Serializable;
 
-import org.apache.flink.api.common.functions.FilterFunction;
-import org.apache.flink.api.common.functions.MapFunction;
-import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.api.function.source.SourceFunction;
-import org.apache.flink.streaming.api.invokable.StreamInvokable;
-import org.apache.flink.streaming.util.TestStreamEnvironment;
-import org.apache.flink.util.Collector;
-import org.junit.Test;
+public class FailTest {
 
-public class PrintTest implements Serializable {
-
-	private static final long serialVersionUID = 1L;
-	private static final long MEMORYSIZE = 32;
-
-	private static final class IdentityMap implements MapFunction<Long, Long> {
-		private static final long serialVersionUID = 1L;
+	public class MyMapFunction implements MapFunction<Long, Long>, Serializable {
+		private Long z = 3L;
 
 		@Override
 		public Long map(Long value) throws Exception {
-			return value + 100;
+			if (value.equals(z)) {
+				z = -1L;
+				throw new FailException();
+			} else {
+				return value;
+			}
 		}
 	}
-
-	private static final class FilterAll implements FilterFunction<Long> {
+	
+	public static class MySink implements SinkFunction<Long> {
 		private static final long serialVersionUID = 1L;
 
 		@Override
-		public boolean filter(Long value) throws Exception {
-			return true;
+		public void invoke(Long value) {
+
 		}
 	}
 
 	@Test
-	public void test() throws Exception {
-		StreamExecutionEnvironment env = new TestStreamEnvironment(1, MEMORYSIZE);
-		env.addSource(new SourceFunction<Long>() {
-			@Override
-			public void invoke(Collector<Long> collector) throws Exception {
-				collector.collect(10L);
-			}
-		}).map(new IdentityMap()).filter(new FilterAll()).print();
-		env.execute();
+	public void test() {
+		StreamExecutionEnvironment env = new TestStreamEnvironment(1, 32);
+		env.setDegreeOfParallelism(1);
+
+		env.generateSequence(0, 5).map(new MyMapFunction())
+				.addSink(new MySink());
+
+		try {
+			env.execute();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
+
 }

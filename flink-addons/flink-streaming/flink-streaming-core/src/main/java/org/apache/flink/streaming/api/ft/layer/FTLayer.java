@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 
 import org.apache.flink.streaming.api.ft.layer.util.RecordId;
-import org.apache.flink.streaming.api.ft.layer.util.RecordReplayer;
 import org.apache.flink.streaming.api.ft.layer.util.RecordWithHashCode;
 import org.apache.flink.streaming.api.ft.layer.util.SemiDeserializedStreamRecord;
 import org.slf4j.Logger;
@@ -136,5 +135,9 @@ public class FTLayer {
 
 	public boolean isEmpty() {
 		return ackerTable.isEmpty();
+	}
+
+	public void setRecordReplayer(RecordReplayer recordReplayer) {
+		this.recordReplayer = recordReplayer;
 	}
 }

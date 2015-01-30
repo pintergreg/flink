@@ -68,11 +68,19 @@ public class StreamOutput<OUT> implements Collector<OUT> {
 		try {
 			abstractFT.setOutRecordId(serializationDelegate);
 			output.emit(serializationDelegate);
-			abstractFT.xor(serializationDelegate.getInstance().getId());
+			abstractFT.xor(serializationDelegate.getInstance());
 		} catch (Exception e) {
 			if (LOG.isErrorEnabled()) {
 				LOG.error("Emit failed due to: {}", StringUtils.stringifyException(e));
 			}
+		}
+	}
+
+	public void flush() {
+		try {
+			output.flush();
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 

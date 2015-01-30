@@ -29,7 +29,7 @@ public class LocalStreamEnvironment extends StreamExecutionEnvironment {
 	 */
 	@Override
 	public void execute() throws Exception {
-		ClusterUtil.runOnMiniCluster(this.streamGraph.getJobGraph(), getDegreeOfParallelism());
+		ClusterUtil.runOnMiniCluster(this.streamGraph.getJobGraph(), getDegreeOfParallelism() + 1);
 	}
 
 	/**
@@ -42,6 +42,6 @@ public class LocalStreamEnvironment extends StreamExecutionEnvironment {
 	@Override
 	public void execute(String jobName) throws Exception {
 		ClusterUtil.runOnMiniCluster(this.streamGraph.getJobGraph(jobName),
-				getDegreeOfParallelism());
+				getDegreeOfParallelism() + 1);
 	}
 }

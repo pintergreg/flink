@@ -17,13 +17,23 @@
 
 package org.apache.flink.streaming.api;
 
+import org.apache.flink.runtime.jobgraph.JobGraph;
+
+import java.io.Serializable;
+
 public interface FTLayerBuilder {
+
+	public enum FTStatus implements Serializable {
+		ON, OFF
+	}
 
 	public boolean isChainingEnabled(String vertexName, String outName);
 
-	public void createFTLayerVertex(int parallelism);
+	void createFTLayerVertex(JobGraph jobGraph, int parallelism);
 
 	void connectWithFTLayer(String vertexName);
 
 	public void setSourceSuccessives();
+
+	public FTStatus getStatus();
 }

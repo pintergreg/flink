@@ -1,13 +1,12 @@
- /*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,9 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.flink.runtime.io.network.api.reader;
+package org.apache.flink.streaming.io;
+
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 
 import org.apache.flink.runtime.event.task.TaskEvent;
+import org.apache.flink.runtime.io.network.api.reader.BufferReaderBase;
+import org.apache.flink.runtime.io.network.api.reader.MutableRecordReader;
 import org.apache.flink.runtime.io.network.buffer.Buffer;
 import org.apache.flink.runtime.util.event.EventListener;
 
@@ -30,15 +35,7 @@ import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
-
-/**
- * A buffer-oriented reader, which unions multiple {@link BufferReader}
- * instances.
- */
-public class UnionBufferReader implements BufferReaderBase {
+public class MultiBufferReaderBase implements BufferReaderBase {
 
 	private final BufferReaderBase[] readers;
 
@@ -54,6 +51,10 @@ public class UnionBufferReader implements BufferReaderBase {
 
 	private BufferReaderBase currentReader;
 
+	private Map<BufferReaderBase, Integer> readerIndices;
+
+	private int nextReaderIndex;
+
 	private int currentReaderChannelIndexOffset;
 
 	private int channelIndexOfLastReadBuffer = -1;
@@ -64,12 +65,17 @@ public class UnionBufferReader implements BufferReaderBase {
 
 	private boolean isTaskEvent;
 
-	public UnionBufferReader(BufferReaderBase... readers) {
+	public MultiBufferReaderBase(BufferReaderBase... readers) {
 		checkNotNull(readers);
 		checkArgument(readers.length >= 2, "Union buffer reader must be initialized with at least two individual buffer readers");
 
 		this.readers = readers;
 		this.remainingReaders = new HashSet<BufferReaderBase>(readers.length + 1, 1.0F);
+
+		this.readerIndices = new HashMap<BufferReaderBase, Integer>();
+		for (int i = 0; i < readers.length; i++) {
+			readerIndices.put(readers[i], i);
+		}
 
 		this.dataAvailabilityListener = new DataAvailabilityListener(this);
 
@@ -99,6 +105,9 @@ public class UnionBufferReader implements BufferReaderBase {
 		}
 	}
 
+	public int getNextReaderIndex() {
+		return nextReaderIndex;
+	}
 
 	@Override
 	public Buffer getNextBufferBlocking() throws IOException, InterruptedException {
@@ -119,6 +128,10 @@ public class UnionBufferReader implements BufferReaderBase {
 				else {
 					while (true) {
 						currentReader = dataAvailabilityListener.getNextReaderBlocking();
+
+						// setting index of next reader
+						nextReaderIndex = readerIndices.get(currentReader);
+
 						currentReaderChannelIndexOffset = readerToIndexOffsetMap.get(currentReader);
 
 						if (isIterative && !remainingReaders.contains(currentReader)) {
@@ -255,14 +268,14 @@ public class UnionBufferReader implements BufferReaderBase {
 
 	private static class DataAvailabilityListener implements EventListener<BufferReaderBase> {
 
-		private final UnionBufferReader unionReader;
+		private final MultiBufferReaderBase multiReader;
 
 		private final BlockingQueue<BufferReaderBase> readersWithData = new LinkedBlockingQueue<BufferReaderBase>();
 
 		private volatile EventListener<BufferReaderBase> registeredListener;
 
-		private DataAvailabilityListener(UnionBufferReader unionReader) {
-			this.unionReader = unionReader;
+		private DataAvailabilityListener(MultiBufferReaderBase multiReader) {
+			this.multiReader = multiReader;
 		}
 
 		@Override
@@ -270,7 +283,7 @@ public class UnionBufferReader implements BufferReaderBase {
 			readersWithData.add(reader);
 
 			if (registeredListener != null) {
-				registeredListener.onEvent(unionReader);
+				registeredListener.onEvent(multiReader);
 			}
 		}
 

@@ -19,8 +19,10 @@ package org.apache.flink.streaming.api.streamrecord;
 
 import java.io.Serializable;
 
+import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple;
+import org.apache.flink.runtime.plugable.SerializationDelegate;
 import org.apache.flink.streaming.api.ft.layer.util.RecordId;
 
 /**

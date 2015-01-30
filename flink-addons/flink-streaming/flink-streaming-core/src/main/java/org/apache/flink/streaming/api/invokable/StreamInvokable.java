@@ -122,17 +122,26 @@ public abstract class StreamInvokable<IN, OUT> implements Serializable {
 	 */
 	protected void callUserFunctionAndLogException() {
 		try {
+			System.out.println("Invoke " + this.getClass() + " with " + nextRecord + " started.");
 			abstractFT.setAnchorRecord(nextRecord);
 			callUserFunction();
-			abstractFT.xor(nextRecord.getId());
+			ackAnchorRecord();
 		} catch (FailException e) {
 			abstractFT.fail();
-			abstractFT.xor(nextRecord.getId());
+			abstractFT.xor(nextRecord);
+			System.out.println("Failed" + this.getClass() + " with " + nextRecord);
 		} catch (Exception e) {
 			if (LOG.isErrorEnabled()) {
 				LOG.error("Calling user function failed due to: {}",
 						StringUtils.stringifyException(e));
 			}
+		}
+		System.out.println("Invoke " + this.getClass() + " with " + nextRecord + " finished.");
+	}
+
+	protected void ackAnchorRecord() {
+		if (nextRecord != null) {
+			abstractFT.xor(nextRecord);
 		}
 	}
 
@@ -153,6 +162,7 @@ public abstract class StreamInvokable<IN, OUT> implements Serializable {
 	 * RichFunction class
 	 */
 	public void close() {
+		System.out.println("Invokable " + this.getClass() + " is closed.");
 		isRunning = false;
 		collector.close();
 		try {
