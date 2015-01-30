@@ -17,6 +17,7 @@
 
 package org.apache.flink.streaming.api;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -35,6 +36,8 @@ import org.apache.flink.streaming.partitioner.ShufflePartitioner;
 import org.apache.flink.streaming.partitioner.StreamPartitioner;
 import org.apache.flink.streaming.state.OperatorState;
 import org.apache.flink.util.InstantiationUtil;
+
+import static org.apache.flink.streaming.api.FTLayerBuilder.*;
 
 public class StreamConfig implements Serializable {
 	private static final long serialVersionUID = 1L;
@@ -61,6 +64,7 @@ public class StreamConfig implements Serializable {
 	private static final String ITERATON_WAIT = "iterationWait";
 	private static final String OUTPUTS = "outVertexNames";
 	private static final String EDGES_IN_ORDER = "rwOrder";
+	private static final String FT_STATUS = "ftStatus";
 	// DEFAULT VALUES
 	private static final long DEFAULT_TIMEOUT = 100;
 	// CONFIG METHODS
@@ -356,6 +360,20 @@ public class StreamConfig implements Serializable {
 
 	public boolean isChainStart() {
 		return config.getBoolean(IS_CHAINED_VERTEX, false);
+	}
+
+	public void setFTStatus(FTStatus ftStatus){
+		config.setBytes(FT_STATUS,
+				SerializationUtils.serialize((Serializable) ftStatus));
+	}
+
+	public FTStatus getFTStatus(ClassLoader cl) {
+		try {
+			return (FTStatus) InstantiationUtil.readObjectFromConfig(this.config,
+					FT_STATUS, cl);
+		} catch (Exception e) {
+			throw new RuntimeException("Could not instantiate fault tolerance status.");
+		}
 	}
 
 	@Override

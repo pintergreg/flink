@@ -18,23 +18,28 @@
 
 package org.apache.flink.streaming.api.streamrecord;
 
-import java.io.IOException;
-
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.core.memory.DataInputView;
 import org.apache.flink.core.memory.DataOutputView;
 
-public final class StreamRecordSerializer<T> extends TypeSerializer<StreamRecord<T>> {
+import java.io.IOException;
+
+public class StreamRecordSerializer<T> extends TypeSerializer<StreamRecord<T>> {
 
 	private static final long serialVersionUID = 1L;
 
-	private final TypeSerializer<T> typeSerializer;
+	protected final TypeSerializer<T> typeSerializer;
 	private final boolean isTuple;
 
 	public StreamRecordSerializer(TypeInformation<T> typeInfo) {
 		this.typeSerializer = typeInfo.createSerializer();
 		this.isTuple = typeInfo.isTupleType();
+	}
+
+	public StreamRecordSerializer(StreamRecordSerializer<T> serializer) {
+		this.typeSerializer = serializer.typeSerializer;
+		this.isTuple = serializer.isTuple;
 	}
 
 	public TypeSerializer<T> getObjectSerializer() {

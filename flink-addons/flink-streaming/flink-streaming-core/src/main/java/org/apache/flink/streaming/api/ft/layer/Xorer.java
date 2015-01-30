@@ -18,6 +18,7 @@
 package org.apache.flink.streaming.api.ft.layer;
 
 import org.apache.flink.streaming.api.ft.layer.util.RecordId;
+import org.apache.flink.streaming.api.streamrecord.IdentifiableStreamRecord;
 import org.apache.flink.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,13 +35,13 @@ public abstract class Xorer {
 		this.failFlag = isFailed;
 	}
 
-	public void xor(RecordId xorMessage) {
+	public void xor(IdentifiableStreamRecord record) {
 		try {
 			if (!failFlag) {
-				emit(xorMessage);
+				emit(record.getId());
 			} else {
 				failFlag = false;
-				fail(xorMessage);
+				fail(record.getId());
 			}
 		} catch (Exception e) {
 			if (LOG.isErrorEnabled()) {

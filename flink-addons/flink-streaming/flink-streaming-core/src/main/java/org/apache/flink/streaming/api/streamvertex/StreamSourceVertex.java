@@ -18,22 +18,33 @@
 package org.apache.flink.streaming.api.streamvertex;
 
 import org.apache.flink.runtime.plugable.SerializationDelegate;
+import org.apache.flink.streaming.api.FTLayerBuilder;
+import org.apache.flink.streaming.api.ft.layer.Anchorer;
+import org.apache.flink.streaming.api.ft.layer.FT;
 import org.apache.flink.streaming.api.ft.layer.NonFT;
+import org.apache.flink.streaming.api.ft.layer.Persister;
+import org.apache.flink.streaming.api.ft.layer.Xorer;
+import org.apache.flink.streaming.api.ft.layer.util.AsSemiDeserializedStreamRecordSerializer;
+import org.apache.flink.streaming.api.ft.layer.util.FTAnchorer;
+import org.apache.flink.streaming.api.ft.layer.util.FTPersister;
+import org.apache.flink.streaming.api.ft.layer.util.SourceFTXorer;
 import org.apache.flink.streaming.api.invokable.SourceInvokable;
 import org.apache.flink.streaming.api.streamrecord.StreamRecord;
 import org.apache.flink.streaming.api.streamrecord.StreamRecordSerializer;
 import org.apache.flink.streaming.io.StreamRecordWriter;
 import org.apache.flink.util.MutableObjectIterator;
 
+import static org.apache.flink.streaming.api.FTLayerBuilder.*;
+
 public class StreamSourceVertex<OUT> extends StreamVertex<OUT, OUT> {
 
 	private SourceInvokable<OUT> sourceInvokable;
-	private StreamRecordWriter<SerializationDelegate<StreamRecord<OUT>>> ftWriter;
+	// private StreamRecordWriter<SerializationDelegate<StreamRecord<OUT>>> ftWriter;
 
-	public StreamSourceVertex(){
+	public StreamSourceVertex() {
 		super();
 		sourceInvokable = null;
-		ftWriter = null;
+		// ftWriter = null;
 	}
 
 	@Override
@@ -44,7 +55,22 @@ public class StreamSourceVertex<OUT> extends StreamVertex<OUT, OUT> {
 	@Override
 	public void setInputsOutputs() {
 		// TODO set FT RecordWriter, PersistencePartitioner
-		abstractFT = new NonFT();
+		if (ftStatus == FTStatus.ON) {
+			StreamRecordWriter<SerializationDelegate<StreamRecord<OUT>>> ftWriter = new
+					StreamRecordWriter<SerializationDelegate<StreamRecord<OUT>>>
+					(getNextWriter());
+			StreamRecordSerializer<OUT> serializer = configuration
+					.getTypeSerializerOut1(userClassLoader);
+			AsSemiDeserializedStreamRecordSerializer<OUT> semiDeserializedSerializer = new
+					AsSemiDeserializedStreamRecordSerializer<OUT>(serializer);
+			Anchorer anchorer = new FTAnchorer();
+			Persister<OUT> persister = new FTPersister<OUT>(anchorer, ftWriter,
+					semiDeserializedSerializer);
+			Xorer sourceXorer = new SourceFTXorer(ftWriter);
+			abstractFT = new FT(persister, sourceXorer, anchorer);
+		} else {
+			abstractFT = new NonFT();
+		}
 		userInvokable = sourceInvokable;
 		outputHandler = new OutputHandler<OUT>(this, abstractFT);
 	}

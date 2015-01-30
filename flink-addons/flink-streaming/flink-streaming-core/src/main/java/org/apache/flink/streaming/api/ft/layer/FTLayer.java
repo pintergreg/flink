@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 
 import org.apache.flink.streaming.api.ft.layer.util.RecordId;
-import org.apache.flink.streaming.api.ft.layer.util.RecordReplayer;
 import org.apache.flink.streaming.api.ft.layer.util.RecordWithHashCode;
 import org.apache.flink.streaming.api.ft.layer.util.SemiDeserializedStreamRecord;
 import org.slf4j.Logger;
@@ -37,12 +36,13 @@ public class FTLayer {
 	protected HashSet<Long> failedSourceRecordIds;
 	protected RecordReplayer recordReplayer;
 
-	public FTLayer() {
+	public FTLayer(RecordReplayer recordReplayer) {
 		// TODO initialize record replayer
 		this.sourceIdOfRecord = new HashMap<Long, Integer>();
 		this.failedSourceRecordIds = new HashSet<Long>();
 		this.persistenceLayer = new PersistenceLayer(this);
 		this.ackerTable = new AckerTable(this);
+		this.recordReplayer = recordReplayer;
 	}
 
 	public void ack(long sourceRecordId) {

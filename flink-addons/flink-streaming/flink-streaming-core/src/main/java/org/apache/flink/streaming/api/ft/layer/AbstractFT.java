@@ -55,8 +55,9 @@ public abstract class AbstractFT<T> extends Xorer implements
 	}
 
 	@Override
-	public void xor(RecordId recordId) {
-		xorer.xor(recordId);
+	public void xor(IdentifiableStreamRecord record) {
+		xorer.xor(record);
+		System.out.println("xored id " + record.getId());
 	}
 
 	@Override
@@ -75,4 +76,6 @@ public abstract class AbstractFT<T> extends Xorer implements
 	}
 
 	public abstract Collector<T> wrap(Collector<T> collector);
+
+	public abstract boolean faultToleranceIsOn();
 }

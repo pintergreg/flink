@@ -45,11 +45,15 @@ import org.apache.flink.streaming.api.streamvertex.StreamSourceVertex;
 import org.apache.flink.streaming.api.streamvertex.StreamVertex;
 import org.apache.flink.streaming.partitioner.StreamPartitioner;
 import org.apache.flink.streaming.state.OperatorState;
+import org.apache.hadoop.net.NetworkTopology;
+import org.apache.hadoop.net.NetworkTopology.InvalidTopologyException;
 import org.apache.sling.commons.json.JSONArray;
 import org.apache.sling.commons.json.JSONException;
 import org.apache.sling.commons.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.flink.streaming.api.FTLayerBuilder.*;
 
 /**
  * Object for building Apache Flink stream processing graphs
@@ -61,6 +65,7 @@ public class StreamGraph extends StreamingPlan {
 
 	protected boolean chaining = true;
 	private String jobName = DEAFULT_JOB_NAME;
+	private static final FTStatus ftStatus = FTStatus.ON;
 
 	// Graph attributes
 	private Set<String> sourceVertices;
@@ -87,6 +92,7 @@ public class StreamGraph extends StreamingPlan {
 	private Map<String, Long> iterationTimeouts;
 	private Map<String, Map<String, OperatorState<?>>> operatorStates;
 	private Map<String, InputFormat<String, ?>> inputFormatLists;
+
 
 	public StreamGraph() {
 
@@ -194,6 +200,11 @@ public class StreamGraph extends StreamingPlan {
 	public void addIterationHead(String vertexName, String iterationHead, Integer iterationID,
 			int parallelism, long waitTime) {
 
+		if (ftStatus == FTStatus.ON) {
+			throw new InvalidTopologyException(
+					"Currently, fault tolarance does not support iteration.");
+		}
+
 		addVertex(vertexName, StreamIterationHead.class, null, null, parallelism);
 
 		chaining = false;
@@ -227,14 +238,16 @@ public class StreamGraph extends StreamingPlan {
 	 *            Id of the iteration tail
 	 * @param iterationID
 	 *            ID of iteration for mulitple iterations
-	 * @param parallelism
-	 *            Number of parallel instances created
 	 * @param waitTime
 	 *            Max waiting time for next record
 	 */
 	public void addIterationTail(String vertexName, String iterationTail, Integer iterationID,
 			long waitTime) {
 
+		if (ftStatus == FTStatus.ON) {
+			throw new InvalidTopologyException(
+					"Currently, fault tolarance does not support iteration.");
+		}
 		if (bufferTimeouts.get(iterationTail) == 0) {
 			throw new RuntimeException("Buffer timeout 0 at iteration tail is not supported.");
 		}
@@ -279,7 +292,7 @@ public class StreamGraph extends StreamingPlan {
 	 *            Name of the vertex
 	 * @param vertexClass
 	 *            The class of the vertex
-	 * @param invokableObjectject
+	 * @param invokableObject
 	 *            The user defined invokable object
 	 * @param operatorName
 	 *            Type of the user defined operator
@@ -319,6 +332,12 @@ public class StreamGraph extends StreamingPlan {
 	 */
 	public void setEdge(String upStreamVertexName, String downStreamVertexName,
 			StreamPartitioner<?> partitionerObject, int typeNumber, List<String> outputNames) {
+		if (ftStatus == FTStatus.ON
+				&& (invokableObjects.get(downStreamVertexName) instanceof CoInvokable)
+				&& sourceVertices.contains(upStreamVertexName)) {
+			throw new InvalidTopologyException("Co-tasks cannot be source successive tasks if " +
+					"fault tolerance is turned on.");
+		}
 		outEdgeLists.get(upStreamVertexName).add(downStreamVertexName);
 		outEdgeTypes.get(upStreamVertexName).add(typeNumber);
 		inEdgeLists.get(downStreamVertexName).add(upStreamVertexName);
@@ -634,4 +653,7 @@ public class StreamGraph extends StreamingPlan {
 		}
 	}
 
+	public FTStatus getFTStatus() {
+		return ftStatus;
+	}
 }

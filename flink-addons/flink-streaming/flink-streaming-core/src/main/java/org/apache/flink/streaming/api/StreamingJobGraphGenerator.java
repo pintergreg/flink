@@ -43,6 +43,8 @@ import org.apache.flink.streaming.partitioner.StreamPartitioner.PartitioningStra
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.flink.streaming.api.FTLayerBuilder.*;
+
 public class StreamingJobGraphGenerator {
 
 	private static final Logger LOG = LoggerFactory.getLogger(StreamingJobGraphGenerator.class);
@@ -57,10 +59,13 @@ public class StreamingJobGraphGenerator {
 	private Map<String, StreamConfig> vertexConfigs;
 	private Map<String, String> chainedNames;
 
-	private final FTLayerBuilder ftBuilder = new NOpFTLayerBuilder();
+	private FTLayerBuilder ftBuilder;
+	private static FTStatus ftStatus;
 
 	public StreamingJobGraphGenerator(StreamGraph streamGraph) {
 		this.streamGraph = streamGraph;
+		this.ftStatus = streamGraph.getFTStatus();
+		this.sourceVertices = new HashSet(streamGraph.getSourceVertices());
 	}
 
 	private void init() {
@@ -69,13 +74,18 @@ public class StreamingJobGraphGenerator {
 		this.chainedConfigs = new HashMap<String, Map<String, StreamConfig>>();
 		this.vertexConfigs = new HashMap<String, StreamConfig>();
 		this.chainedNames = new HashMap<String, String>();
-		this.sourceVertices = new HashSet(streamGraph.getSourceVertices());
-		ftBuilder.createFTLayerVertex(1);
+
+		if (ftStatus == FTStatus.ON) {
+			this.ftBuilder = new OpFTLayerBuilder(this);
+		} else {
+			this.ftBuilder = new NOpFTLayerBuilder();
+		}
 	}
 
 	public JobGraph createJobGraph(String jobName) {
 		jobGraph = new JobGraph(jobName);
 		init();
+		ftBuilder.createFTLayerVertex(jobGraph, 1);
 
 		for (String sourceName : sourceVertices) {
 			createChain(sourceName, sourceName);
@@ -207,6 +217,7 @@ public class StreamingJobGraphGenerator {
 		config.setNumberOfOutputs(nonChainableOutputs.size());
 		config.setOutputs(nonChainableOutputs);
 		config.setChainedOutputs(chainableOutputs);
+		config.setFTStatus(ftStatus);
 
 		Class<? extends AbstractInvokable> vertexClass = streamGraph.getJobVertexClass(vertexName);
 

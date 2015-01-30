@@ -35,4 +35,9 @@ public class FT<T> extends AbstractFT<T> {
 		return new FTCollectorWrapper(collector, this);
 	}
 
+	@Override
+	public boolean faultToleranceIsOn() {
+		return true;
+	}
+
 }

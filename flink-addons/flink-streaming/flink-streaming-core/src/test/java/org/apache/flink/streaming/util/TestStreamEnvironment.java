@@ -51,8 +51,9 @@ public class TestStreamEnvironment extends StreamExecutionEnvironment {
 
 		Configuration configuration = jobGraph.getJobConfiguration();
 
+		// TODO set degree of parallelism for FT properly
 		configuration.setInteger(ConfigConstants.TASK_MANAGER_NUM_TASK_SLOTS,
-				getDegreeOfParallelism());
+				getDegreeOfParallelism() + 1);
 		configuration.setLong(ConfigConstants.TASK_MANAGER_MEMORY_SIZE_KEY, memorySize);
 
 		ForkableFlinkMiniCluster cluster = new ForkableFlinkMiniCluster(configuration);

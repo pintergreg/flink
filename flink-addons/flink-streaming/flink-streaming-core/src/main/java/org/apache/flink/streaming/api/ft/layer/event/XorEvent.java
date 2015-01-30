@@ -30,10 +30,12 @@ public class XorEvent extends TaskEvent {
 	private boolean failFlag = false;
 
 	public XorEvent() {
+		super();
 		setRecordId(new RecordId());
 	}
 
 	public XorEvent(RecordId recordId, boolean failFlag) {
+		super();
 		this.recordId = recordId;
 		this.failFlag = failFlag;
 	}

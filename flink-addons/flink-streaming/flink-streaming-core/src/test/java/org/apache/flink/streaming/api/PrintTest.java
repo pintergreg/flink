@@ -22,7 +22,10 @@ import java.io.Serializable;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.function.source.SourceFunction;
+import org.apache.flink.streaming.api.invokable.StreamInvokable;
 import org.apache.flink.streaming.util.TestStreamEnvironment;
+import org.apache.flink.util.Collector;
 import org.junit.Test;
 
 public class PrintTest implements Serializable {
@@ -35,7 +38,8 @@ public class PrintTest implements Serializable {
 
 		@Override
 		public Long map(Long value) throws Exception {
-			return value;
+			System.out.println("mapping");
+			return value + 100;
 		}
 	}
 
@@ -51,7 +55,14 @@ public class PrintTest implements Serializable {
 	@Test
 	public void test() throws Exception {
 		StreamExecutionEnvironment env = new TestStreamEnvironment(1, MEMORYSIZE);
-		env.generateSequence(1, 10).map(new IdentityMap()).filter(new FilterAll()).print();
+		env.addSource(new SourceFunction<Long>() {
+			@Override
+			public void invoke(Collector<Long> collector) throws Exception {
+				System.out.println("sourced");
+
+				collector.collect(10L);
+			}
+		}).setChainingStrategy(StreamInvokable.ChainingStrategy.NEVER).map(new IdentityMap()).filter(new FilterAll()).print();
 		env.execute();
 	}
 }

@@ -6,7 +6,7 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,24 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.flink.streaming.api.ft.layer.util;
+package org.apache.flink.streaming.io;
 
-import org.apache.flink.streaming.api.ft.layer.Xorer;
-import org.apache.flink.streaming.api.streamrecord.IdentifiableStreamRecord;
+import java.io.IOException;
 
-public class NonFTXorer extends Xorer {
+public interface MultiReaderIterator<T> {
 
-	@Override
-	public void xor(IdentifiableStreamRecord record) {
-	}
+	public int nextWithIndex(T target) throws IOException;
 
-	@Override
-	protected void emit(RecordId recordId) throws Exception {
-
-	}
-
-	@Override
-	protected void fail(RecordId recordId) throws Exception {
-
-	}
 }

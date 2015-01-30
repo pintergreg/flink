@@ -121,18 +121,26 @@ public abstract class StreamInvokable<IN, OUT> implements Serializable {
 	 * Method for logging exceptions thrown during the user function call
 	 */
 	protected void callUserFunctionAndLogException() {
+		System.out.println("Invoke " + this.getClass() + " started");
 		try {
 			abstractFT.setAnchorRecord(nextRecord);
 			callUserFunction();
-			abstractFT.xor(nextRecord.getId());
+			ackAnchorRecord();
 		} catch (FailException e) {
 			abstractFT.fail();
-			abstractFT.xor(nextRecord.getId());
+			abstractFT.xor(nextRecord);
 		} catch (Exception e) {
 			if (LOG.isErrorEnabled()) {
 				LOG.error("Calling user function failed due to: {}",
 						StringUtils.stringifyException(e));
 			}
+		}
+		System.out.println("Invoke " + this.getClass() + " finished");
+	}
+
+	protected void ackAnchorRecord() {
+		if (nextRecord != null) {
+			abstractFT.xor(nextRecord);
 		}
 	}
 

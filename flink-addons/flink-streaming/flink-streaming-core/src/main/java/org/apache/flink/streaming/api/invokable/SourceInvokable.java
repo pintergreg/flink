@@ -43,4 +43,9 @@ public class SourceInvokable<OUT> extends StreamInvokable<OUT, OUT> implements S
 	protected void callUserFunction() throws Exception {
 		sourceFunction.invoke(collector);
 	}
+
+	@Override
+	protected void ackAnchorRecord() {
+		// intentionally left blank
+	}
 }

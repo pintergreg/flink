@@ -37,7 +37,7 @@ public class OpFTLayerBuilder implements FTLayerBuilder {
 	private static final Logger LOG = LoggerFactory.getLogger(OpFTLayerBuilder.class);
 
 	private StreamGraph streamGraph;
-	private JobGraph jobGraph;
+	// private JobGraph jobGraph;
 
 	private AbstractJobVertex ftLayerVertex;
 	private Map<String, AbstractJobVertex> streamVertices;
@@ -47,7 +47,6 @@ public class OpFTLayerBuilder implements FTLayerBuilder {
 
 	public OpFTLayerBuilder(StreamingJobGraphGenerator jobGraphGenerator) {
 		this.streamGraph = jobGraphGenerator.getStreamGraph();
-		this.jobGraph = jobGraphGenerator.getJobGraph();
 		this.streamVertices = jobGraphGenerator.getStreamVertices();
 		this.sourceVertices = jobGraphGenerator.getSourceVertices();
 		this.ftLayerOutputs = new HashMap<String, Integer>();
@@ -59,10 +58,10 @@ public class OpFTLayerBuilder implements FTLayerBuilder {
 	}
 
 	@Override
-	public void createFTLayerVertex(int parallelism) {
+	public void createFTLayerVertex(JobGraph jobGraph, int parallelism) {
 		String vertexName = "FTLayerVertex";
-		Class<? extends AbstractInvokable> vertexClass = StreamVertex.class;
-		ftLayerVertex = new FTLayerVertex(vertexName);
+		Class<? extends AbstractInvokable> vertexClass = FTLayerVertex.class;
+		ftLayerVertex = new AbstractJobVertex(vertexName);
 		jobGraph.addVertex(ftLayerVertex);
 		ftLayerVertex.setInvokableClass(vertexClass);
 		ftLayerVertex.setParallelism(parallelism);
@@ -120,6 +119,11 @@ public class OpFTLayerBuilder implements FTLayerBuilder {
 		FTLayerConfig ftLayerConfig = new FTLayerConfig(ftLayerVertex.getConfiguration());
 		ftLayerConfig.setNumberOfOutputs(processingTaskVertices.size());
 		ftLayerConfig.setSourceSuccessives(sourceSuccessives);
+	}
+
+	@Override
+	public FTStatus getStatus() {
+		return FTStatus.ON;
 	}
 
 	@SuppressWarnings("unused")

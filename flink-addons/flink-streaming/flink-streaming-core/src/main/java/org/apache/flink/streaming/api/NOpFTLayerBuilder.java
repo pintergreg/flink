@@ -17,6 +17,8 @@
 
 package org.apache.flink.streaming.api;
 
+import org.apache.flink.runtime.jobgraph.JobGraph;
+
 public class NOpFTLayerBuilder implements FTLayerBuilder {
 
 	@Override
@@ -25,7 +27,8 @@ public class NOpFTLayerBuilder implements FTLayerBuilder {
 	}
 
 	@Override
-	public void createFTLayerVertex(int parallelism) {
+	public void createFTLayerVertex(JobGraph jobGraph, int parallelism) {
+
 	}
 
 	@Override
@@ -34,5 +37,10 @@ public class NOpFTLayerBuilder implements FTLayerBuilder {
 
 	@Override
 	public void setSourceSuccessives() {
+	}
+
+	@Override
+	public FTStatus getStatus() {
+		return FTStatus.OFF;
 	}
 }

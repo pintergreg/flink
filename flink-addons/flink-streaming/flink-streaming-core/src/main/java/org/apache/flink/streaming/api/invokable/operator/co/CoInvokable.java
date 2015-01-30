@@ -119,10 +119,10 @@ public abstract class CoInvokable<IN1, IN2, OUT> extends StreamInvokable<IN1, OU
 		try {
 			abstractFT.setAnchorRecord(reuse1);
 			callUserFunction1();
-			abstractFT.xor(reuse1.getId());
+			abstractFT.xor(reuse1);
 		} catch (FailException e) {
 			abstractFT.fail();
-			abstractFT.xor(reuse1.getId());
+			abstractFT.xor(reuse1);
 		} catch (Exception e) {
 			if (LOG.isErrorEnabled()) {
 				LOG.error("Calling user function failed due to: {}",
@@ -135,10 +135,10 @@ public abstract class CoInvokable<IN1, IN2, OUT> extends StreamInvokable<IN1, OU
 		try {
 			abstractFT.setAnchorRecord(reuse2);
 			callUserFunction2();
-			abstractFT.xor(reuse2.getId());
+			abstractFT.xor(reuse2);
 		} catch (FailException e) {
 			abstractFT.fail();
-			abstractFT.xor(reuse2.getId());
+			abstractFT.xor(reuse2);
 		} catch (Exception e) {
 			if (LOG.isErrorEnabled()) {
 				LOG.error("Calling user function failed due to: {}",

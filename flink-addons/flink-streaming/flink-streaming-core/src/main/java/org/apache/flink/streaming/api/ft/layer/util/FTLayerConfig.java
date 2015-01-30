@@ -46,9 +46,9 @@ public class FTLayerConfig {
 		config.setInteger(NUMBER_OF_SOURCES, numberOfSources);
 	}
 
-	public int[][] getSourceSuccessives() {
+	public ArrayList<ArrayList<Integer>> getSourceSuccessives() {
 		try {
-			return (int[][]) InstantiationUtil.deserializeObject(config.getBytes(
+			return (ArrayList<ArrayList<Integer>>) InstantiationUtil.deserializeObject(config.getBytes(
 					SOURCE_SUCCESSIVES, new byte[0]), Thread.currentThread()
 					.getContextClassLoader());
 		} catch (Exception e) {

@@ -17,18 +17,22 @@
 
 package org.apache.flink.streaming.api.ft.layer.util;
 
-import org.apache.flink.runtime.io.network.api.writer.RecordWriter;
 import org.apache.flink.runtime.plugable.SerializationDelegate;
+import org.apache.flink.streaming.api.ft.layer.Anchorer;
 import org.apache.flink.streaming.api.ft.layer.Persister;
 import org.apache.flink.streaming.api.streamrecord.StreamRecord;
 import org.apache.flink.streaming.api.streamrecord.StreamRecordSerializer;
+import org.apache.flink.streaming.io.StreamRecordWriter;
 
 public class FTPersister<T> implements Persister<T> {
-	private RecordWriter<SerializationDelegate<StreamRecord<T>>> recordWriter;
+	private Anchorer anchorer;
+	private StreamRecordWriter<SerializationDelegate<StreamRecord<T>>> recordWriter;
 	private SerializationDelegate<StreamRecord<T>> serializationDelegate;
 
-	public FTPersister(RecordWriter<SerializationDelegate<StreamRecord<T>>> recordWriter,
+	public FTPersister(Anchorer anchorer,
+			StreamRecordWriter<SerializationDelegate<StreamRecord<T>>> recordWriter,
 			StreamRecordSerializer<T> serializer) {
+		this.anchorer = anchorer;
 		this.recordWriter = recordWriter;
 		this.serializationDelegate = new SerializationDelegate<StreamRecord<T>>(
 				serializer);
@@ -36,6 +40,8 @@ public class FTPersister<T> implements Persister<T> {
 
 	@Override
 	public void persist(StreamRecord<T> record) {
+		record.setId(RecordId.newSourceRecordId());
+		anchorer.setAnchorRecord(record);
 		serializationDelegate.setInstance(record);
 		try {
 			recordWriter.emit(serializationDelegate);

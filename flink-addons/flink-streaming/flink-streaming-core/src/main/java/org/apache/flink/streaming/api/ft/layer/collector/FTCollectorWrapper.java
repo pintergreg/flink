@@ -38,9 +38,7 @@ public class FTCollectorWrapper<T> implements Collector<T> {
 	public void collect(T record) {
 
 		streamRecord.setObject(record);
-		streamRecord.setId(RecordId.newSourceRecordId());
 		abstractFT.persist(streamRecord);
-		abstractFT.setAnchorRecord(streamRecord);
 		outerCollector.collect(record);
 	}
 

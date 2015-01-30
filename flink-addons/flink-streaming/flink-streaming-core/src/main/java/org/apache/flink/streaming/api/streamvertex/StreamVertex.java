@@ -20,10 +20,20 @@ package org.apache.flink.streaming.api.streamvertex;
 import java.util.Map;
 
 import org.apache.flink.runtime.execution.Environment;
+import org.apache.flink.runtime.io.network.api.reader.MutableRecordReader;
+import org.apache.flink.runtime.io.network.api.writer.BufferWriter;
 import org.apache.flink.runtime.jobgraph.tasks.AbstractInvokable;
+import org.apache.flink.streaming.api.FTLayerBuilder;
+import org.apache.flink.streaming.api.FTLayerBuilder.FTStatus;
 import org.apache.flink.streaming.api.StreamConfig;
 import org.apache.flink.streaming.api.ft.layer.AbstractFT;
+import org.apache.flink.streaming.api.ft.layer.Anchorer;
+import org.apache.flink.streaming.api.ft.layer.FT;
 import org.apache.flink.streaming.api.ft.layer.NonFT;
+import org.apache.flink.streaming.api.ft.layer.Xorer;
+import org.apache.flink.streaming.api.ft.layer.util.FTAnchorer;
+import org.apache.flink.streaming.api.ft.layer.util.NonFTPersister;
+import org.apache.flink.streaming.api.ft.layer.util.TaskFTXorer;
 import org.apache.flink.streaming.api.invokable.ChainableInvokable;
 import org.apache.flink.streaming.api.invokable.StreamInvokable;
 import org.apache.flink.streaming.api.streamrecord.StreamRecordSerializer;
@@ -51,6 +61,7 @@ public class StreamVertex<IN, OUT> extends AbstractInvokable implements
 	protected ClassLoader userClassLoader;
 
 	protected AbstractFT<OUT> abstractFT;
+	protected static FTStatus ftStatus;
 
 
 	public StreamVertex() {
@@ -76,6 +87,7 @@ public class StreamVertex<IN, OUT> extends AbstractInvokable implements
 		this.configuration = new StreamConfig(getTaskConfiguration());
 		this.states = configuration.getOperatorStates(userClassLoader);
 		this.context = createRuntimeContext(getEnvironment().getTaskName(), this.states);
+		this.ftStatus = configuration.getFTStatus(userClassLoader);
 	}
 
 	public void initializeInvoke() {
@@ -101,10 +113,16 @@ public class StreamVertex<IN, OUT> extends AbstractInvokable implements
 	}
 
 	public void setInputsOutputs() {
-		abstractFT = new NonFT<OUT>();
+		if(ftStatus == FTStatus.ON){
+			MutableRecordReader ftReader = new MutableRecordReader(getEnvironment().getReader(0));
+			Anchorer anchorer = new FTAnchorer();
+			Xorer taskXorer = new TaskFTXorer(ftReader);
+			abstractFT = new FT(new NonFTPersister<OUT>(), taskXorer, anchorer);
+		} else {
+			abstractFT = new NonFT();
+		}
 		inputHandler = new InputHandler<IN>(this);
 		outputHandler = new OutputHandler<OUT>(this, abstractFT);
-		// TODO set FT
 	}
 
 	protected void setInvokable() {
@@ -172,4 +190,9 @@ public class StreamVertex<IN, OUT> extends AbstractInvokable implements
 		return abstractFT;
 	}
 
+
+	int currentWriterIndex = 0;
+	public BufferWriter getNextWriter() {
+		return getEnvironment().getWriter(currentWriterIndex++);
+	}
 }

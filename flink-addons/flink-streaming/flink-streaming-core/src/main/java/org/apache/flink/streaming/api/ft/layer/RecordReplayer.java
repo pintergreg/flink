@@ -15,24 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.flink.streaming.api.ft.layer.util;
+package org.apache.flink.streaming.api.ft.layer;
 
-import org.apache.flink.streaming.api.ft.layer.Xorer;
-import org.apache.flink.streaming.api.streamrecord.IdentifiableStreamRecord;
+import org.apache.flink.streaming.api.ft.layer.util.SemiDeserializedStreamRecord;
 
-public class NonFTXorer extends Xorer {
+public interface RecordReplayer {
 
-	@Override
-	public void xor(IdentifiableStreamRecord record) {
-	}
+	void replayRecord(int sourceId, SemiDeserializedStreamRecord sourceRecord);
 
-	@Override
-	protected void emit(RecordId recordId) throws Exception {
-
-	}
-
-	@Override
-	protected void fail(RecordId recordId) throws Exception {
-
-	}
 }

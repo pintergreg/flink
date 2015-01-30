@@ -187,8 +187,7 @@ public class OutputHandler<OUT> {
 
 		if (configuration.getBufferTimeout() >= 0) {
 
-			output = new StreamRecordWriter<SerializationDelegate<StreamRecord<T>>>(vertex
-					.getEnvironment().getWriter(outputIndex), outputPartitioner,
+			output = new StreamRecordWriter<SerializationDelegate<StreamRecord<T>>>(vertex.getNextWriter(), outputPartitioner,
 					configuration.getBufferTimeout());
 
 			if (LOG.isTraceEnabled()) {
@@ -196,8 +195,7 @@ public class OutputHandler<OUT> {
 						configuration.getBufferTimeout(), vertex.getClass().getSimpleName());
 			}
 		} else {
-			output = new RecordWriter<SerializationDelegate<StreamRecord<T>>>(vertex
-					.getEnvironment().getWriter(outputIndex), outputPartitioner);
+			output = new RecordWriter<SerializationDelegate<StreamRecord<T>>>(vertex.getNextWriter(), outputPartitioner);
 
 			if (LOG.isTraceEnabled()) {
 				LOG.trace("RecordWriter initiated for {}", vertex.getClass().getSimpleName());
@@ -217,7 +215,7 @@ public class OutputHandler<OUT> {
 
 	public void flushOutputs() throws IOException, InterruptedException {
 		for (StreamOutput<?> streamOutput : getOutputs()) {
-			streamOutput.close();
+			streamOutput.flush();
 		}
 	}
 
