@@ -34,6 +34,7 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.spargel.java.VertexCentricIteration;
 import org.apache.flink.spargel.java.VertexCentricIteration1;
 import org.apache.flink.spargel.java.VertexCentricIteration2;
+import org.apache.flink.spargel.java.multicast.MCEnum;
 
 /**
  * An implementation of the basic PageRank algorithm in the vertex-centric API (spargel).
@@ -168,7 +169,7 @@ public class SpargelPageRankComputer implements Serializable {
 			iteration = 
 					VertexCentricIteration1.withPlainEdges(edges,
 					new VertexRankUpdater(BETA),
-					new RankMessenger1(epsilonForConvergence),  2 * maxNumberOfIterations);
+					new RankMessenger1(epsilonForConvergence, MCEnum.MC1),  2 * maxNumberOfIterations);
 			VertexCentricIteration1<Long, SpargelNode, Double, ?> iteration2 = 
 					(VertexCentricIteration1<Long, SpargelNode, Double, ?>)iteration;
 			iteration2.addBroadcastSetForUpdateFunction(PageRankUtil.NUMOFPAGES, numOfPages);
@@ -180,7 +181,7 @@ public class SpargelPageRankComputer implements Serializable {
 			iteration = 
 					VertexCentricIteration2.withPlainEdges(edges,
 					new VertexRankUpdater(BETA),
-					new RankMessenger2(epsilonForConvergence),  2 * maxNumberOfIterations);
+					new RankMessenger2(epsilonForConvergence, MCEnum.MC2),  2 * maxNumberOfIterations);
 			VertexCentricIteration2<Long, SpargelNode, Double, ?> iteration2 = 
 					(VertexCentricIteration2<Long, SpargelNode, Double, ?>)iteration;
 			iteration2.addBroadcastSetForUpdateFunction(PageRankUtil.NUMOFPAGES, numOfPages);

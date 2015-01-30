@@ -20,7 +20,6 @@ package org.apache.flink.spargel.multicast_pagerank;
 
 import org.apache.flink.api.common.aggregators.DoubleSumAggregator;
 import org.apache.flink.spargel.java.MessagingFunction;
-import org.apache.flink.spargel.java.OutgoingEdge;
 import org.apache.flink.types.DoubleValue;
 import org.apache.flink.types.NullValue;
 

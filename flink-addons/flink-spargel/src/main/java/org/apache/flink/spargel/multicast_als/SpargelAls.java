@@ -26,6 +26,7 @@ import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.spargel.java.VertexCentricIteration;
 import org.apache.flink.spargel.java.VertexCentricIteration1;
 import org.apache.flink.spargel.java.VertexCentricIteration2;
+import org.apache.flink.spargel.java.multicast.MCEnum;
 
 //TODO: usage of union operator fails
 
@@ -96,7 +97,7 @@ public class SpargelAls {
 		} else if (whichMulticast == 1) {
 			VertexCentricIteration1<Integer, DoubleVectorWithMap, AlsCustomMessageForSpargel, ?> vc_iteration1 = VertexCentricIteration1
 					.withPlainEdges(edges, new AlsUpdater(k, lambda,
-							whichSolver), new AlsMessager1(), 2 * iteration + 1);
+							whichSolver), new AlsMessager1(MCEnum.MC1), 2 * iteration + 1);
 			// Stephan's workaround: is it needed for big input?
 			vc_iteration1.setSolutionSetUnmanagedMemory(true);
 			
@@ -105,7 +106,7 @@ public class SpargelAls {
 			// must I use long id?
 			VertexCentricIteration2<Integer, DoubleVectorWithMap, AlsCustomMessageForSpargel, ?> vc_iteration2 = VertexCentricIteration2
 					.withPlainEdges(edges, new AlsUpdater(k, lambda,
-							whichSolver), new AlsMessager2(), 2 * iteration + 1);
+							whichSolver), new AlsMessager2(MCEnum.MC2), 2 * iteration + 1);
 			// Stephan's workaround: is it needed?
 			vc_iteration2.setSolutionSetUnmanagedMemory(true);
 			

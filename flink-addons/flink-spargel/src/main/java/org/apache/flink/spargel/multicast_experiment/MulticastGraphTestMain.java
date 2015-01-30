@@ -29,13 +29,13 @@ import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.spargel.java.MessageIterator;
 import org.apache.flink.spargel.java.MessagingFunction;
-import org.apache.flink.spargel.java.MessagingFunction1;
-import org.apache.flink.spargel.java.MessagingFunction2;
+import org.apache.flink.spargel.java.MessagingFunction3;
 import org.apache.flink.spargel.java.OutgoingEdge;
 import org.apache.flink.spargel.java.VertexCentricIteration;
 import org.apache.flink.spargel.java.VertexCentricIteration1;
 import org.apache.flink.spargel.java.VertexCentricIteration2;
 import org.apache.flink.spargel.java.VertexUpdateFunction;
+import org.apache.flink.spargel.java.multicast.MCEnum;
 import org.apache.flink.spargel.java.multicast.MultipleRecipients;
 import org.apache.flink.spargel.multicast_test.io_utils.EdgeListInputFormat;
 import org.apache.flink.types.NullValue;
@@ -162,12 +162,12 @@ public class MulticastGraphTestMain implements Serializable {
 			result = initialVertices.runOperation(iteration);
 		} else if (whichMulticast == 1) {
 			VertexCentricIteration1<Long, VertexVal, Message, ?> iteration = VertexCentricIteration1
-					.withPlainEdges(edges, new CCUpdater(), new CCMessager1(),
+					.withPlainEdges(edges, new CCUpdater(), new CCMessager1(MCEnum.MC1),
 							numberOfIterations);
 			result = initialVertices.runOperation(iteration);
 		} else if (whichMulticast == 2) {
 			VertexCentricIteration2<Long, VertexVal, Message, ?> iteration = VertexCentricIteration2
-					.withPlainEdges(edges, new CCUpdater(), new CCMessager2(),
+					.withPlainEdges(edges, new CCUpdater(), new CCMessager2(MCEnum.MC2),
 							numberOfIterations);
 			result = initialVertices.runOperation(iteration);
 		} else {
@@ -266,7 +266,10 @@ public class MulticastGraphTestMain implements Serializable {
 		}
 	}
 
-	public static final class CCMessager1 extends MessagingFunction1<Long, VertexVal, Message, NullValue> {
+	public static final class CCMessager1 extends MessagingFunction3<Long, VertexVal, Message, NullValue> {
+		public CCMessager1(MCEnum whichMulticast) {
+			super(whichMulticast);
+		}
 		private static final long serialVersionUID = 1L;
 		boolean multiRecipients = false;
 		@Override
@@ -282,7 +285,10 @@ public class MulticastGraphTestMain implements Serializable {
 	}
 
 
-	public static final class CCMessager2 extends MessagingFunction2<Long, VertexVal, Message, NullValue> {
+	public static final class CCMessager2 extends MessagingFunction3<Long, VertexVal, Message, NullValue> {
+		public CCMessager2(MCEnum whichMulticast) {
+			super(whichMulticast);
+		}
 		private static final long serialVersionUID = 1L;
 		boolean multiRecipients = false;
 		@Override

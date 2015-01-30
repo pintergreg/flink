@@ -31,10 +31,11 @@ import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.spargel.java.MessageIterator;
-import org.apache.flink.spargel.java.MessagingFunction1;
+import org.apache.flink.spargel.java.MessagingFunction3;
 import org.apache.flink.spargel.java.OutgoingEdge;
 import org.apache.flink.spargel.java.VertexCentricIteration1;
 import org.apache.flink.spargel.java.VertexUpdateFunction;
+import org.apache.flink.spargel.java.multicast.MCEnum;
 import org.apache.flink.spargel.java.multicast.MultipleRecipients;
 
 
@@ -90,7 +91,8 @@ public class MultipleRecipientsValuedEdgesTestMain {
 		
 
 		
-		VertexCentricIteration1<Long, Long, Message, Double> iteration = VertexCentricIteration1.withValuedEdges(edges, new CCUpdater(), new CCMessager(), 1);
+		VertexCentricIteration1<Long, Long, Message, Double> iteration = VertexCentricIteration1
+				.withValuedEdges(edges, new CCUpdater(), new CCMessager(MCEnum.MC1), 1);
 		
 		DataSet<Tuple2<Long, Long>> result = initialVertices.runOperation(iteration);
 		
@@ -147,7 +149,10 @@ public class MultipleRecipientsValuedEdgesTestMain {
 		}
 	}
 	
-	public static final class CCMessager extends MessagingFunction1<Long, Long, Message, Double> {
+	public static final class CCMessager extends MessagingFunction3<Long, Long, Message, Double> {
+		public CCMessager(MCEnum whichMulticast) {
+			super(whichMulticast);
+		}
 		boolean multiRecipients = false;
 		@Override
 		public void sendMessages(Long vertexId, Long componentId) {
