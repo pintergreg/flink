@@ -17,23 +17,26 @@
 
 package org.apache.flink.streaming.api.function.source;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.URI;
+
 import org.apache.flink.api.common.functions.FlatMapFunction;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.core.fs.FSDataInputStream;
 import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.core.fs.Path;
 import org.apache.flink.util.Collector;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.net.URI;
-
-public class FileReadFunction implements FlatMapFunction<Tuple3<String, Long, Long>, String> {
+public class FileReadFunction implements
+		FlatMapFunction<Tuple3<String, Long, Long>, Tuple2<String, String>> {
 
 	private static final long serialVersionUID = 1L;
 
 	@Override
-	public void flatMap(Tuple3<String, Long, Long> value, Collector<String> out) throws Exception {
+	public void flatMap(Tuple3<String, Long, Long> value, Collector<Tuple2<String, String>> out)
+			throws Exception {
 		FSDataInputStream stream = FileSystem.get(new URI(value.f0)).open(new Path(value.f0));
 		stream.seek(value.f1);
 
@@ -41,8 +44,9 @@ public class FileReadFunction implements FlatMapFunction<Tuple3<String, Long, Lo
 		String line;
 
 		try {
-			while ((line = reader.readLine()) != null && (value.f2 == -1L || stream.getPos() <= value.f2)) {
-				out.collect(line);
+			while ((line = reader.readLine()) != null
+					&& (value.f2 == -1L || stream.getPos() <= value.f2)) {
+				out.collect(new Tuple2<String, String>(value.f0, line));
 			}
 		} finally {
 			reader.close();

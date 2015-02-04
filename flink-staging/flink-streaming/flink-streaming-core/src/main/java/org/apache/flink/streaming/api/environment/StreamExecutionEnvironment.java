@@ -29,6 +29,7 @@ import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.io.TextInputFormat;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.client.program.Client;
@@ -240,7 +241,7 @@ public abstract class StreamExecutionEnvironment {
 	 * 
 	 * @return The DataStream containing the given directory.
 	 */
-	public DataStream<String> readFileStream(String filePath, long intervalMillis,
+	public DataStream<Tuple2<String,String>> readFileStream(String filePath, long intervalMillis,
 			WatchType watchType) {
 		DataStream<Tuple3<String, Long, Long>> source = addSource(new FileMonitoringFunction(
 				filePath, intervalMillis, watchType), null, "File Stream");
