@@ -17,6 +17,7 @@
 
 package org.apache.flink.streaming.api.streamvertex;
 
+import org.apache.flink.runtime.io.network.api.writer.RoundRobinChannelSelector;
 import org.apache.flink.runtime.plugable.SerializationDelegate;
 import org.apache.flink.streaming.api.FTLayerBuilder;
 import org.apache.flink.streaming.api.ft.layer.Anchorer;
@@ -58,7 +59,7 @@ public class StreamSourceVertex<OUT> extends StreamVertex<OUT, OUT> {
 		if (ftStatus == FTStatus.ON) {
 			StreamRecordWriter<SerializationDelegate<StreamRecord<OUT>>> ftWriter = new
 					StreamRecordWriter<SerializationDelegate<StreamRecord<OUT>>>
-					(getNextWriter());
+					(getNextWriter(), new RoundRobinChannelSelector<SerializationDelegate<StreamRecord<OUT>>>(), 10);
 			StreamRecordSerializer<OUT> serializer = configuration
 					.getTypeSerializerOut1(userClassLoader);
 			AsSemiDeserializedStreamRecordSerializer<OUT> semiDeserializedSerializer = new
@@ -86,6 +87,7 @@ public class StreamSourceVertex<OUT> extends StreamVertex<OUT, OUT> {
 		initializeInvoke();
 		inputHandler = new InputHandler<OUT>(this);
 		outputHandler.invokeUserFunction("SOURCE", sourceInvokable);
+		abstractFT.close();
 	}
 
 	@SuppressWarnings("unchecked")

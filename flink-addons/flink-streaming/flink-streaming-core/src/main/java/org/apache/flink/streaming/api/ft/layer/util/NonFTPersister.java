@@ -26,4 +26,9 @@ public class NonFTPersister<T> implements Persister<T> {
 	public void persist(StreamRecord<T> record) {
 
 	}
+
+	@Override
+	public void close() {
+
+	}
 }

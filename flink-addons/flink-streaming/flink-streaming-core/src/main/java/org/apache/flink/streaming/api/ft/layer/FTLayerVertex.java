@@ -21,6 +21,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.flink.core.io.IOReadableWritable;
+import org.apache.flink.core.memory.DataInputView;
+import org.apache.flink.core.memory.DataOutputView;
+import org.apache.flink.runtime.event.task.AbstractEvent;
 import org.apache.flink.runtime.io.network.api.reader.MutableRecordReader;
 import org.apache.flink.runtime.io.network.api.reader.ReaderBase;
 import org.apache.flink.runtime.io.network.api.reader.UnionBufferReader;
@@ -33,8 +37,10 @@ import org.apache.flink.streaming.api.ft.layer.collector.FailedRecordCollector;
 import org.apache.flink.streaming.api.ft.layer.event.XorEvent;
 import org.apache.flink.streaming.api.ft.layer.event.XorEventListener;
 import org.apache.flink.streaming.api.ft.layer.util.AsStreamRecordSerializer;
+import org.apache.flink.streaming.api.ft.layer.util.EmptyIOReadableWritable;
 import org.apache.flink.streaming.api.ft.layer.util.FTLayerConfig;
 import org.apache.flink.streaming.api.ft.layer.util.FTRecordReplayer;
+import org.apache.flink.streaming.api.ft.layer.util.ReaderInitializerEvent;
 import org.apache.flink.streaming.api.ft.layer.util.SemiDeserializedStreamRecord;
 import org.apache.flink.streaming.api.ft.layer.util.SemiDeserializedStreamRecordSerializer;
 import org.apache.flink.streaming.api.streamvertex.StreamVertexException;
@@ -73,8 +79,6 @@ public class FTLayerVertex extends AbstractInvokable {
 	// logic
 	protected FTLayer ftLayer;
 	private RecordReplayer recordReplayer;
-
-	//private XorEventListener xorListener;
 
 	public FTLayerVertex() {
 		instanceID = numOfTasks;
@@ -194,7 +198,6 @@ public class FTLayerVertex extends AbstractInvokable {
 		if (LOG.isTraceEnabled()) {
 			LOG.trace("closeflushing FTLayer outputs");
 		}
-		//	System.out.println("#closeflushing FTLayer outputs");
 		for (RecordWriter<SerializationDelegate<SemiDeserializedStreamRecord>> output :
 				streamOutputs) {
 			if (output instanceof StreamRecordWriter) {
@@ -207,7 +210,6 @@ public class FTLayerVertex extends AbstractInvokable {
 		if (LOG.isTraceEnabled()) {
 			LOG.trace("closeflushed FTLayer outputs");
 		}
-		//	System.out.println("#closeflushed FTLayer outputs");
 	}
 
 	private void initializeOutputSerializers() {
@@ -222,8 +224,6 @@ public class FTLayerVertex extends AbstractInvokable {
 	private void registerInputs() {
 
 		inputOutputSerializer = new AsStreamRecordSerializer();
-		// SemiDeserializedStreamRecordSerializer semiDeserializedStreamRecordSerializer = new
-				// SemiDeserializedStreamRecordSerializer();
 
 		numberOfOutputs = config.getNumberOfOutputs();
 		numberOfSources = config.getNumberOfSources();
@@ -252,37 +252,48 @@ public class FTLayerVertex extends AbstractInvokable {
 		return instanceID;
 	}
 
-//	public void replayRecord(int sourceId, SemiDeserializedStreamRecord record) {
-//		failedRecordCollectors[sourceId].collect(record);
-//	}
-
 	@Override
 	public void invoke() throws Exception {
-		// System.out.println("Invoked:\tFTLayer");
 		if (LOG.isTraceEnabled()) {
 			LOG.trace("Invoked:\tFTLayerVertex");
 		}
 
 		initializeOutputSerializers();
 
+		initializeOutConnections();
+
 		reuse = inputOutputSerializer.createInstance();
 
 		int fromInput;
 
-		// TODO write FTLayer logic
 		while ((fromInput = inputIter.nextWithIndex(reuse)) != -1) {
-
-//			System.out.println("from: " + fromInput + "\t" + reuse);
-
 			ftLayer.newSourceRecord(reuse, fromInput);
-			// failedRecordCol"lectors[fromInput].collect(reuse);
+		}
+
+		while (!ftLayer.isEmpty()) {
+			Thread.sleep(500L);
 		}
 
 		flushOutputs();
-//		System.out.println(Invoke finished:\tFTLayer");
 		if (LOG.isTraceEnabled()) {
 			LOG.trace("Invoke finished:\tFTLayerVertex");
 		}
 	}
+
+
+	private void initializeOutConnections() {
+		for (BufferWriter output : outputs) {
+			RecordWriter<IOReadableWritable> writer = new RecordWriter<IOReadableWritable>(output);
+			try {
+				writer.emit(new EmptyIOReadableWritable());
+				writer.flush();
+			} catch (IOException e) {
+				e.printStackTrace();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
 
 }

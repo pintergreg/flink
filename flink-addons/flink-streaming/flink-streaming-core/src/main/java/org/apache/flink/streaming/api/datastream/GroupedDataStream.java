@@ -23,6 +23,8 @@ import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.streaming.api.function.aggregation.AggregationFunction;
 import org.apache.flink.streaming.api.invokable.operator.GroupedReduceInvokable;
 import org.apache.flink.streaming.partitioner.StreamPartitioner;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A GroupedDataStream represents a {@link DataStream} which has been
@@ -34,6 +36,8 @@ import org.apache.flink.streaming.partitioner.StreamPartitioner;
  *            The output type of the {@link GroupedDataStream}.
  */
 public class GroupedDataStream<OUT> extends DataStream<OUT> {
+
+	private static final Logger LOG = LoggerFactory.getLogger(GroupedDataStream.class);
 
 	KeySelector<OUT, ?> keySelector;
 
@@ -194,7 +198,9 @@ public class GroupedDataStream<OUT> extends DataStream<OUT> {
 
 	@Override
 	protected DataStream<OUT> setConnectionType(StreamPartitioner<OUT> partitioner) {
-		System.out.println("Setting the partitioning after groupBy can affect the grouping");
+		if (LOG.isWarnEnabled()) {
+			LOG.warn("Setting the partitioning after groupBy can affect the grouping");
+		}
 		return super.setConnectionType(partitioner);
 	}
 

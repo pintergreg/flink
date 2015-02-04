@@ -23,4 +23,6 @@ public interface Persister<T> {
 
 	public void persist(StreamRecord<T> record);
 
+	public void close();
+
 }

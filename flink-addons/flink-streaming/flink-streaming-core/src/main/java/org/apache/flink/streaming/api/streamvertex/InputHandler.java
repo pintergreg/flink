@@ -96,7 +96,4 @@ public class InputHandler<IN> {
 		return inputIter;
 	}
 
-//	public MutableRecordReader<IOReadableWritable> getPersistenceInput() {
-//		return ftInput;
-//	}
 }

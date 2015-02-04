@@ -44,11 +44,6 @@ public class NonFT<T> extends AbstractFT<T> {
 	}
 
 	@Override
-	public boolean faultToleranceIsOn() {
-		return false;
-	}
-
-	@Override
 	public void fail() {
 	}
 

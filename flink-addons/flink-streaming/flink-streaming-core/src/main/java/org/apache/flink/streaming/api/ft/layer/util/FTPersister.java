@@ -50,4 +50,9 @@ public class FTPersister<T> implements Persister<T> {
 			e.printStackTrace();
 		}
 	}
+
+	@Override
+	public void close() {
+		recordWriter.close();
+	}
 }

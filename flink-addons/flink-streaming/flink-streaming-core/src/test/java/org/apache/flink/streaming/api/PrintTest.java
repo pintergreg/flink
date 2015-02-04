@@ -38,7 +38,6 @@ public class PrintTest implements Serializable {
 
 		@Override
 		public Long map(Long value) throws Exception {
-			System.out.println("mapping");
 			return value + 100;
 		}
 	}
@@ -58,11 +57,9 @@ public class PrintTest implements Serializable {
 		env.addSource(new SourceFunction<Long>() {
 			@Override
 			public void invoke(Collector<Long> collector) throws Exception {
-				System.out.println("sourced");
-
 				collector.collect(10L);
 			}
-		}).setChainingStrategy(StreamInvokable.ChainingStrategy.NEVER).map(new IdentityMap()).filter(new FilterAll()).print();
+		}).map(new IdentityMap()).filter(new FilterAll()).print();
 		env.execute();
 	}
 }
