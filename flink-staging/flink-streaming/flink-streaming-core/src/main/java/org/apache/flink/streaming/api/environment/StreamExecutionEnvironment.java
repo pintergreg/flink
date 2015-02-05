@@ -31,6 +31,7 @@ import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.io.TextInputFormat;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
+import org.apache.flink.api.java.typeutils.TupleTypeInfo;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.client.program.Client;
 import org.apache.flink.client.program.Client.OptimizerPlanEnvironment;
@@ -43,6 +44,7 @@ import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.function.source.FileMonitoringFunction;
 import org.apache.flink.streaming.api.function.source.FileMonitoringFunction.WatchType;
 import org.apache.flink.streaming.api.function.source.FileReadFunction;
+import org.apache.flink.streaming.api.function.source.FileReadFunction2;
 import org.apache.flink.streaming.api.function.source.FileSourceFunction;
 import org.apache.flink.streaming.api.function.source.FromElementsFunction;
 import org.apache.flink.streaming.api.function.source.GenSequenceFunction;
@@ -53,6 +55,7 @@ import org.apache.flink.streaming.api.function.source.SocketTextStreamFunction;
 import org.apache.flink.streaming.api.function.source.SourceFunction;
 import org.apache.flink.streaming.api.invokable.SourceInvokable;
 import org.apache.flink.streaming.api.invokable.StreamInvokable;
+import org.apache.flink.streaming.api.invokable.operator.FlatMapInvokable;
 
 /**
  * {@link ExecutionEnvironment} for streaming jobs. An instance of it is
@@ -241,12 +244,26 @@ public abstract class StreamExecutionEnvironment {
 	 * 
 	 * @return The DataStream containing the given directory.
 	 */
-	public DataStream<Tuple2<String,String>> readFileStream(String filePath, long intervalMillis,
+	public DataStream<String> readFileStream(String filePath, long intervalMillis,
 			WatchType watchType) {
 		DataStream<Tuple3<String, Long, Long>> source = addSource(new FileMonitoringFunction(
 				filePath, intervalMillis, watchType), null, "File Stream");
 
 		return source.flatMap(new FileReadFunction());
+	}
+
+	public <R> DataStream<Tuple2<String, R>> readFileStream(String filePath,
+			TypeInformation<R> typeInfo, long intervalMillis, WatchType watchType) {
+		DataStream<Tuple3<String, Long, Long>> source = addSource(new FileMonitoringFunction(
+				filePath, intervalMillis, watchType), null, "File Stream");
+
+		@SuppressWarnings({ "unchecked", "rawtypes" })
+		TypeInformation<Tuple2<String, R>> type = new TupleTypeInfo(Tuple2.class,
+				BasicTypeInfo.STRING_TYPE_INFO, typeInfo);
+
+		return source.transform("Flat Map", type,
+				new FlatMapInvokable<Tuple3<String, Long, Long>, Tuple2<String, R>>(
+						new FileReadFunction2<R>(typeInfo)));
 	}
 
 	/**

@@ -17,36 +17,68 @@
 
 package org.apache.flink.streaming.api.function.source;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 
 import org.apache.flink.api.common.functions.FlatMapFunction;
+import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeutils.TypeSerializer;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.core.fs.FSDataInputStream;
 import org.apache.flink.core.fs.FileSystem;
 import org.apache.flink.core.fs.Path;
+import org.apache.flink.core.memory.DataInputView;
 import org.apache.flink.util.Collector;
 
-public class FileReadFunction implements FlatMapFunction<Tuple3<String, Long, Long>, String> {
+public class FileReadFunction2<T> implements
+		FlatMapFunction<Tuple3<String, Long, Long>, Tuple2<String, T>> {
 
 	private static final long serialVersionUID = 1L;
+	TypeSerializer<T> serializer;
+
+	public FileReadFunction2(TypeInformation<T> typeInfo) {
+		this.serializer = typeInfo.createSerializer();
+	}
 
 	@Override
-	public void flatMap(Tuple3<String, Long, Long> value, Collector<String> out) throws Exception {
+	public void flatMap(Tuple3<String, Long, Long> value, Collector<Tuple2<String, T>> out)
+			throws Exception {
+
 		FSDataInputStream stream = FileSystem.get(new URI(value.f0)).open(new Path(value.f0));
 		stream.seek(value.f1);
 
-		BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
-		String line;
+		FileInputView inputView = new FileInputView(stream);
 
 		try {
-			while ((line = reader.readLine()) != null
+			while (inputView.available() > 26
 					&& (value.f2 == -1L || stream.getPos() <= value.f2)) {
-				out.collect(line);
+
+				Tuple2<String, T> output = new Tuple2<String, T>(value.f0,
+						serializer.deserialize(inputView));
+
+				out.collect(output);
 			}
 		} finally {
-			reader.close();
+			stream.close();
 		}
+	}
+
+	private static class FileInputView extends DataInputStream implements DataInputView {
+
+		public FileInputView(InputStream stream) {
+			super(stream);
+		}
+
+		@Override
+		public void skipBytesToRead(int numBytes) throws IOException {
+			while (numBytes > 0) {
+				int skipped = skipBytes(numBytes);
+				numBytes -= skipped;
+			}
+		}
+
 	}
 }

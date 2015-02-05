@@ -53,6 +53,8 @@ public class LocalExecutor extends PlanExecutor {
 	private final Object lock = new Object();	// we lock to ensure singleton execution
 	
 	private LocalFlinkMiniCluster flink;
+	
+	private boolean singleActorSystem;
 
 	// ---------------------------------- config options ------------------------------------------
 	
@@ -66,12 +68,18 @@ public class LocalExecutor extends PlanExecutor {
 	// --------------------------------------------------------------------------------------------
 	
 	public LocalExecutor() {
-		if (!ExecutionEnvironment.localExecutionIsAllowed()) {
-			throw new InvalidProgramException("The LocalEnvironment cannot be used when submitting a program through a client.");
-		}
+		this(true);
 	}
 
+	public LocalExecutor(boolean singleActorSystem) {
 
+		this.singleActorSystem = singleActorSystem;
+
+		if (!ExecutionEnvironment.localExecutionIsAllowed()) {
+			throw new InvalidProgramException(
+					"The LocalEnvironment cannot be used when submitting a program through a client.");
+		}
+	}
 	
 	public boolean isDefaultOverwriteFiles() {
 		return defaultOverwriteFiles;
@@ -100,7 +108,7 @@ public class LocalExecutor extends PlanExecutor {
 				configuration.setInteger(ConfigConstants.TASK_MANAGER_NUM_TASK_SLOTS, getTaskManagerNumSlots());
 				configuration.setBoolean(ConfigConstants.FILESYSTEM_DEFAULT_OVERWRITE_KEY, isDefaultOverwriteFiles());
 				// start it up
-				this.flink = new LocalFlinkMiniCluster(configuration, true);
+				this.flink = new LocalFlinkMiniCluster(configuration, singleActorSystem);
 			} else {
 				throw new IllegalStateException("The local executor was already started.");
 			}

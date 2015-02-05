@@ -17,98 +17,83 @@
 
 package org.apache.flink.streaming.examples.lambda;
 
-import java.util.HashSet;
-import java.util.Random;
-import java.util.Set;
-
-import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.api.common.Plan;
+import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
+import org.apache.flink.api.java.DataSet;
+import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.api.java.io.TypeSerializerOutputFormat;
 import org.apache.flink.api.java.tuple.Tuple2;
-import org.apache.flink.api.java.tuple.Tuple3;
+import org.apache.flink.client.LocalExecutor;
+import org.apache.flink.core.fs.FileSystem.WriteMode;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.api.function.co.CoFlatMapFunction;
 import org.apache.flink.streaming.api.function.source.FileMonitoringFunction.WatchType;
-import org.apache.flink.streaming.api.function.source.SourceFunction;
-import org.apache.flink.util.Collector;
 
 public class LambdaJoin {
 
+	private static final String JAR = "/Users/gyfora//git/mbalassi/incubator-flink/flink-staging/flink-streaming/flink-streaming-examples/target/flink-streaming-examples-0.9-SNAPSHOT-LambdaJoin.jar";
+
+	public static LocalExecutor exec = new LocalExecutor(false);
+
 	public static void main(String[] args) throws Exception {
 
-		StreamExecutionEnvironment streamEnv = StreamExecutionEnvironment.createLocalEnvironment(1);
+		exec.setTaskManagerNumSlots(8);
+		exec.start();
 
-		DataStream<Tuple2<String, Tuple2<String, Integer>>> dataSetStream = streamEnv
-				.readFileStream("/Users/gyfora/FlinkTmp", 1000, WatchType.PROCESS_ONLY_APPENDED)
-				.map(new Parser());
+		ExecutionEnvironment batchEnv = ExecutionEnvironment.createRemoteEnvironment("127.0.0.1",
+				6123, JAR);
+		batchEnv.setDegreeOfParallelism(1);
 
-		dataSetStream.print();
+		StreamExecutionEnvironment streamEnv = StreamExecutionEnvironment.createRemoteEnvironment(
+				"127.0.0.1", 6123, JAR);
+		streamEnv.setDegreeOfParallelism(1);
 
-		DataStream<Tuple2<String, Integer>> myStream = streamEnv.addSource(new MySource());
+		DataSet<Integer> dataSet = batchEnv.fromElements(1, 2, 3, 4);
+		dataSet.write(new TypeSerializerOutputFormat<Integer>(), "/Users/gyfora/FlinkTmp/test",
+				WriteMode.OVERWRITE);
 
-		dataSetStream.connect(myStream).flatMap(new Join()).print();
+		DataStream<Tuple2<String, Integer>> dataSetStream = streamEnv.readFileStream(
+				"/Users/gyfora/FlinkTmp", dataSet.getType(), 1000,
+				WatchType.REPROCESS_WITH_APPENDED);
 
-		streamEnv.execute();
-	}
+		dataSetStream.project(1).types(Integer.class).print();
 
-	private static class MySource implements SourceFunction<Tuple2<String, Integer>> {
-
-		Random rnd = new Random();
-		String[] words = { "first", "second", "third" };
-
-		@Override
-		public void invoke(Collector<Tuple2<String, Integer>> collector) throws Exception {
-			for (int i = 0; i < 100; i++) {
-				Thread.sleep(2000);
-				collector.collect(new Tuple2<String, Integer>(words[rnd.nextInt(words.length)], rnd
-						.nextInt(100)));
-			}
+		try {
+			runPeriodically(batchEnv, 5000);
+			streamEnv.execute();
+		} finally {
+			exec.stop();
 		}
+
 	}
 
-	private static class Join
-			implements
-			CoFlatMapFunction<Tuple2<String, Tuple2<String, Integer>>, Tuple2<String, Integer>, Tuple3<String, Integer, Integer>> {
+	private static void runPeriodically(ExecutionEnvironment env, long millis) {
+		new Thread(new PeriodicJob(env, millis)).start();
+	}
 
-		Set<Tuple2<String, Integer>> dataSet = new HashSet<Tuple2<String, Integer>>();
-		String currentSet = "";
+	private static class PeriodicJob implements Runnable {
 
-		@Override
-		public void flatMap1(Tuple2<String, Tuple2<String, Integer>> value,
-				Collector<Tuple3<String, Integer, Integer>> out) throws Exception {
-			if (!currentSet.equals(value.f0)) {
-				dataSet.clear();
-				currentSet = value.f0;
+		private Plan plan;
+		private long millis;
 
-			}
-			dataSet.add(value.f1);
+		public PeriodicJob(ExecutionEnvironment env, long millis) {
+			this.plan = env.createProgramPlan();
+			this.millis = millis;
 		}
 
 		@Override
-		public void flatMap2(Tuple2<String, Integer> value,
-				Collector<Tuple3<String, Integer, Integer>> out) throws Exception {
-			for (Tuple2<String, Integer> element : dataSet) {
-				if (element.f0.equals(value.f0)) {
-					out.collect(new Tuple3<String, Integer, Integer>(element.f0, value.f1,
-							element.f1));
+		public void run() {
+
+			while (true) {
+				try {
+					exec.executePlan(plan);
+					Thread.sleep(millis);
+				} catch (Exception e) {
+					e.printStackTrace();
 				}
 			}
 
 		}
-
 	}
 
-	private static class Parser implements
-			MapFunction<Tuple2<String, String>, Tuple2<String, Tuple2<String, Integer>>> {
-
-		@Override
-		public Tuple2<String, Tuple2<String, Integer>> map(Tuple2<String, String> value)
-				throws Exception {
-
-			String[] split = value.f1.split(",");
-
-			return new Tuple2<String, Tuple2<String, Integer>>(value.f0,
-					new Tuple2<String, Integer>(split[0], Integer.valueOf(split[1])));
-		}
-
-	}
 }

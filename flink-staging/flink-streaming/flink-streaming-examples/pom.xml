@@ -119,6 +119,28 @@ under the License.
 							</includes>
 						</configuration>
 					</execution>
+                    
+                    <!-- LambdaJoin -->
+                    <execution>
+                        <id>LambdaJoin</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>LambdaJoin</classifier>
+                            
+                            <archive>
+                                <manifestEntries>
+                                    <program-class>org.apache.flink.streaming.examples.lambda.LambdaJoin</program-class>
+                                </manifestEntries>
+                            </archive>
+                            
+                            <includes>
+                                <include>org/apache/flink/streaming/examples/lambda/*.class</include>
+                            </includes>
+                        </configuration>
+                    </execution>
 
 					<!-- IncrementalLearning -->
 					<execution>

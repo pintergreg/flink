@@ -22,6 +22,7 @@ import java.io.Serializable;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.windowing.helper.Count;
 import org.apache.flink.streaming.util.TestStreamEnvironment;
 import org.junit.Test;
 
@@ -51,7 +52,7 @@ public class PrintTest implements Serializable {
 	@Test
 	public void test() throws Exception {
 		StreamExecutionEnvironment env = new TestStreamEnvironment(1, MEMORYSIZE);
-		env.generateSequence(1, 10).map(new IdentityMap()).filter(new FilterAll()).print();
+		env.generateSequence(1, 10).window(Count.of(3)).sum(0).getDiscretizedStream().print();
 		env.execute();
 	}
 }
