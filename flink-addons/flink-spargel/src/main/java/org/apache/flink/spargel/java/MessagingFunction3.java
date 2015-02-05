@@ -378,7 +378,7 @@ public abstract class MessagingFunction3<VertexKey extends Comparable<VertexKey>
 			this.outValueMC.f1 = new MessageWithHeader<VertexKey, Message>();
 			if (whichMulticast == MCEnum.MC2) {
 				Collection<Tuple2<Integer, VertexKey>> hashKeysBroadcastSet = context
-						.getBroadcastVariable(VertexCentricIteration2.HASH_KEYS_BROADCAST_SET);
+						.getBroadcastVariable(VertexCentricIteration3.HASH_KEYS_BROADCAST_SET);
 				for (Tuple2<Integer, VertexKey> a : hashKeysBroadcastSet) {
 					hashKeys.put(a.f0, a.f1);
 				}

@@ -30,9 +30,7 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.spargel.java.MessageIterator;
 import org.apache.flink.spargel.java.MessagingFunction3;
 import org.apache.flink.spargel.java.OutgoingEdge;
-import org.apache.flink.spargel.java.VertexCentricIteration;
-import org.apache.flink.spargel.java.VertexCentricIteration1;
-import org.apache.flink.spargel.java.VertexCentricIteration2;
+import org.apache.flink.spargel.java.VertexCentricIteration3;
 import org.apache.flink.spargel.java.VertexUpdateFunction;
 import org.apache.flink.spargel.java.multicast.MCEnum;
 import org.apache.flink.spargel.java.multicast.MultipleRecipients;
@@ -156,16 +154,16 @@ public class MulticastGraphTestMain implements Serializable {
 		DataSet<Tuple2<Long, VertexVal>> result = null;
 
 		if (whichMulticast == 0) {
-			VertexCentricIteration<Long, VertexVal, Message, ?> iteration = VertexCentricIteration
+			VertexCentricIteration3<Long, VertexVal, Message, ?> iteration = VertexCentricIteration3
 					.withPlainEdges(edges, new CCUpdater(), new CCMessager(MCEnum.MC0), numberOfIterations);
 			result = initialVertices.runOperation(iteration);
 		} else if (whichMulticast == 1) {
-			VertexCentricIteration1<Long, VertexVal, Message, ?> iteration = VertexCentricIteration1
+			VertexCentricIteration3<Long, VertexVal, Message, ?> iteration = VertexCentricIteration3
 					.withPlainEdges(edges, new CCUpdater(), new CCMessager1(MCEnum.MC1),
 							numberOfIterations);
 			result = initialVertices.runOperation(iteration);
 		} else if (whichMulticast == 2) {
-			VertexCentricIteration2<Long, VertexVal, Message, ?> iteration = VertexCentricIteration2
+			VertexCentricIteration3<Long, VertexVal, Message, ?> iteration = VertexCentricIteration3
 					.withPlainEdges(edges, new CCUpdater(), new CCMessager2(MCEnum.MC2),
 							numberOfIterations);
 			result = initialVertices.runOperation(iteration);
