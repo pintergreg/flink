@@ -19,7 +19,7 @@ package org.apache.flink.spargel.multicast_pagerank;
 
 
 import org.apache.flink.api.common.aggregators.DoubleSumAggregator;
-import org.apache.flink.spargel.java.MessagingFunction3;
+import org.apache.flink.spargel.java.MessagingFunction;
 import org.apache.flink.spargel.java.multicast.MCEnum;
 import org.apache.flink.types.DoubleValue;
 import org.apache.flink.types.NullValue;
@@ -28,7 +28,7 @@ import org.apache.flink.types.NullValue;
  * Distributes the rank of a vertex among all target vertices according to the transition probability,
  * which is associated with an edge as the edge value.
  */
-public class RankMessenger2 extends MessagingFunction3<Long, SpargelNode, Double, NullValue> {
+public class RankMessenger2 extends MessagingFunction<Long, SpargelNode, Double, NullValue> {
 
 	private static final long serialVersionUID = 1L;
 	private DoubleSumAggregator agg;

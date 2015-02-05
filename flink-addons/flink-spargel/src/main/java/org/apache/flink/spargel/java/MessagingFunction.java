@@ -53,7 +53,7 @@ import org.apache.flink.util.Collector;
  * @param <EdgeValue>
  *            The type of the values that are associated with the edges.
  */
-public abstract class MessagingFunction3<VertexKey extends Comparable<VertexKey>, VertexValue, Message, EdgeValue>
+public abstract class MessagingFunction<VertexKey extends Comparable<VertexKey>, VertexValue, Message, EdgeValue>
 		implements Serializable {
 
 	private static final long serialVersionUID = 1L;
@@ -68,7 +68,7 @@ public abstract class MessagingFunction3<VertexKey extends Comparable<VertexKey>
 		return whichMulticast;
 	}
 
-	public MessagingFunction3(MCEnum whichMulticast) {
+	public MessagingFunction(MCEnum whichMulticast) {
 		super();
 		this.whichMulticast = whichMulticast;
 	}

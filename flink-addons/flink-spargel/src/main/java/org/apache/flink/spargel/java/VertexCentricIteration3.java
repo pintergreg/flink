@@ -26,18 +26,29 @@ import java.util.Map;
 
 import org.apache.commons.lang3.Validate;
 import org.apache.flink.api.common.aggregators.Aggregator;
+import org.apache.flink.api.common.functions.FilterFunction;
+import org.apache.flink.api.common.functions.JoinFunction;
+import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.functions.RichCoGroupFunction;
+import org.apache.flink.api.common.functions.RichMapFunction;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.operators.CoGroupOperator;
 import org.apache.flink.api.java.operators.CustomUnaryOperation;
 import org.apache.flink.api.java.operators.DeltaIteration;
+import org.apache.flink.api.java.operators.FlatMapOperator;
+import org.apache.flink.api.java.operators.PartitionOperator;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
+import org.apache.flink.api.java.tuple.Tuple4;
 import org.apache.flink.api.java.typeutils.ResultTypeQueryable;
 import org.apache.flink.api.java.typeutils.TupleTypeInfo;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.spargel.java.multicast.MCEnum;
+import org.apache.flink.spargel.java.multicast.MessageWithHeader;
+import org.apache.flink.spargel.java.multicast.UnpackMsgsWithRecipientsMC1;
+import org.apache.flink.spargel.java.multicast.UnpackMsgsWithoutRecipientsMC2;
 import org.apache.flink.util.Collector;
 
 /**
@@ -56,13 +67,13 @@ import org.apache.flink.util.Collector;
  *   <li>The {@link VertexUpdateFunction} receives incoming messages and may updates the state for
  *   the vertex. If a state is updated, messages are sent from this vertex. Initially, all vertices are
  *   considered updated.</li>
- *   <li>The {@link MessagingFunction3} takes the new vertex state and sends messages along the outgoing
+ *   <li>The {@link MessagingFunction} takes the new vertex state and sends messages along the outgoing
  *   edges of the vertex. The outgoing edges may optionally have an associated value, such as a weight.</li>
  * </ul>
  * <p>
  * Vertex-centric graph iterations are instantiated by the
- * {@link #withPlainEdges(DataSet, VertexUpdateFunction, MessagingFunction3, int)} method, or the
- * {@link #withValuedEdges(DataSet, VertexUpdateFunction, MessagingFunction3, int)} method, depending on whether
+ * {@link #withPlainEdges(DataSet, VertexUpdateFunction, MessagingFunction, int)} method, or the
+ * {@link #withValuedEdges(DataSet, VertexUpdateFunction, MessagingFunction, int)} method, depending on whether
  * the graph's edges are carrying values.
  *
  * @param <VertexKey> The type of the vertex key (the vertex identifier).
@@ -70,12 +81,12 @@ import org.apache.flink.util.Collector;
  * @param <Message> The type of the message sent between vertices along the edges.
  * @param <EdgeValue> The type of the values that are associated with the edges.
  */
-public class VertexCentricIteration<VertexKey extends Comparable<VertexKey>, VertexValue, Message, EdgeValue> 
+public class VertexCentricIteration3<VertexKey extends Comparable<VertexKey>, VertexValue, Message, EdgeValue> 
 	implements CustomUnaryOperation<Tuple2<VertexKey, VertexValue>, Tuple2<VertexKey, VertexValue>>
 {
 	private final VertexUpdateFunction<VertexKey, VertexValue, Message> updateFunction;
 	
-	private final MessagingFunction3<VertexKey, VertexValue, Message, EdgeValue> messagingFunction;
+	private final MessagingFunction<VertexKey, VertexValue, Message, EdgeValue> messagingFunction;
 	
 	private final DataSet<Tuple2<VertexKey, VertexKey>> edgesWithoutValue;
 	
@@ -99,11 +110,19 @@ public class VertexCentricIteration<VertexKey extends Comparable<VertexKey>, Ver
 	
 	private boolean unmanagedSolutionSet;
 	
+	private MCEnum whichMulticast;
+
+	@SuppressWarnings("rawtypes")
+	private final TypeInformation<MessageWithHeader> packedMessageType;
+	private final TypeInformation<Message> unPackedMessageType;
+	private final TypeInformation<VertexKey> keyType;
+	public static final String HASH_KEYS_BROADCAST_SET = "HASH_KEYS_BROADCAST_SET";
+
 	
 	// ----------------------------------------------------------------------------------
 	
-	private  VertexCentricIteration(VertexUpdateFunction<VertexKey, VertexValue, Message> uf,
-			MessagingFunction3<VertexKey, VertexValue, Message, EdgeValue> mf,
+	private  VertexCentricIteration3(VertexUpdateFunction<VertexKey, VertexValue, Message> uf,
+			MessagingFunction<VertexKey, VertexValue, Message, EdgeValue> mf,
 			DataSet<Tuple2<VertexKey, VertexKey>> edgesWithoutValue,
 			int maximumNumberOfIterations)
 	{
@@ -131,11 +150,18 @@ public class VertexCentricIteration<VertexKey extends Comparable<VertexKey>, Ver
 		
 		this.messageType = getMessageType(mf);
 		
-		
+		this.whichMulticast = mf.getWhichMulticast();
+
+		this.keyType = TypeExtractor.createTypeInfo(
+				MessagingFunction.class, mf.getClass(), 0, null, null);
+		this.unPackedMessageType = TypeExtractor.createTypeInfo(
+				MessagingFunction.class, mf.getClass(), 2, null, null);
+		this.packedMessageType = MessageWithHeader.getTypeInfo(this.keyType, this.unPackedMessageType);
+
 	}
 	
-	private VertexCentricIteration(VertexUpdateFunction<VertexKey, VertexValue, Message> uf,
-			MessagingFunction3<VertexKey, VertexValue, Message, EdgeValue> mf,
+	private VertexCentricIteration3(VertexUpdateFunction<VertexKey, VertexValue, Message> uf,
+			MessagingFunction<VertexKey, VertexValue, Message, EdgeValue> mf,
 			DataSet<Tuple3<VertexKey, VertexKey, EdgeValue>> edgesWithValue, 
 			int maximumNumberOfIterations,
 			boolean edgeHasValueMarker)
@@ -164,11 +190,18 @@ public class VertexCentricIteration<VertexKey extends Comparable<VertexKey>, Ver
 		this.aggregators = new HashMap<String, Aggregator<?>>();
 		
 		this.messageType = getMessageType(mf);
-	
+		this.whichMulticast = mf.getWhichMulticast();
+
+		this.keyType = TypeExtractor.createTypeInfo(
+				MessagingFunction.class, mf.getClass(), 0, null, null);
+		this.unPackedMessageType = TypeExtractor.createTypeInfo(
+				MessagingFunction.class, mf.getClass(), 2, null, null);
+		this.packedMessageType = MessageWithHeader.getTypeInfo(this.keyType, this.unPackedMessageType);
+
 	}
 	
-	private TypeInformation<Message> getMessageType(MessagingFunction3<VertexKey, VertexValue, Message, EdgeValue> mf) {
-		return TypeExtractor.createTypeInfo(MessagingFunction3.class, mf.getClass(), 2, null, null);
+	private TypeInformation<Message> getMessageType(MessagingFunction<VertexKey, VertexValue, Message, EdgeValue> mf) {
+		return TypeExtractor.createTypeInfo(MessagingFunction.class, mf.getClass(), 2, null, null);
 	}
 	
 	/**
@@ -309,6 +342,8 @@ public class VertexCentricIteration<VertexKey extends Comparable<VertexKey>, Ver
 		TypeInformation<VertexKey> keyType = ((TupleTypeInfo<?>) initialVertices.getType()).getTypeAt(0);
 		TypeInformation<Tuple2<VertexKey, Message>> messageTypeInfo = new TupleTypeInfo<Tuple2<VertexKey,Message>>(keyType, messageType);		
 		
+		
+		
 		// set up the iteration operator
 		final String name = (this.name != null) ? this.name :
 			"Vertex-centric iteration (" + updateFunction + " | " + messagingFunction + ")";
@@ -326,23 +361,14 @@ public class VertexCentricIteration<VertexKey extends Comparable<VertexKey>, Ver
 		}
 		
 		// build the messaging function (co group)
-		CoGroupOperator<?, ?, Tuple2<VertexKey, Message>> messages;
-		if (edgesWithoutValue != null) {
-			MessagingUdfNoEdgeValues<VertexKey, VertexValue, Message> messenger = new MessagingUdfNoEdgeValues<VertexKey, VertexValue, Message>(
-					messagingFunction, messageTypeInfo);
-			messages = this.edgesWithoutValue.coGroup(iteration.getWorkset())
-					.where(0).equalTo(0).with(messenger);
-		} else {
-			MessagingUdfWithEdgeValues<VertexKey, VertexValue, Message, EdgeValue> messenger = new MessagingUdfWithEdgeValues<VertexKey, VertexValue, Message, EdgeValue>(
-					messagingFunction, messageTypeInfo);
-			messages = this.edgesWithValue.coGroup(iteration.getWorkset())
-					.where(0).equalTo(0).with(messenger);
-		}
-		// configure coGroup message function with name and broadcast
-		// variables
-		messages = messages.name("Messaging");
-		for (Tuple2<String, DataSet<?>> e : this.bcVarsMessaging) {
-			messages = messages.withBroadcastSet(e.f1, e.f0);
+		//CoGroupOperator<?, ?, Tuple2<VertexKey, Message>> messages;
+		DataSet<Tuple2<VertexKey, Message>> messages = null;
+		if (whichMulticast == MCEnum.MC0) {
+			messages = getMessages(messageTypeInfo, iteration);
+		} else if (whichMulticast == MCEnum.MC2) {
+			messages = getMessagesMC2(iteration);
+		} else if (whichMulticast == MCEnum.MC1) {
+			messages = getMessagesMC1(messageTypeInfo, iteration);
 		}
 		
 		VertexUpdateUdf<VertexKey, VertexValue, Message> updateUdf = new VertexUpdateUdf<VertexKey, VertexValue, Message>(updateFunction, vertexTypes);
@@ -363,6 +389,176 @@ public class VertexCentricIteration<VertexKey extends Comparable<VertexKey>, Ver
 		return iteration.closeWith(updates, updates);
 		
 	}
+
+	private DataSet<Tuple2<VertexKey, Message>> getMessagesMC2(
+			final DeltaIteration<Tuple2<VertexKey, VertexValue>, Tuple2<VertexKey, VertexValue>> iteration) {
+
+		TypeInformation<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>> packedMessageTupleTypeInfo = new TupleTypeInfo<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>>(
+				keyType, packedMessageType);
+		TypeInformation<Tuple2<VertexKey, Message>> unpackedMessageTupleTypeInfo = new TupleTypeInfo<Tuple2<VertexKey, Message>>(
+				keyType, unPackedMessageType);
+
+		// more preparations: this part is done only once
+		DataSet<Tuple3<VertexKey, VertexKey, Integer>> edgesWithChannelId = null;
+		if (edgesWithoutValue != null) {
+			edgesWithChannelId = edgesWithoutValue.partitionByHash(1).map(
+					new SubtaskIndexAdder<VertexKey>());
+		} else {
+			edgesWithChannelId = edgesWithValue
+					// the following is essentially a projection, but I think it
+					// cannot be done as a projection (due to generics)
+					// .project(0,1).types(VertexKey.class, VertexKey.class)
+					.map(new ProjectByMap<VertexKey, EdgeValue>())
+					.partitionByHash(1).map(new SubtaskIndexAdder<VertexKey>());
+		}
+
+		DataSet<Tuple2<Integer, VertexKey>> hashKeys = edgesWithChannelId
+				.groupBy(2).min(1)
+				// again a projection that has to be implemented as a map due to
+				// the generics
+				.map(new ProjectHashKeys<VertexKey>())
+				.name("MachineId-SmallestNodeId map");
+
+		// hashKeys is small: the number of rows is equal to the degree of
+		// paralellism. (Attila)
+		DataSet<Tuple4<VertexKey, VertexKey, Integer, VertexKey>> edgesWithRepresentativeVertex = edgesWithChannelId
+				.joinWithTiny(hashKeys).where(2).equalTo(0)
+				.with(new JoinEdgesWithHashKeys<VertexKey>())
+				.name("Edges with a representative of the target");
+
+		// build the messaging function (co group)
+		// CoGroupOperator<?, ?, Tuple2<VertexKey, MessageWithHeader<VertexKey,
+		// Message>>> messages;
+		PartitionOperator<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>> messages;
+		// PartitionOperator<Tuple2<VertexKey, MessageWithHeader<VertexKey,
+		// Message>>> messages;
+		if (edgesWithoutValue != null) {
+			MessagingUdfNoEdgeValuesMC<VertexKey, VertexValue, Message> messenger = new MessagingUdfNoEdgeValuesMC<VertexKey, VertexValue, Message>(
+					messagingFunction, packedMessageTupleTypeInfo, MCEnum.MC2);
+			messages = this.edgesWithoutValue.coGroup(iteration.getWorkset())
+					.where(0).equalTo(0).with(messenger)
+					.withBroadcastSet(hashKeys, HASH_KEYS_BROADCAST_SET)
+					.partitionByHash(0);
+		} else {
+			MessagingUdfWithEdgeValuesMC<VertexKey, VertexValue, Message, EdgeValue> messenger = new MessagingUdfWithEdgeValuesMC<VertexKey, VertexValue, Message, EdgeValue>(
+					messagingFunction, packedMessageTupleTypeInfo, MCEnum.MC2);
+			messages = this.edgesWithValue.coGroup(iteration.getWorkset())
+					.where(0).equalTo(0).with(messenger)
+					.withBroadcastSet(hashKeys, HASH_KEYS_BROADCAST_SET)
+					.partitionByHash(0);
+		}
+
+		// configure coGroup message function with name and broadcast variables
+		messages = messages.name("Messages with header.");
+		for (Tuple2<String, DataSet<?>> e : this.bcVarsMessaging) {
+			messages = messages.withBroadcastSet(e.f1, e.f0);
+		}
+		// messages.print();
+
+		// Messages with sender info only
+		// unpacking messages with sender info only
+		DataSet<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>> messagesWithoutRecipients = messages
+				.filter(new FilterMsgsBasedOnRecipientList<VertexKey, Message>(
+						false)).name("Messages without recipient list");
+
+		DataSet<Tuple2<VertexKey, Message>> messagesWithoutRecipientsUnpacked = edgesWithRepresentativeVertex
+				// TODO The edgesWithRepresentativeVertex part is the same in
+				// every iteration and we only read it in the first iteration.
+				// Is it possible that Flink still does some work with it in
+				// every iteration?
+				.coGroup(messagesWithoutRecipients)
+				.where(3)
+				.equalTo(0)
+				// .equalTo(new ReprVertexSelector<VertexKey, Message>())
+				.with(new UnpackMsgsWithoutRecipientsMC2<VertexKey, Message>(
+						unpackedMessageTupleTypeInfo))
+				.name("Messages without recipient list (unpacked)");
+		// Messages with sender info only -- end
+
+		// Messages with recipient list
+		// unpacking messages with recipient info
+		DataSet<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>> messagesWithRecipients = messages
+				.filter(new FilterMsgsBasedOnRecipientList<VertexKey, Message>(
+						true)).name("Messages with recipient list");
+		;
+
+		FlatMapOperator<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>, Tuple2<VertexKey, Message>> messagesWithRecipientsUnpacked = messagesWithRecipients
+				.flatMap(
+						new UnpackMsgsWithRecipientsMC1<VertexKey, Message>(
+								unpackedMessageTupleTypeInfo)).name(
+						"Messages with recipient list (unpacked)");
+		// Messages with recipient list -- end
+
+		// Union of the two tye messages
+		DataSet<Tuple2<VertexKey, Message>> messagesUnpacked = messagesWithoutRecipientsUnpacked
+				.union(messagesWithRecipientsUnpacked)
+				.name("Unpacked messages");
+		return messagesUnpacked;
+
+	}
+
+	private FlatMapOperator<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>, Tuple2<VertexKey, Message>> getMessagesMC1(
+			TypeInformation<Tuple2<VertexKey, Message>> messageTypeInfo,
+			final DeltaIteration<Tuple2<VertexKey, VertexValue>, Tuple2<VertexKey, VertexValue>> iteration) {
+
+		TypeInformation<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>> packedMessageTypeInfo = new TupleTypeInfo<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>>(
+				keyType, packedMessageType);
+		TypeInformation<Tuple2<VertexKey, Message>> unpackedMessageTypeInfo = new TupleTypeInfo<Tuple2<VertexKey, Message>>(
+				keyType, unPackedMessageType);
+
+		// build the messaging function (co group)
+		CoGroupOperator<?, ?, Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>> messages;
+		if (edgesWithoutValue != null) {
+			MessagingUdfNoEdgeValuesMC<VertexKey, VertexValue, Message> messenger = new MessagingUdfNoEdgeValuesMC<VertexKey, VertexValue, Message>(
+					messagingFunction, packedMessageTypeInfo, MCEnum.MC1);
+			messages = this.edgesWithoutValue.coGroup(iteration.getWorkset())
+					.where(0).equalTo(0).with(messenger);
+		} else {
+			MessagingUdfWithEdgeValuesMC<VertexKey, VertexValue, Message, EdgeValue> messenger = new MessagingUdfWithEdgeValuesMC<VertexKey, VertexValue, Message, EdgeValue>(
+					messagingFunction, packedMessageTypeInfo, MCEnum.MC1);
+			messages = this.edgesWithValue.coGroup(iteration.getWorkset())
+					.where(0).equalTo(0).with(messenger);
+		}
+
+		// configure coGroup message function with name and broadcast variables
+		messages = messages.name("Messaging");
+		for (Tuple2<String, DataSet<?>> e : this.bcVarsMessaging) {
+			messages = messages.withBroadcastSet(e.f1, e.f0);
+		}
+
+		// unpack the messages, take off header
+		FlatMapOperator<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>, Tuple2<VertexKey, Message>> messages1 = messages
+				.partitionByHash(0).flatMap(
+						new UnpackMsgsWithRecipientsMC1<VertexKey, Message>(
+								unpackedMessageTypeInfo));
+
+		return messages1;
+
+	}
+	
+	private CoGroupOperator<?, ?, Tuple2<VertexKey, Message>> getMessages(
+			TypeInformation<Tuple2<VertexKey, Message>> messageTypeInfo,
+			final DeltaIteration<Tuple2<VertexKey, VertexValue>, Tuple2<VertexKey, VertexValue>> iteration) {
+		CoGroupOperator<?, ?, Tuple2<VertexKey, Message>> messages;
+		if (edgesWithoutValue != null) {
+			MessagingUdfNoEdgeValues<VertexKey, VertexValue, Message> messenger = new MessagingUdfNoEdgeValues<VertexKey, VertexValue, Message>(
+					messagingFunction, messageTypeInfo);
+			messages = this.edgesWithoutValue.coGroup(iteration.getWorkset())
+					.where(0).equalTo(0).with(messenger);
+		} else {
+			MessagingUdfWithEdgeValues<VertexKey, VertexValue, Message, EdgeValue> messenger = new MessagingUdfWithEdgeValues<VertexKey, VertexValue, Message, EdgeValue>(
+					messagingFunction, messageTypeInfo);
+			messages = this.edgesWithValue.coGroup(iteration.getWorkset())
+					.where(0).equalTo(0).with(messenger);
+		}
+		// configure coGroup message function with name and broadcast
+		// variables
+		messages = messages.name("Messaging");
+		for (Tuple2<String, DataSet<?>> e : this.bcVarsMessaging) {
+			messages = messages.withBroadcastSet(e.f1, e.f0);
+		}
+		return messages;
+	}
 	
 	// --------------------------------------------------------------------------------------------
 	// Constructor builders to avoid signature conflicts with generic type erasure
@@ -382,18 +578,18 @@ public class VertexCentricIteration<VertexKey extends Comparable<VertexKey>, Ver
 	 * @return An in stance of the vertex-centric graph computation operator.
 	 */
 	public static final <VertexKey extends Comparable<VertexKey>, VertexValue, Message>
-			VertexCentricIteration<VertexKey, VertexValue, Message, ?> withPlainEdges(
+			VertexCentricIteration3<VertexKey, VertexValue, Message, ?> withPlainEdges(
 					DataSet<Tuple2<VertexKey, VertexKey>> edgesWithoutValue,
 						VertexUpdateFunction<VertexKey, VertexValue, Message> vertexUpdateFunction,
-						MessagingFunction3<VertexKey, VertexValue, Message, ?> MessagingFunction3,
+						MessagingFunction<VertexKey, VertexValue, Message, ?> MessagingFunction3,
 						int maximumNumberOfIterations
 					)
 	{
 		@SuppressWarnings("unchecked")
-		MessagingFunction3<VertexKey, VertexValue, Message, Object> tmf = 
-								(MessagingFunction3<VertexKey, VertexValue, Message, Object>) MessagingFunction3;
+		MessagingFunction<VertexKey, VertexValue, Message, Object> tmf = 
+								(MessagingFunction<VertexKey, VertexValue, Message, Object>) MessagingFunction3;
 		
-		return new VertexCentricIteration<VertexKey, VertexValue, Message, Object>(vertexUpdateFunction, tmf, edgesWithoutValue, maximumNumberOfIterations);
+		return new VertexCentricIteration3<VertexKey, VertexValue, Message, Object>(vertexUpdateFunction, tmf, edgesWithoutValue, maximumNumberOfIterations);
 	}
 	
 	/**
@@ -412,13 +608,13 @@ public class VertexCentricIteration<VertexKey extends Comparable<VertexKey>, Ver
 	 * @return An in stance of the vertex-centric graph computation operator.
 	 */
 	public static final <VertexKey extends Comparable<VertexKey>, VertexValue, Message, EdgeValue>
-			VertexCentricIteration<VertexKey, VertexValue, Message, EdgeValue> withValuedEdges(
+			VertexCentricIteration3<VertexKey, VertexValue, Message, EdgeValue> withValuedEdges(
 					DataSet<Tuple3<VertexKey, VertexKey, EdgeValue>> edgesWithValue,
 					VertexUpdateFunction<VertexKey, VertexValue, Message> uf,
-					MessagingFunction3<VertexKey, VertexValue, Message, EdgeValue> mf,
+					MessagingFunction<VertexKey, VertexValue, Message, EdgeValue> mf,
 					int maximumNumberOfIterations)
 	{
-		return new VertexCentricIteration<VertexKey, VertexValue, Message, EdgeValue>(uf, mf, edgesWithValue, maximumNumberOfIterations, true);
+		return new VertexCentricIteration3<VertexKey, VertexValue, Message, EdgeValue>(uf, mf, edgesWithValue, maximumNumberOfIterations, true);
 	}
 	
 	// --------------------------------------------------------------------------------------------
@@ -505,12 +701,12 @@ public class VertexCentricIteration<VertexKey extends Comparable<VertexKey>, Ver
 	{
 		private static final long serialVersionUID = 1L;
 		
-		private final MessagingFunction3<VertexKey, VertexValue, Message, ?> messagingFunction;
+		private final MessagingFunction<VertexKey, VertexValue, Message, ?> messagingFunction;
 		
 		private transient TypeInformation<Tuple2<VertexKey, Message>> resultType;
 		
 		
-		private MessagingUdfNoEdgeValues(MessagingFunction3<VertexKey, VertexValue, Message, ?> messagingFunction,
+		private MessagingUdfNoEdgeValues(MessagingFunction<VertexKey, VertexValue, Message, ?> messagingFunction,
 				TypeInformation<Tuple2<VertexKey, Message>> resultType)
 		{
 			this.messagingFunction = messagingFunction;
@@ -560,12 +756,12 @@ public class VertexCentricIteration<VertexKey extends Comparable<VertexKey>, Ver
 	{
 		private static final long serialVersionUID = 1L;
 		
-		private final MessagingFunction3<VertexKey, VertexValue, Message, EdgeValue> messagingFunction;
+		private final MessagingFunction<VertexKey, VertexValue, Message, EdgeValue> messagingFunction;
 		
 		private transient TypeInformation<Tuple2<VertexKey, Message>> resultType;
 		
 		
-		private MessagingUdfWithEdgeValues(MessagingFunction3<VertexKey, VertexValue, Message, EdgeValue> messagingFunction,
+		private MessagingUdfWithEdgeValues(MessagingFunction<VertexKey, VertexValue, Message, EdgeValue> messagingFunction,
 				TypeInformation<Tuple2<VertexKey, Message>> resultType)
 		{
 			this.messagingFunction = messagingFunction;
@@ -605,4 +801,245 @@ public class VertexCentricIteration<VertexKey extends Comparable<VertexKey>, Ver
 			return this.resultType;
 		}
 	}
+
+
+	/*
+	 * UDF that encapsulates the message sending function for graphs where the
+	 * edges have no associated value - Multicast version.
+	 */
+	private static final class MessagingUdfNoEdgeValuesMC<VertexKey extends Comparable<VertexKey>, VertexValue, Message>
+			extends
+			RichCoGroupFunction<Tuple2<VertexKey, VertexKey>, Tuple2<VertexKey, VertexValue>, Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>>
+			implements
+			ResultTypeQueryable<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>> {
+		private static final long serialVersionUID = 1L;
+
+		private final MessagingFunction<VertexKey, VertexValue, Message, ?> messagingFunction;
+
+		private transient TypeInformation<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>> resultType;
+
+		private MCEnum whichMulticast;
+
+		// does this have to know whichMulticast?
+		MessagingUdfNoEdgeValuesMC(
+				MessagingFunction<VertexKey, VertexValue, Message, ?> messagingFunction,
+				TypeInformation<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>> resultType,
+				MCEnum whichMulticast) {
+			this.messagingFunction = messagingFunction;
+			this.resultType = resultType;
+			this.whichMulticast = whichMulticast;
+			if (this.whichMulticast != messagingFunction.getWhichMulticast()) {
+				throw new RuntimeException(
+						"The multicast id for the messagingFunction and MessagingUdfNoEdgeValuesMC should be equal.");
+			}
+		}
+
+		@Override
+		public void coGroup(
+				Iterable<Tuple2<VertexKey, VertexKey>> edges,
+				Iterable<Tuple2<VertexKey, VertexValue>> state,
+				Collector<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>> out)
+				throws Exception {
+			final Iterator<Tuple2<VertexKey, VertexValue>> stateIter = state
+					.iterator();
+
+			if (stateIter.hasNext()) {
+				Tuple2<VertexKey, VertexValue> newVertexState = stateIter
+						.next();
+
+				messagingFunction.setMC((Iterator<?>) edges.iterator(), out);
+				messagingFunction.setSender(newVertexState.f0);
+				messagingFunction.sendMessages(newVertexState.f0,
+						newVertexState.f1);
+			}
+		}
+
+		@Override
+		public void open(Configuration parameters) throws Exception {
+			if (getIterationRuntimeContext().getSuperstepNumber() == 1) {
+				this.messagingFunction
+						.init(getIterationRuntimeContext(), false);
+			}
+
+			this.messagingFunction.preSuperstep();
+		}
+
+		@Override
+		public void close() throws Exception {
+			this.messagingFunction.postSuperstep();
+		}
+
+		@Override
+		public TypeInformation<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>> getProducedType() {
+			return this.resultType;
+		}
+	}
+
+	/*
+	 * UDF that encapsulates the message sending function for graphs where the
+	 * edges have an associated value - Multicast version.
+	 */
+	private static final class MessagingUdfWithEdgeValuesMC<VertexKey extends Comparable<VertexKey>, VertexValue, Message, EdgeValue>
+			extends
+			RichCoGroupFunction<Tuple3<VertexKey, VertexKey, EdgeValue>, Tuple2<VertexKey, VertexValue>, Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>>
+			implements
+			ResultTypeQueryable<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>> {
+		private static final long serialVersionUID = 1L;
+
+		private final MessagingFunction<VertexKey, VertexValue, Message, EdgeValue> messagingFunction;
+
+		private transient TypeInformation<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>> resultType;
+		private MCEnum whichMulticast;
+
+		MessagingUdfWithEdgeValuesMC(
+				MessagingFunction<VertexKey, VertexValue, Message, EdgeValue> messagingFunction,
+				TypeInformation<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>> resultType,
+				MCEnum whichMulticast) {
+			this.messagingFunction = messagingFunction;
+			this.resultType = resultType;
+			this.whichMulticast = whichMulticast;
+			if (this.whichMulticast != messagingFunction.getWhichMulticast()) {
+				throw new RuntimeException(
+						"The multicast id for the messagingFunction and MessagingUdfNoEdgeValuesMC should be equal.");
+			}
+		}
+
+		@Override
+		public void open(Configuration parameters) throws Exception {
+			if (getIterationRuntimeContext().getSuperstepNumber() == 1) {
+				this.messagingFunction.init(getIterationRuntimeContext(), true);
+			}
+
+			this.messagingFunction.preSuperstep();
+		}
+
+		@Override
+		public void close() throws Exception {
+			this.messagingFunction.postSuperstep();
+		}
+
+		@Override
+		public TypeInformation<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>> getProducedType() {
+			return this.resultType;
+		}
+
+		@Override
+		public void coGroup(
+				Iterable<Tuple3<VertexKey, VertexKey, EdgeValue>> edges,
+				Iterable<Tuple2<VertexKey, VertexValue>> state,
+				Collector<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>> out)
+				throws Exception {
+			final Iterator<Tuple2<VertexKey, VertexValue>> stateIter = state
+					.iterator();
+
+			if (stateIter.hasNext()) {
+				Tuple2<VertexKey, VertexValue> newVertexState = stateIter
+						.next();
+
+				messagingFunction.setMC((Iterator<?>) edges.iterator(), out);
+				messagingFunction.setSender(newVertexState.f0);
+				messagingFunction.sendMessages(newVertexState.f0,
+						newVertexState.f1);
+			}
+		}
+	}
+	// A FilterFunction that filters messages based on the length of the recipient list in the header
+	public static class FilterMsgsBasedOnRecipientList<VertexKey, Message>
+			implements
+			FilterFunction<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>> {
+		private static final long serialVersionUID = 1L;
+		
+		private boolean withRecipients;
+		
+		public FilterMsgsBasedOnRecipientList(boolean withRecipients){
+			this.withRecipients = withRecipients;
+		}
+		@Override
+		public boolean filter(
+				Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>> value)
+				throws Exception {
+			if (withRecipients) {
+				return value.f1.getSomeRecipients().length > 0;
+			} else {
+				return value.f1.getSomeRecipients().length == 0;
+			}
+		}
+	}
+
+	public static class ProjectHashKeys<VertexKey>
+	implements MapFunction<Tuple3<VertexKey,VertexKey,Integer>, Tuple2<Integer, VertexKey>> {
+		private static final long serialVersionUID = 1L;
+		Tuple2<Integer, VertexKey> reuse = new Tuple2<Integer, VertexKey>();
+		@Override
+		public Tuple2<Integer, VertexKey> map(
+				Tuple3<VertexKey, VertexKey, Integer> value)
+				throws Exception {
+			reuse.f0 = value.f2;
+			reuse.f1 = value.f1;
+			return reuse;
+		}
+	}
+
+
+	public static class JoinEdgesWithHashKeys<VertexKey>
+	implements
+	JoinFunction<Tuple3<VertexKey, VertexKey, Integer>, Tuple2<Integer, VertexKey>,
+		Tuple4<VertexKey, VertexKey, Integer, VertexKey>> {
+		private static final long serialVersionUID = 1L;
+		Tuple4<VertexKey, VertexKey, Integer, VertexKey> reuse = new Tuple4<VertexKey, VertexKey, Integer, VertexKey>();
+		@Override
+		public Tuple4<VertexKey, VertexKey, Integer, VertexKey> join(
+				Tuple3<VertexKey, VertexKey, Integer> first,
+				Tuple2<Integer, VertexKey> second) throws Exception {
+			reuse.f0 = first.f0;
+			reuse.f1 = first.f1;
+			reuse.f2 = first.f2;
+			reuse.f3 = second.f1;
+			return reuse;
+		}
+	}
+
+
+
+
+//	public static class ReprVertexSelector<VertexKey extends Comparable<VertexKey>, Message>
+//	implements KeySelector<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>, VertexKey>{
+//		private static final long serialVersionUID = 1L;
+//		@Override
+//		public VertexKey getKey(
+//				Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>> value)
+//				throws Exception {
+//			return  value.f1.getReprVertexOfPartition();
+//		}
+//	}
+
+	public static class ProjectByMap<VertexKey extends Comparable<VertexKey>, EdgeValue>  
+	implements
+	MapFunction<Tuple3<VertexKey, VertexKey, EdgeValue>, Tuple2<VertexKey, VertexKey>> {
+		private static final long serialVersionUID = 1L;
+
+		@Override
+		public Tuple2<VertexKey, VertexKey> map(
+				Tuple3<VertexKey, VertexKey, EdgeValue> value)
+				throws Exception {
+			return new Tuple2<VertexKey, VertexKey>(value.f0, value.f1);
+		}
+	}
+
+	public static class SubtaskIndexAdder<VertexKey extends Comparable<VertexKey>>
+			extends
+			RichMapFunction<Tuple2<VertexKey, VertexKey>, Tuple3<VertexKey, VertexKey, Integer>> {
+		private static final long serialVersionUID = 1L;
+		Tuple3<VertexKey, VertexKey, Integer> reuse = new Tuple3<VertexKey, VertexKey, Integer>();
+
+		@Override
+		public Tuple3<VertexKey, VertexKey, Integer> map(
+				Tuple2<VertexKey, VertexKey> value) throws Exception {
+			reuse.f0 = value.f0;
+			reuse.f1 = value.f1;
+			reuse.f2 = getRuntimeContext().getIndexOfThisSubtask();
+			return reuse;
+		}
+	}
+
 }

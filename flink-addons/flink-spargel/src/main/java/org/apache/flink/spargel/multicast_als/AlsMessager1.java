@@ -17,13 +17,13 @@
  */
 package org.apache.flink.spargel.multicast_als;
 
-import org.apache.flink.spargel.java.MessagingFunction3;
+import org.apache.flink.spargel.java.MessagingFunction;
 import org.apache.flink.spargel.java.OutgoingEdge;
 import org.apache.flink.spargel.java.multicast.MCEnum;
 import org.apache.flink.spargel.java.multicast.MultipleRecipients;
 import org.apache.flink.types.NullValue;
 
-public final class AlsMessager1 extends MessagingFunction3<Integer, DoubleVectorWithMap, AlsCustomMessageForSpargel, NullValue> {
+public final class AlsMessager1 extends MessagingFunction<Integer, DoubleVectorWithMap, AlsCustomMessageForSpargel, NullValue> {
 	
 	//TODO: what if I use it as private?
 	//private AlsCustomMessageForSpargel msg = new AlsCustomMessageForSpargel();

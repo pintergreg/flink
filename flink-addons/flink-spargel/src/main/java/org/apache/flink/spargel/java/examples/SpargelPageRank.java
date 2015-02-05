@@ -25,9 +25,9 @@ import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.spargel.java.MessageIterator;
-import org.apache.flink.spargel.java.MessagingFunction3;
+import org.apache.flink.spargel.java.MessagingFunction;
 import org.apache.flink.spargel.java.OutgoingEdge;
-import org.apache.flink.spargel.java.VertexCentricIteration;
+import org.apache.flink.spargel.java.VertexCentricIteration3;
 import org.apache.flink.spargel.java.VertexUpdateFunction;
 import org.apache.flink.spargel.java.multicast.MCEnum;
 import org.apache.flink.util.Collector;
@@ -68,7 +68,7 @@ public class SpargelPageRank {
 								});
 		
 		DataSet<Tuple2<Long, Double>> result = intialRanks.runOperation(
-			VertexCentricIteration.withValuedEdges(edgesWithProbability,
+			VertexCentricIteration3.withValuedEdges(edgesWithProbability,
 						new VertexRankUpdater(numVertices, BETA), new RankMessenger(MCEnum.MC0), 20));
 		
 		result.print();
@@ -106,7 +106,7 @@ public class SpargelPageRank {
 	 * Distributes the rank of a vertex among all target vertices according to the transition probability,
 	 * which is associated with an edge as the edge value.
 	 */
-	public static final class RankMessenger extends MessagingFunction3<Long, Double, Double, Double> {
+	public static final class RankMessenger extends MessagingFunction<Long, Double, Double, Double> {
 		
 		public RankMessenger(MCEnum whichMulticast) {
 			super(whichMulticast);

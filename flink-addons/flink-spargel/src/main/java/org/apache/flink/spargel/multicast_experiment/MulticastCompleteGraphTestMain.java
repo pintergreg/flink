@@ -27,7 +27,7 @@ import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.spargel.java.MessageIterator;
-import org.apache.flink.spargel.java.MessagingFunction3;
+import org.apache.flink.spargel.java.MessagingFunction;
 import org.apache.flink.spargel.java.OutgoingEdge;
 import org.apache.flink.spargel.java.VertexCentricIteration3;
 import org.apache.flink.spargel.java.VertexUpdateFunction;
@@ -185,7 +185,7 @@ public class MulticastCompleteGraphTestMain {
 		}
 	}
 
-	public static final class CCMessager extends MessagingFunction3<Long, VertexVal, Message, NullValue> {
+	public static final class CCMessager extends MessagingFunction<Long, VertexVal, Message, NullValue> {
 		public CCMessager(MCEnum whichMulticast) {
 			super(whichMulticast);
 		}
@@ -199,7 +199,7 @@ public class MulticastCompleteGraphTestMain {
 		}
 	}
 
-	public static final class CCMessager1 extends MessagingFunction3<Long, VertexVal, Message, NullValue> {
+	public static final class CCMessager1 extends MessagingFunction<Long, VertexVal, Message, NullValue> {
 		public CCMessager1(MCEnum whichMulticast) {
 			super(whichMulticast);
 		}
@@ -218,7 +218,7 @@ public class MulticastCompleteGraphTestMain {
 	}
 
 
-	public static final class CCMessager2 extends MessagingFunction3<Long, VertexVal, Message, NullValue> {
+	public static final class CCMessager2 extends MessagingFunction<Long, VertexVal, Message, NullValue> {
 		public CCMessager2(MCEnum whichMulticast) {
 			super(whichMulticast);
 		}
