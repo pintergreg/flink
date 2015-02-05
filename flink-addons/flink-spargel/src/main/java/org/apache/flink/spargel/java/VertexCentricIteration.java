@@ -943,6 +943,8 @@ public class VertexCentricIteration<VertexKey extends Comparable<VertexKey>, Ver
 			}
 		}
 	}
+
+	// Classes needed for MC2
 	// A FilterFunction that filters messages based on the length of the recipient list in the header
 	public static class FilterMsgsBasedOnRecipientList<VertexKey, Message>
 			implements
@@ -999,19 +1001,6 @@ public class VertexCentricIteration<VertexKey extends Comparable<VertexKey>, Ver
 		}
 	}
 
-
-
-
-//	public static class ReprVertexSelector<VertexKey extends Comparable<VertexKey>, Message>
-//	implements KeySelector<Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>>, VertexKey>{
-//		private static final long serialVersionUID = 1L;
-//		@Override
-//		public VertexKey getKey(
-//				Tuple2<VertexKey, MessageWithHeader<VertexKey, Message>> value)
-//				throws Exception {
-//			return  value.f1.getReprVertexOfPartition();
-//		}
-//	}
 
 	public static class ProjectByMap<VertexKey extends Comparable<VertexKey>, EdgeValue>  
 	implements
