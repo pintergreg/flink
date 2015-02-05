@@ -34,7 +34,7 @@ import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.spargel.java.MessageIterator;
 import org.apache.flink.spargel.java.MessagingFunction;
 import org.apache.flink.spargel.java.OutgoingEdge;
-import org.apache.flink.spargel.java.VertexCentricIteration3;
+import org.apache.flink.spargel.java.VertexCentricIteration;
 import org.apache.flink.spargel.java.VertexUpdateFunction;
 import org.apache.flink.types.NullValue;
 import org.junit.Test;
@@ -135,7 +135,7 @@ public class MultiCastTest {
 		DataSet<Tuple2<Long, VertexVal>> result = null;
 		if (whichMulticast == 0) {
 			if (subTestId == 0) {
-				VertexCentricIteration3<Long, VertexVal, Message, ?> iteration = VertexCentricIteration3
+				VertexCentricIteration<Long, VertexVal, Message, ?> iteration = VertexCentricIteration
 						.withPlainEdges(edges, new TestUpdater(),
 								new TestMessager0(MCEnum.MC0), 1);
 				result = initialVertices.runOperation(iteration);
@@ -144,7 +144,7 @@ public class MultiCastTest {
 			}
 		} else if (whichMulticast == 1) {
 			if (subTestId == 0) {
-				VertexCentricIteration3<Long, VertexVal, Message, ?> iteration = VertexCentricIteration3
+				VertexCentricIteration<Long, VertexVal, Message, ?> iteration = VertexCentricIteration
 						.withPlainEdges(edges, new TestUpdater(),
 								new TestMessager1(MCEnum.MC1), 1);
 				result = initialVertices.runOperation(iteration);
@@ -153,17 +153,17 @@ public class MultiCastTest {
 			}
 		} else if (whichMulticast == 2) {
 			if (subTestId == 0) {
-				VertexCentricIteration3<Long, VertexVal, Message, ?> iteration = VertexCentricIteration3
+				VertexCentricIteration<Long, VertexVal, Message, ?> iteration = VertexCentricIteration
 						.withPlainEdges(edges, new TestUpdater(),
 								new TestMessager2(MCEnum.MC2), 1);
 				result = initialVertices.runOperation(iteration);
 			} else if (subTestId == 1) {
-				VertexCentricIteration3<Long, VertexVal, Message, ?> iteration = VertexCentricIteration3
+				VertexCentricIteration<Long, VertexVal, Message, ?> iteration = VertexCentricIteration
 						.withPlainEdges(edges, new TestUpdater(),
 								new TestMessager2SendMessageTo(MCEnum.MC2), 1);
 				result = initialVertices.runOperation(iteration);
 			} else if (subTestId == 2) {
-				VertexCentricIteration3<Long, VertexVal, Message, ?> iteration = VertexCentricIteration3
+				VertexCentricIteration<Long, VertexVal, Message, ?> iteration = VertexCentricIteration
 						.withPlainEdges(edges, new TestUpdater(),
 								new TestMessager2SendMessageToMultipleRecipients(MCEnum.MC2), 1);
 				result = initialVertices.runOperation(iteration);
@@ -182,7 +182,7 @@ public class MultiCastTest {
 						}
 					});
 
-				VertexCentricIteration3<Long, VertexVal, Message, EdgeVal> iteration = VertexCentricIteration3
+				VertexCentricIteration<Long, VertexVal, Message, EdgeVal> iteration = VertexCentricIteration
 						.withValuedEdges(edgesWithValue, new TestUpdater(),
 								new TestMessager2ValuedEdges(MCEnum.MC2), 1);
 				result = initialVertices.runOperation(iteration);

@@ -23,7 +23,7 @@ import org.apache.flink.api.java.operators.DataSink;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.core.fs.FileSystem;
-import org.apache.flink.spargel.java.VertexCentricIteration3;
+import org.apache.flink.spargel.java.VertexCentricIteration;
 import org.apache.flink.spargel.java.multicast.MCEnum;
 
 //TODO: usage of union operator fails
@@ -85,7 +85,7 @@ public class SpargelAls {
 
 		DataSet<Tuple2<Integer, DoubleVectorWithMap>> result = null;
 		if (whichMulticast == 0) {
-			VertexCentricIteration3<Integer, DoubleVectorWithMap, AlsCustomMessageForSpargel, ?> vc_iteration = VertexCentricIteration3
+			VertexCentricIteration<Integer, DoubleVectorWithMap, AlsCustomMessageForSpargel, ?> vc_iteration = VertexCentricIteration
 					.withPlainEdges(edges, new AlsUpdater(k, lambda,
 							whichSolver), new AlsMessager(MCEnum.MC0), 2 * iteration + 1);
 			// Stephan's workaround: is it needed for big input?
@@ -93,7 +93,7 @@ public class SpargelAls {
 
 			result = vertices.runOperation(vc_iteration);
 		} else if (whichMulticast == 1) {
-			VertexCentricIteration3<Integer, DoubleVectorWithMap, AlsCustomMessageForSpargel, ?> vc_iteration1 = VertexCentricIteration3
+			VertexCentricIteration<Integer, DoubleVectorWithMap, AlsCustomMessageForSpargel, ?> vc_iteration1 = VertexCentricIteration
 					.withPlainEdges(edges, new AlsUpdater(k, lambda,
 							whichSolver), new AlsMessager1(MCEnum.MC1), 2 * iteration + 1);
 			// Stephan's workaround: is it needed for big input?
@@ -102,7 +102,7 @@ public class SpargelAls {
 			result = vertices.runOperation(vc_iteration1);
 		} else if (whichMulticast == 2) {
 			// must I use long id?
-			VertexCentricIteration3<Integer, DoubleVectorWithMap, AlsCustomMessageForSpargel, ?> vc_iteration2 = VertexCentricIteration3
+			VertexCentricIteration<Integer, DoubleVectorWithMap, AlsCustomMessageForSpargel, ?> vc_iteration2 = VertexCentricIteration
 					.withPlainEdges(edges, new AlsUpdater(k, lambda,
 							whichSolver), new AlsMessager2(MCEnum.MC2), 2 * iteration + 1);
 			// Stephan's workaround: is it needed?

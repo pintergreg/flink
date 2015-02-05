@@ -27,7 +27,7 @@ import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.spargel.java.MessageIterator;
 import org.apache.flink.spargel.java.MessagingFunction;
 import org.apache.flink.spargel.java.OutgoingEdge;
-import org.apache.flink.spargel.java.VertexCentricIteration3;
+import org.apache.flink.spargel.java.VertexCentricIteration;
 import org.apache.flink.spargel.java.VertexUpdateFunction;
 import org.apache.flink.spargel.java.multicast.MCEnum;
 import org.apache.flink.util.Collector;
@@ -68,7 +68,7 @@ public class SpargelPageRank {
 								});
 		
 		DataSet<Tuple2<Long, Double>> result = intialRanks.runOperation(
-			VertexCentricIteration3.withValuedEdges(edgesWithProbability,
+			VertexCentricIteration.withValuedEdges(edgesWithProbability,
 						new VertexRankUpdater(numVertices, BETA), new RankMessenger(MCEnum.MC0), 20));
 		
 		result.print();

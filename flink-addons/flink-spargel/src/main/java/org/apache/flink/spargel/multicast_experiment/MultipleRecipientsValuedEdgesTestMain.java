@@ -33,7 +33,7 @@ import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.spargel.java.MessageIterator;
 import org.apache.flink.spargel.java.MessagingFunction;
 import org.apache.flink.spargel.java.OutgoingEdge;
-import org.apache.flink.spargel.java.VertexCentricIteration3;
+import org.apache.flink.spargel.java.VertexCentricIteration;
 import org.apache.flink.spargel.java.VertexUpdateFunction;
 import org.apache.flink.spargel.java.multicast.MCEnum;
 import org.apache.flink.spargel.java.multicast.MultipleRecipients;
@@ -91,7 +91,7 @@ public class MultipleRecipientsValuedEdgesTestMain {
 		
 
 		
-		VertexCentricIteration3<Long, Long, Message, Double> iteration = VertexCentricIteration3
+		VertexCentricIteration<Long, Long, Message, Double> iteration = VertexCentricIteration
 				.withValuedEdges(edges, new CCUpdater(), new CCMessager(MCEnum.MC1), 1);
 		
 		DataSet<Tuple2<Long, Long>> result = initialVertices.runOperation(iteration);

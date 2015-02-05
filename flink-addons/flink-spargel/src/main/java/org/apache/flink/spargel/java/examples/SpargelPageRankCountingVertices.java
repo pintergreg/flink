@@ -30,7 +30,7 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.spargel.java.MessageIterator;
 import org.apache.flink.spargel.java.MessagingFunction;
 import org.apache.flink.spargel.java.OutgoingEdge;
-import org.apache.flink.spargel.java.VertexCentricIteration3;
+import org.apache.flink.spargel.java.VertexCentricIteration;
 import org.apache.flink.spargel.java.VertexUpdateFunction;
 import org.apache.flink.spargel.java.multicast.MCEnum;
 import org.apache.flink.util.Collector;
@@ -98,7 +98,7 @@ public class SpargelPageRankCountingVertices {
 			}).withBroadcastSet(count, "count");
 		
 		
-		VertexCentricIteration3<Long, Double, Double, Double> iteration = VertexCentricIteration3.withValuedEdges(edgesWithProbability,
+		VertexCentricIteration<Long, Double, Double, Double> iteration = VertexCentricIteration.withValuedEdges(edgesWithProbability,
 				new VertexRankUpdater(BETA), new RankMessenger(MCEnum.MC0), 20);
 		iteration.addBroadcastSetForUpdateFunction("count", count);
 		

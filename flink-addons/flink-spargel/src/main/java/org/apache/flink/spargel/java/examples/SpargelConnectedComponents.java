@@ -24,7 +24,7 @@ import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.spargel.java.MessageIterator;
 import org.apache.flink.spargel.java.MessagingFunction;
-import org.apache.flink.spargel.java.VertexCentricIteration3;
+import org.apache.flink.spargel.java.VertexCentricIteration;
 import org.apache.flink.spargel.java.VertexUpdateFunction;
 import org.apache.flink.spargel.java.multicast.MCEnum;
 import org.apache.flink.types.NullValue;
@@ -41,7 +41,7 @@ public class SpargelConnectedComponents {
 		
 		DataSet<Tuple2<Long, Long>> initialVertices = vertexIds.map(new IdAssigner());
 		
-		DataSet<Tuple2<Long, Long>> result = initialVertices.runOperation(VertexCentricIteration3.withPlainEdges(edges, new CCUpdater(), new CCMessager(MCEnum.MC0), 100));
+		DataSet<Tuple2<Long, Long>> result = initialVertices.runOperation(VertexCentricIteration.withPlainEdges(edges, new CCUpdater(), new CCMessager(MCEnum.MC0), 100));
 		
 		result.print();
 		env.execute("Spargel Connected Components");

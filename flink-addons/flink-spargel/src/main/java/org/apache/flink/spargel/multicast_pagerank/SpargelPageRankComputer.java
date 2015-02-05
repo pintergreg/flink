@@ -31,7 +31,7 @@ import org.apache.flink.api.java.tuple.Tuple1;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple4;
 import org.apache.flink.configuration.Configuration;
-import org.apache.flink.spargel.java.VertexCentricIteration3;
+import org.apache.flink.spargel.java.VertexCentricIteration;
 import org.apache.flink.spargel.java.multicast.MCEnum;
 
 /**
@@ -151,11 +151,11 @@ public class SpargelPageRankComputer implements Serializable {
 		if (whichMulticast == 0) {
 			// We do twice as many iterations because every second iteration deals with the sources only
 			iteration = 
-					VertexCentricIteration3.withPlainEdges(edges,
+					VertexCentricIteration.withPlainEdges(edges,
 					new VertexRankUpdater(BETA),
 					new RankMessenger(epsilonForConvergence, MCEnum.MC0),  2 * maxNumberOfIterations);
-			VertexCentricIteration3<Long, SpargelNode, Double, ?> iteration2 = 
-					(VertexCentricIteration3<Long, SpargelNode, Double, ?>)iteration;
+			VertexCentricIteration<Long, SpargelNode, Double, ?> iteration2 = 
+					(VertexCentricIteration<Long, SpargelNode, Double, ?>)iteration;
 			iteration2.addBroadcastSetForUpdateFunction(PageRankUtil.NUMOFPAGES, numOfPages);
 			iteration2.registerAggregator(PageRankUtil.VALUE_COLLECTED_BY_SINKS, agg);
 			iteration2.registerAggregator(PageRankUtil.MAX_RANK_CHANGE, maxRankChange);
@@ -163,22 +163,22 @@ public class SpargelPageRankComputer implements Serializable {
 		} else if (whichMulticast == 1) {
 			// We do twice as many iterations because every second iteration deals with the sources only
 			iteration = 
-					VertexCentricIteration3.withPlainEdges(edges,
+					VertexCentricIteration.withPlainEdges(edges,
 					new VertexRankUpdater(BETA),
 					new RankMessenger1(epsilonForConvergence, MCEnum.MC1),  2 * maxNumberOfIterations);
-			VertexCentricIteration3<Long, SpargelNode, Double, ?> iteration2 = 
-					(VertexCentricIteration3<Long, SpargelNode, Double, ?>)iteration;
+			VertexCentricIteration<Long, SpargelNode, Double, ?> iteration2 = 
+					(VertexCentricIteration<Long, SpargelNode, Double, ?>)iteration;
 			iteration2.addBroadcastSetForUpdateFunction(PageRankUtil.NUMOFPAGES, numOfPages);
 			iteration2.registerAggregator(PageRankUtil.VALUE_COLLECTED_BY_SINKS, agg);
 			iteration2.registerAggregator(PageRankUtil.MAX_RANK_CHANGE, maxRankChange);
 		} else if (whichMulticast == 2) {
 			// We do twice as many iterations because every second iteration deals with the sources only
 			iteration = 
-					VertexCentricIteration3.withPlainEdges(edges,
+					VertexCentricIteration.withPlainEdges(edges,
 					new VertexRankUpdater(BETA),
 					new RankMessenger2(epsilonForConvergence, MCEnum.MC2),  2 * maxNumberOfIterations);
-			VertexCentricIteration3<Long, SpargelNode, Double, ?> iteration2 = 
-					(VertexCentricIteration3<Long, SpargelNode, Double, ?>)iteration;
+			VertexCentricIteration<Long, SpargelNode, Double, ?> iteration2 = 
+					(VertexCentricIteration<Long, SpargelNode, Double, ?>)iteration;
 			iteration2.addBroadcastSetForUpdateFunction(PageRankUtil.NUMOFPAGES, numOfPages);
 			iteration2.registerAggregator(PageRankUtil.VALUE_COLLECTED_BY_SINKS, agg);
 			iteration2.registerAggregator(PageRankUtil.MAX_RANK_CHANGE, maxRankChange);

@@ -70,8 +70,8 @@ public class SpargelTranslationTest {
 				DataSet<Tuple2<String, String>> edges = env.fromElements(new Tuple2<String, String>("a", "c"));
 				
 				
-				VertexCentricIteration3<String, Double, Long, ?> vertexIteration = 
-						VertexCentricIteration3.withPlainEdges(edges, new UpdateFunction(), new MessageFunctionNoEdgeValue(MCEnum.MC0), NUM_ITERATIONS);
+				VertexCentricIteration<String, Double, Long, ?> vertexIteration = 
+						VertexCentricIteration.withPlainEdges(edges, new UpdateFunction(), new MessageFunctionNoEdgeValue(MCEnum.MC0), NUM_ITERATIONS);
 				vertexIteration.addBroadcastSetForMessagingFunction(BC_SET_MESSAGES_NAME, bcMessaging);
 				vertexIteration.addBroadcastSetForUpdateFunction(BC_SET_UPDATES_NAME, bcUpdate);
 				
@@ -149,8 +149,8 @@ public class SpargelTranslationTest {
 				DataSet<Tuple2<String, String>> edges = env.fromElements(new Tuple2<String, String>("a", "c"));
 				
 				
-				VertexCentricIteration3<String, Double, Long, ?> vertexIteration = 
-						VertexCentricIteration3.withPlainEdges(edges, new UpdateFunction(), new MessageFunctionNoEdgeValue(MCEnum.MC0), NUM_ITERATIONS);
+				VertexCentricIteration<String, Double, Long, ?> vertexIteration = 
+						VertexCentricIteration.withPlainEdges(edges, new UpdateFunction(), new MessageFunctionNoEdgeValue(MCEnum.MC0), NUM_ITERATIONS);
 				vertexIteration.addBroadcastSetForMessagingFunction(BC_SET_MESSAGES_NAME, bcVar);
 				vertexIteration.addBroadcastSetForUpdateFunction(BC_SET_UPDATES_NAME, bcVar);
 				

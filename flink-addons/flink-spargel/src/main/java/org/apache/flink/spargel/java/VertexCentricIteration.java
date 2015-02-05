@@ -81,7 +81,7 @@ import org.apache.flink.util.Collector;
  * @param <Message> The type of the message sent between vertices along the edges.
  * @param <EdgeValue> The type of the values that are associated with the edges.
  */
-public class VertexCentricIteration3<VertexKey extends Comparable<VertexKey>, VertexValue, Message, EdgeValue> 
+public class VertexCentricIteration<VertexKey extends Comparable<VertexKey>, VertexValue, Message, EdgeValue> 
 	implements CustomUnaryOperation<Tuple2<VertexKey, VertexValue>, Tuple2<VertexKey, VertexValue>>
 {
 	private final VertexUpdateFunction<VertexKey, VertexValue, Message> updateFunction;
@@ -121,7 +121,7 @@ public class VertexCentricIteration3<VertexKey extends Comparable<VertexKey>, Ve
 	
 	// ----------------------------------------------------------------------------------
 	
-	private  VertexCentricIteration3(VertexUpdateFunction<VertexKey, VertexValue, Message> uf,
+	private  VertexCentricIteration(VertexUpdateFunction<VertexKey, VertexValue, Message> uf,
 			MessagingFunction<VertexKey, VertexValue, Message, EdgeValue> mf,
 			DataSet<Tuple2<VertexKey, VertexKey>> edgesWithoutValue,
 			int maximumNumberOfIterations)
@@ -160,7 +160,7 @@ public class VertexCentricIteration3<VertexKey extends Comparable<VertexKey>, Ve
 
 	}
 	
-	private VertexCentricIteration3(VertexUpdateFunction<VertexKey, VertexValue, Message> uf,
+	private VertexCentricIteration(VertexUpdateFunction<VertexKey, VertexValue, Message> uf,
 			MessagingFunction<VertexKey, VertexValue, Message, EdgeValue> mf,
 			DataSet<Tuple3<VertexKey, VertexKey, EdgeValue>> edgesWithValue, 
 			int maximumNumberOfIterations,
@@ -578,7 +578,7 @@ public class VertexCentricIteration3<VertexKey extends Comparable<VertexKey>, Ve
 	 * @return An in stance of the vertex-centric graph computation operator.
 	 */
 	public static final <VertexKey extends Comparable<VertexKey>, VertexValue, Message>
-			VertexCentricIteration3<VertexKey, VertexValue, Message, ?> withPlainEdges(
+			VertexCentricIteration<VertexKey, VertexValue, Message, ?> withPlainEdges(
 					DataSet<Tuple2<VertexKey, VertexKey>> edgesWithoutValue,
 						VertexUpdateFunction<VertexKey, VertexValue, Message> vertexUpdateFunction,
 						MessagingFunction<VertexKey, VertexValue, Message, ?> MessagingFunction3,
@@ -589,7 +589,7 @@ public class VertexCentricIteration3<VertexKey extends Comparable<VertexKey>, Ve
 		MessagingFunction<VertexKey, VertexValue, Message, Object> tmf = 
 								(MessagingFunction<VertexKey, VertexValue, Message, Object>) MessagingFunction3;
 		
-		return new VertexCentricIteration3<VertexKey, VertexValue, Message, Object>(vertexUpdateFunction, tmf, edgesWithoutValue, maximumNumberOfIterations);
+		return new VertexCentricIteration<VertexKey, VertexValue, Message, Object>(vertexUpdateFunction, tmf, edgesWithoutValue, maximumNumberOfIterations);
 	}
 	
 	/**
@@ -608,13 +608,13 @@ public class VertexCentricIteration3<VertexKey extends Comparable<VertexKey>, Ve
 	 * @return An in stance of the vertex-centric graph computation operator.
 	 */
 	public static final <VertexKey extends Comparable<VertexKey>, VertexValue, Message, EdgeValue>
-			VertexCentricIteration3<VertexKey, VertexValue, Message, EdgeValue> withValuedEdges(
+			VertexCentricIteration<VertexKey, VertexValue, Message, EdgeValue> withValuedEdges(
 					DataSet<Tuple3<VertexKey, VertexKey, EdgeValue>> edgesWithValue,
 					VertexUpdateFunction<VertexKey, VertexValue, Message> uf,
 					MessagingFunction<VertexKey, VertexValue, Message, EdgeValue> mf,
 					int maximumNumberOfIterations)
 	{
-		return new VertexCentricIteration3<VertexKey, VertexValue, Message, EdgeValue>(uf, mf, edgesWithValue, maximumNumberOfIterations, true);
+		return new VertexCentricIteration<VertexKey, VertexValue, Message, EdgeValue>(uf, mf, edgesWithValue, maximumNumberOfIterations, true);
 	}
 	
 	// --------------------------------------------------------------------------------------------
