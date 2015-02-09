@@ -49,6 +49,7 @@ import org.apache.flink.api.streaming.scala.ScalaStreamingAggregator
 
 class DataStream[T](javaStream: JavaStream[T]) {
 
+
   /**
    * Gets the underlying java DataStream object.
    */

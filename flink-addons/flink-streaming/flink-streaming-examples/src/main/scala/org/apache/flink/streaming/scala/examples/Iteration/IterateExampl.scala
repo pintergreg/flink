@@ -16,6 +16,7 @@
  */
 package org.apache.flink.streaming.scala.examples.Iteration
 
+import org.apache.flink.streaming.api.scala.DataStream
 import org.apache.flink.streaming.api.scala._
 
 import scala.util.Random
@@ -39,6 +40,8 @@ import scala.util.Random
 
 object IterateExample {
 
+
+
   // *************************************************************************
   // PROGRAM
   // *************************************************************************
@@ -47,44 +50,23 @@ object IterateExample {
       return
     }
 
-
-    // setup input for the stream of (0,0) pairs
-    //TODO
-
-
     // StreamExecution
     val  env = StreamExecutionEnvironment.getExecutionEnvironment
                 .setBufferTimeout(1)
 
-    val it = env.fromCollection(generateStream).shuffle.iterate(5000)
-
-    val step = it.map(t => {val (x,y)= t ;(x.toString().toDouble() + Random.nextDouble(), y +1)})
-                  .shuffle
-                  .split(//)
-
-
-
-
-
-
+    val it = env.fromCollection(generateStream).shuffle
+    val output = it.iterate(stepFunction, 5000).map {t:(Double, Int) => t._2 }
 
     // emit result
-
-
     if (fileOutput) {
-      it.writeAsText(outputPath, 1)
+      output.writeAsText(outputPath, 1)
     }
     else {
-      it.print
+      output.print
     }
 
-
-
     // execute the program
-
-
     env.execute("Streaming Iteration Example")
-
   }
 
   // *************************************************************************
@@ -96,6 +78,18 @@ object IterateExample {
     Stream.from(0,1).map(x => (0.0,0))
   }
 
+
+  def stepFunction (input: DataStream[(Double, Int)]) : (DataStream[(Double, Int)], DataStream[(Double, Int)]) = {
+      def  Myselector: ((Double,Int))=> String  ={
+          case (x: Double,_) if x > 2 =>"output"
+          case _ => "iterate"
+      }
+
+      val step = input.map { t:(Double, Int) => ( t._1+ Random.nextDouble(), t._2 +1)}
+                  .shuffle.split ( Myselector)
+    ( step.select("iterate"), step.select("output"))
+
+  }
 
   // *************************************************************************
   // UTIL METHODS
