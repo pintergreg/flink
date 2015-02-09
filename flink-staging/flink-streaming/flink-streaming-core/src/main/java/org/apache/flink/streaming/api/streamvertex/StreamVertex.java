@@ -19,8 +19,10 @@ package org.apache.flink.streaming.api.streamvertex;
 
 import java.util.Map;
 
+import org.apache.flink.runtime.event.task.StreamingSuperstep;
 import org.apache.flink.runtime.execution.Environment;
 import org.apache.flink.runtime.jobgraph.tasks.AbstractInvokable;
+import org.apache.flink.runtime.util.event.EventListener;
 import org.apache.flink.streaming.api.StreamConfig;
 import org.apache.flink.streaming.api.invokable.ChainableInvokable;
 import org.apache.flink.streaming.api.invokable.StreamInvokable;
@@ -47,10 +49,13 @@ public class StreamVertex<IN, OUT> extends AbstractInvokable implements StreamTa
 
 	protected ClassLoader userClassLoader;
 
+	private EventListener<StreamingSuperstep> superstepListener;
+
 	public StreamVertex() {
 		userInvokable = null;
 		numTasks = newVertex();
 		instanceID = numTasks;
+		superstepListener = new SuperstepEventListener();
 	}
 
 	protected static int newVertex() {
@@ -152,5 +157,19 @@ public class StreamVertex<IN, OUT> extends AbstractInvokable implements StreamTa
 	@Override
 	public <X, Y> CoReaderIterator<X, Y> getCoReader() {
 		throw new IllegalArgumentException("CoReader not available");
+	}
+	
+	
+	public EventListener<StreamingSuperstep> getSuperstepListener(){
+		return this.superstepListener;
+	}
+
+	private class SuperstepEventListener implements EventListener<StreamingSuperstep> {
+
+		@Override
+		public void onEvent(StreamingSuperstep event) {
+			System.out.println("End of superstep");
+		}
+
 	}
 }

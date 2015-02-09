@@ -19,14 +19,15 @@ package org.apache.flink.streaming.api.streamvertex;
 
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.core.io.IOReadableWritable;
+import org.apache.flink.runtime.io.network.api.reader.BufferReader;
 import org.apache.flink.runtime.io.network.api.reader.MutableReader;
 import org.apache.flink.runtime.io.network.api.reader.MutableRecordReader;
-import org.apache.flink.runtime.io.network.api.reader.UnionBufferReader;
 import org.apache.flink.runtime.operators.util.ReaderIterator;
 import org.apache.flink.runtime.plugable.DeserializationDelegate;
 import org.apache.flink.streaming.api.StreamConfig;
 import org.apache.flink.streaming.api.streamrecord.StreamRecord;
 import org.apache.flink.streaming.api.streamrecord.StreamRecordSerializer;
+import org.apache.flink.streaming.io.StreamingUnionReader;
 import org.apache.flink.util.MutableObjectIterator;
 
 public class InputHandler<IN> {
@@ -56,11 +57,14 @@ public class InputHandler<IN> {
 		if (numberOfInputs > 0) {
 
 			if (numberOfInputs < 2) {
-
-				inputs = new MutableRecordReader<IOReadableWritable>(streamVertex.getEnvironment().getReader(0));
+				BufferReader reader = streamVertex.getEnvironment().getReader(0);
+//				reader.subscribeToSuperstepEvents(streamVertex.getSuperstepListener());
+				inputs = new MutableRecordReader<IOReadableWritable>(reader);
 
 			} else {
-				UnionBufferReader reader = new UnionBufferReader(streamVertex.getEnvironment().getAllReaders());
+				StreamingUnionReader reader = new StreamingUnionReader(streamVertex.getEnvironment()
+						.getAllReaders());
+				reader.subscribeToSuperstepEvents(streamVertex.getSuperstepListener());
 				inputs = new MutableRecordReader<IOReadableWritable>(reader);
 			}
 

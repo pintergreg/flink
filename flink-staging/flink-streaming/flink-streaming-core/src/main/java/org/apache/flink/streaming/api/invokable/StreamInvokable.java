@@ -93,9 +93,8 @@ public abstract class StreamInvokable<IN, OUT> implements Serializable {
 	 * nextRecord variable
 	 */
 	protected StreamRecord<IN> readNext() {
-		this.nextRecord = inSerializer.createInstance();
 		try {
-			nextRecord = recordIterator.next(nextRecord);
+			nextRecord = recordIterator.next();
 			try {
 				nextObject = nextRecord.getObject();
 			} catch (NullPointerException e) {
