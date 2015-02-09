@@ -19,7 +19,7 @@ package org.apache.flink.streaming.api.ft.layer.event;
 
 import org.apache.flink.runtime.util.event.EventListener;
 import org.apache.flink.streaming.api.ft.layer.FTLayer;
-import org.apache.flink.streaming.api.ft.layer.util.RecordId;
+import org.apache.flink.streaming.api.ft.layer.id.RecordId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -26,9 +26,9 @@ import org.apache.flink.streaming.api.collector.OutputSelector;
  * {@link OutputSelector}. Named outputs can be selected using the
  * {@link #select} function. To apply transformation on the whole output simply
  * call the transformation on the SplitDataStream
- * 
+ *
  * @param <OUT>
- *            The type of the output.
+ * 		The type of the output.
  */
 public class SplitDataStream<OUT> extends DataStream<OUT> {
 
@@ -38,10 +38,10 @@ public class SplitDataStream<OUT> extends DataStream<OUT> {
 
 	/**
 	 * Sets the output names for which the next operator will receive values.
-	 * 
+	 *
 	 * @param outputNames
-	 *            The output names for which the operator will receive the
-	 *            input.
+	 * 		The output names for which the operator will receive the
+	 * 		input.
 	 * @return Returns the selected DataStream
 	 */
 	public DataStream<OUT> select(String... outputNames) {

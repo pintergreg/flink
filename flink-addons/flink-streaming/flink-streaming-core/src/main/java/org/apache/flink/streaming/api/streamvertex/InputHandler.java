@@ -71,7 +71,7 @@ public class InputHandler<IN> {
 	}
 
 	private MutableObjectIterator<StreamRecord<IN>> createInputIterator() {
-		@SuppressWarnings({ "unchecked", "rawtypes" })
+		@SuppressWarnings({"unchecked", "rawtypes"})
 		final MutableObjectIterator<StreamRecord<IN>> iter = new ReaderIterator(inputs,
 				inputSerializer);
 		return iter;
@@ -83,7 +83,7 @@ public class InputHandler<IN> {
 		// generic data type serialization
 		@SuppressWarnings("unchecked")
 		MutableReader<DeserializationDelegate<?>> reader = (MutableReader<DeserializationDelegate<?>>) inputReader;
-		@SuppressWarnings({ "unchecked", "rawtypes" })
+		@SuppressWarnings({"unchecked", "rawtypes"})
 		final MutableObjectIterator<StreamRecord<T>> iter = new ReaderIterator(reader, serializer);
 		return iter;
 	}

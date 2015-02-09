@@ -33,7 +33,7 @@ import org.apache.flink.streaming.api.invokable.operator.co.CoWindowInvokable;
 
 public class StreamCrossOperator<I1, I2> extends
 		TemporalOperator<I1, I2, StreamCrossOperator.CrossWindow<I1, I2>> {
-	
+
 	public StreamCrossOperator(DataStream<I1> input1, DataStream<I2> input2) {
 		super(input1, input2);
 	}
@@ -75,12 +75,11 @@ public class StreamCrossOperator<I1, I2> extends
 		 * Finalizes a temporal Cross transformation by applying a
 		 * {@link CrossFunction} to each pair of crossed elements.<br/>
 		 * Each CrossFunction call returns exactly one element.
-		 * 
+		 *
 		 * @param function
-		 *            The CrossFunction that is called for each pair of crossed
-		 *            elements.
+		 * 		The CrossFunction that is called for each pair of crossed
+		 * 		elements.
 		 * @return The crossed data streams
-		 * 
 		 */
 		public <R> SingleOutputStreamOperator<R, ?> with(CrossFunction<I1, I2, R> function) {
 			TypeInformation<R> outTypeInfo = TypeExtractor.getCrossReturnTypes(function,

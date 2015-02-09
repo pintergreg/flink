@@ -19,7 +19,7 @@
 package org.apache.flink.streaming.api.streamvertex;
 
 import org.apache.flink.streaming.api.StreamConfig;
-import org.apache.flink.streaming.api.ft.layer.AbstractFT;
+import org.apache.flink.streaming.api.ft.layer.runtime.AbstractFTHandler;
 import org.apache.flink.streaming.api.streamrecord.StreamRecordSerializer;
 import org.apache.flink.streaming.io.CoReaderIterator;
 import org.apache.flink.util.Collector;
@@ -37,7 +37,7 @@ public interface StreamTaskContext<OUT> {
 
 	Collector<OUT> getOutputCollector();
 
-	AbstractFT<OUT> getFT();
+	AbstractFTHandler<OUT> getFT();
 
 	<X, Y> CoReaderIterator<X, Y> getCoReader();
 }

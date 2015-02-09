@@ -23,9 +23,9 @@ import org.apache.flink.streaming.api.windowing.policy.TriggerPolicy;
 /**
  * A helper representing a count or eviction policy. Such helper classes are
  * used to provide a nice and well readable API.
- * 
+ *
  * @param <DATA>
- *            the type of input data handled by this helper
+ * 		the type of input data handled by this helper
  * @see Count
  * @see Time
  * @see Delta

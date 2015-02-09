@@ -23,7 +23,6 @@ import org.apache.flink.util.NumberSequenceIterator;
 
 /**
  * Source Function used to generate the number sequence
- * 
  */
 public class GenSequenceFunction extends RichParallelSourceFunction<Long> {
 

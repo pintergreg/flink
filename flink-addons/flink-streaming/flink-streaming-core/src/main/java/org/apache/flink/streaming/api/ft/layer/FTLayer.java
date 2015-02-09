@@ -21,9 +21,9 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.HashSet;
 
-import org.apache.flink.streaming.api.ft.layer.util.RecordId;
-import org.apache.flink.streaming.api.ft.layer.util.RecordWithHashCode;
-import org.apache.flink.streaming.api.ft.layer.util.SemiDeserializedStreamRecord;
+import org.apache.flink.streaming.api.ft.layer.id.RecordId;
+import org.apache.flink.streaming.api.ft.layer.id.RecordWithHashCode;
+import org.apache.flink.streaming.api.ft.layer.serialization.SemiDeserializedStreamRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -114,7 +114,7 @@ public class FTLayer {
 			if (!ackerTable.contains(sourceRecordId)) {
 				ackerTable.newSourceRecord(sourceRecordId);
 			}
-			ackerTable.xor(sourceRecordId, recordId.getRecordId());
+			ackerTable.xor(sourceRecordId, recordId.getCurrentRecordId());
 		}
 	}
 

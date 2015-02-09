@@ -23,9 +23,9 @@ import org.apache.flink.streaming.api.invokable.StreamInvokable;
 
 /**
  * The DataStreamSource represents the starting point of a DataStream.
- * 
+ *
  * @param <OUT>
- *            Type of the DataStream created.
+ * 		Type of the DataStream created.
  */
 public class DataStreamSource<OUT> extends SingleOutputStreamOperator<OUT, DataStreamSource<OUT>> {
 

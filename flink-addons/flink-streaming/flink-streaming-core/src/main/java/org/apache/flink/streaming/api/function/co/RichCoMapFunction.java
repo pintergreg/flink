@@ -27,11 +27,11 @@ import org.apache.flink.api.common.functions.RichFunction;
  * {@link RichFunction} interface.
  *
  * @param <IN1>
- *            Type of the first input.
+ * 		Type of the first input.
  * @param <IN2>
- *            Type of the second input.
+ * 		Type of the second input.
  * @param <OUT>
- *            Output type.
+ * 		Output type.
  */
 public abstract class RichCoMapFunction<IN1, IN2, OUT> extends AbstractRichFunction implements
 		CoMapFunction<IN1, IN2, OUT> {

@@ -32,7 +32,7 @@ public class AckerTable implements Serializable {
 
 	protected HashMap<Long, Long> ackTable;
 
-	protected AckerTable(FTLayer ftLayer) {
+	public AckerTable(FTLayer ftLayer) {
 		this.ftLayer = ftLayer;
 		ackTable = new HashMap<Long, Long>();
 	}
@@ -44,12 +44,12 @@ public class AckerTable implements Serializable {
 		}
 	}
 
-	public synchronized void xor(long sourceRecordId, long recordId) {
+	public synchronized void xor(long sourceRecordId, long currentRecordId) {
 		try {
-			Long ackValue = ackTable.get(sourceRecordId) ^ recordId;
+			Long ackValue = ackTable.get(sourceRecordId) ^ currentRecordId;
 			if (LOG.isDebugEnabled()) {
 				LOG.debug("XORed to AckerTable: ({},{})", Long.toHexString(sourceRecordId),
-						Long.toHexString(recordId));
+						Long.toHexString(currentRecordId));
 				LOG.debug("Ack value after XOR: ({},{})", Long.toHexString(sourceRecordId),
 						Long.toHexString(ackValue));
 			}

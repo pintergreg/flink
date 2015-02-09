@@ -43,11 +43,11 @@ import org.apache.flink.streaming.api.windowing.helper.TimestampWrapper;
  * The ConnectedDataStream represents a stream for two different data types. It
  * can be used to apply transformations like {@link CoMapFunction} on two
  * {@link DataStream}s
- * 
+ *
  * @param <IN1>
- *            Type of the first input data steam.
+ * 		Type of the first input data steam.
  * @param <IN2>
- *            Type of the second input data stream.
+ * 		Type of the second input data stream.
  */
 public class ConnectedDataStream<IN1, IN2> {
 
@@ -101,7 +101,7 @@ public class ConnectedDataStream<IN1, IN2> {
 
 	/**
 	 * Returns the first {@link DataStream}.
-	 * 
+	 *
 	 * @return The first DataStream.
 	 */
 	public DataStream<IN1> getFirst() {
@@ -110,7 +110,7 @@ public class ConnectedDataStream<IN1, IN2> {
 
 	/**
 	 * Returns the second {@link DataStream}.
-	 * 
+	 *
 	 * @return The second DataStream.
 	 */
 	public DataStream<IN2> getSecond() {
@@ -119,7 +119,7 @@ public class ConnectedDataStream<IN1, IN2> {
 
 	/**
 	 * Gets the type of the first input
-	 * 
+	 *
 	 * @return The type of the first input
 	 */
 	public TypeInformation<IN1> getInputType1() {
@@ -128,7 +128,7 @@ public class ConnectedDataStream<IN1, IN2> {
 
 	/**
 	 * Gets the type of the second input
-	 * 
+	 *
 	 * @return The type of the second input
 	 */
 	public TypeInformation<IN2> getInputType2() {
@@ -140,13 +140,13 @@ public class ConnectedDataStream<IN1, IN2> {
 	 * input1 and input2 according to keyPosition1 and keyPosition2. Used for
 	 * applying function on grouped data streams for example
 	 * {@link ConnectedDataStream#reduce}
-	 * 
+	 *
 	 * @param keyPosition1
-	 *            The field used to compute the hashcode of the elements in the
-	 *            first input stream.
+	 * 		The field used to compute the hashcode of the elements in the
+	 * 		first input stream.
 	 * @param keyPosition2
-	 *            The field used to compute the hashcode of the elements in the
-	 *            second input stream.
+	 * 		The field used to compute the hashcode of the elements in the
+	 * 		second input stream.
 	 * @return @return The transformed {@link ConnectedDataStream}
 	 */
 	public ConnectedDataStream<IN1, IN2> groupBy(int keyPosition1, int keyPosition2) {
@@ -159,11 +159,11 @@ public class ConnectedDataStream<IN1, IN2> {
 	 * input1 and input2 according to keyPositions1 and keyPositions2. Used for
 	 * applying function on grouped data streams for example
 	 * {@link ConnectedDataStream#reduce}
-	 * 
+	 *
 	 * @param keyPositions1
-	 *            The fields used to group the first input stream.
+	 * 		The fields used to group the first input stream.
 	 * @param keyPositions2
-	 *            The fields used to group the second input stream.
+	 * 		The fields used to group the second input stream.
 	 * @return @return The transformed {@link ConnectedDataStream}
 	 */
 	public ConnectedDataStream<IN1, IN2> groupBy(int[] keyPositions1, int[] keyPositions2) {
@@ -177,11 +177,11 @@ public class ConnectedDataStream<IN1, IN2> {
 	 * expression is either the name of a public field or a getter method with
 	 * parentheses of the {@link DataStream}S underlying type. A dot can be used
 	 * to drill down into objects, as in {@code "field1.getInnerField2()" }.
-	 * 
+	 *
 	 * @param field1
-	 *            The grouping expression for the first input
+	 * 		The grouping expression for the first input
 	 * @param field2
-	 *            The grouping expression for the second input
+	 * 		The grouping expression for the second input
 	 * @return The grouped {@link ConnectedDataStream}
 	 */
 	public ConnectedDataStream<IN1, IN2> groupBy(String field1, String field2) {
@@ -196,11 +196,11 @@ public class ConnectedDataStream<IN1, IN2> {
 	 * with parentheses of the {@link DataStream}S underlying type. A dot can be
 	 * used to drill down into objects, as in {@code "field1.getInnerField2()" }
 	 * .
-	 * 
+	 *
 	 * @param fields1
-	 *            The grouping expressions for the first input
+	 * 		The grouping expressions for the first input
 	 * @param fields2
-	 *            The grouping expressions for the second input
+	 * 		The grouping expressions for the second input
 	 * @return The grouped {@link ConnectedDataStream}
 	 */
 	public ConnectedDataStream<IN1, IN2> groupBy(String[] fields1, String[] fields2) {
@@ -213,11 +213,11 @@ public class ConnectedDataStream<IN1, IN2> {
 	 * input1 and input2 using keySelector1 and keySelector2. Used for applying
 	 * function on grouped data streams for example
 	 * {@link ConnectedDataStream#reduce}
-	 * 
+	 *
 	 * @param keySelector1
-	 *            The {@link KeySelector} used for grouping the first input
+	 * 		The {@link KeySelector} used for grouping the first input
 	 * @param keySelector2
-	 *            The {@link KeySelector} used for grouping the second input
+	 * 		The {@link KeySelector} used for grouping the second input
 	 * @return @return The transformed {@link ConnectedDataStream}
 	 */
 	public ConnectedDataStream<IN1, IN2> groupBy(KeySelector<IN1, ?> keySelector1,
@@ -234,10 +234,10 @@ public class ConnectedDataStream<IN1, IN2> {
 	 * CoMapFunction call returns exactly one element. The user can also extend
 	 * {@link RichCoMapFunction} to gain access to other features provided by
 	 * the {@link RichFuntion} interface.
-	 * 
+	 *
 	 * @param coMapper
-	 *            The CoMapFunction used to jointly transform the two input
-	 *            DataStreams
+	 * 		The CoMapFunction used to jointly transform the two input
+	 * 		DataStreams
 	 * @return The transformed {@link DataStream}
 	 */
 	public <OUT> SingleOutputStreamOperator<OUT, ?> map(CoMapFunction<IN1, IN2, OUT> coMapper) {
@@ -258,10 +258,10 @@ public class ConnectedDataStream<IN1, IN2> {
 	 * including none. The user can also extend {@link RichFlatMapFunction} to
 	 * gain access to other features provided by the {@link RichFuntion}
 	 * interface.
-	 * 
+	 *
 	 * @param coFlatMapper
-	 *            The CoFlatMapFunction used to jointly transform the two input
-	 *            DataStreams
+	 * 		The CoFlatMapFunction used to jointly transform the two input
+	 * 		DataStreams
 	 * @return The transformed {@link DataStream}
 	 */
 	public <OUT> SingleOutputStreamOperator<OUT, ?> flatMap(
@@ -283,10 +283,10 @@ public class ConnectedDataStream<IN1, IN2> {
 	 * the reduce function can be applied incrementally. The user can also
 	 * extend the {@link RichCoReduceFunction} to gain access to other features
 	 * provided by the {@link RichFuntion} interface.
-	 * 
+	 *
 	 * @param coReducer
-	 *            The {@link CoReduceFunction} that will be called for every
-	 *            element of the inputs.
+	 * 		The {@link CoReduceFunction} that will be called for every
+	 * 		element of the inputs.
 	 * @return The transformed {@link DataStream}.
 	 */
 	public <OUT> SingleOutputStreamOperator<OUT, ?> reduce(CoReduceFunction<IN1, IN2, OUT> coReducer) {
@@ -303,17 +303,16 @@ public class ConnectedDataStream<IN1, IN2> {
 	 * transformation calls the {@link CoWindowFunction#coWindow} method for for
 	 * time aligned windows of the two data streams. System time is used as
 	 * default to compute windows.
-	 * 
+	 *
 	 * @param coWindowFunction
-	 *            The {@link CoWindowFunction} that will be applied for the time
-	 *            windows.
+	 * 		The {@link CoWindowFunction} that will be applied for the time
+	 * 		windows.
 	 * @param windowSize
-	 *            Size of the windows that will be aligned for both streams in
-	 *            milliseconds.
+	 * 		Size of the windows that will be aligned for both streams in
+	 * 		milliseconds.
 	 * @param slideInterval
-	 *            After every function call the windows will be slid by this
-	 *            interval.
-	 * 
+	 * 		After every function call the windows will be slid by this
+	 * 		interval.
 	 * @return The transformed {@link DataStream}.
 	 */
 	@SuppressWarnings("unchecked")
@@ -329,22 +328,21 @@ public class ConnectedDataStream<IN1, IN2> {
 	 * transformation calls the {@link CoWindowFunction#coWindow} method for
 	 * time aligned windows of the two data streams. The user can implement
 	 * their own time stamps or use the system time by default.
-	 * 
+	 *
 	 * @param coWindowFunction
-	 *            The {@link CoWindowFunction} that will be applied for the time
-	 *            windows.
+	 * 		The {@link CoWindowFunction} that will be applied for the time
+	 * 		windows.
 	 * @param windowSize
-	 *            Size of the windows that will be aligned for both streams. If
-	 *            system time is used it is milliseconds. User defined time
-	 *            stamps are assumed to be monotonically increasing.
+	 * 		Size of the windows that will be aligned for both streams. If
+	 * 		system time is used it is milliseconds. User defined time
+	 * 		stamps are assumed to be monotonically increasing.
 	 * @param slideInterval
-	 *            After every function call the windows will be slid by this
-	 *            interval.
-	 * 
+	 * 		After every function call the windows will be slid by this
+	 * 		interval.
 	 * @param timestamp1
-	 *            User defined time stamps for the first input.
+	 * 		User defined time stamps for the first input.
 	 * @param timestamp2
-	 *            User defined time stamps for the second input.
+	 * 		User defined time stamps for the second input.
 	 * @return The transformed {@link DataStream}.
 	 */
 	public <OUT> SingleOutputStreamOperator<OUT, ?> windowReduce(
@@ -398,7 +396,7 @@ public class ConnectedDataStream<IN1, IN2> {
 	public <OUT> SingleOutputStreamOperator<OUT, ?> addCoFunction(String functionName,
 			TypeInformation<OUT> outTypeInfo, CoInvokable<IN1, IN2, OUT> functionInvokable) {
 
-		@SuppressWarnings({ "unchecked", "rawtypes" })
+		@SuppressWarnings({"unchecked", "rawtypes"})
 		SingleOutputStreamOperator<OUT, ?> returnStream = new SingleOutputStreamOperator(
 				environment, functionName, outTypeInfo, functionInvokable);
 

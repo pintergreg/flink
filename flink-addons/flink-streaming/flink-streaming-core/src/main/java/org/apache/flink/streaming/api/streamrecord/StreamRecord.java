@@ -19,11 +19,9 @@ package org.apache.flink.streaming.api.streamrecord;
 
 import java.io.Serializable;
 
-import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple;
-import org.apache.flink.runtime.plugable.SerializationDelegate;
-import org.apache.flink.streaming.api.ft.layer.util.RecordId;
+import org.apache.flink.streaming.api.ft.layer.id.RecordId;
 
 /**
  * Object for wrapping a tuple or other object with ID used for sending records
@@ -42,6 +40,7 @@ public class StreamRecord<T> implements IdentifiableStreamRecord, Serializable {
 	public StreamRecord() {
 		id = new RecordId();
 	}
+
 	/**
 	 * @return The ID of the object
 	 */
@@ -54,7 +53,7 @@ public class StreamRecord<T> implements IdentifiableStreamRecord, Serializable {
 	 * Sets the ID of the StreamRecord
 	 *
 	 * @param id
-	 *            id to set
+	 * 		id to set
 	 */
 	@Override
 	public void setId(RecordId id) {
@@ -69,7 +68,7 @@ public class StreamRecord<T> implements IdentifiableStreamRecord, Serializable {
 
 	/**
 	 * Gets the wrapped object from the StreamRecord
-	 * 
+	 *
 	 * @return The object wrapped
 	 */
 	public T getObject() {
@@ -80,9 +79,9 @@ public class StreamRecord<T> implements IdentifiableStreamRecord, Serializable {
 	 * Gets the field of the contained object at the given position. If a tuple
 	 * is wrapped then the getField method is invoked. If the StreamRecord
 	 * contains and object of Basic types only position 0 could be returned.
-	 * 
+	 *
 	 * @param pos
-	 *            Position of the field to get.
+	 * 		Position of the field to get.
 	 * @return Returns the object contained in the position.
 	 */
 	public Object getField(int pos) {
@@ -99,9 +98,9 @@ public class StreamRecord<T> implements IdentifiableStreamRecord, Serializable {
 
 	/**
 	 * Extracts key for the stored object using the keySelector provided.
-	 * 
+	 *
 	 * @param keySelector
-	 *            KeySelector for extracting the key
+	 * 		KeySelector for extracting the key
 	 * @return The extracted key
 	 */
 	public <R> R getKey(KeySelector<T, R> keySelector) {
@@ -114,9 +113,9 @@ public class StreamRecord<T> implements IdentifiableStreamRecord, Serializable {
 
 	/**
 	 * Sets the object stored
-	 * 
+	 *
 	 * @param object
-	 *            Object to set
+	 * 		Object to set
 	 * @return Returns the StreamRecord object
 	 */
 	public StreamRecord<T> setObject(T object) {

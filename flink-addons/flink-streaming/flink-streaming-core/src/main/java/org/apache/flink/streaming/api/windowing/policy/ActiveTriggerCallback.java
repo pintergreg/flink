@@ -22,11 +22,10 @@ package org.apache.flink.streaming.api.windowing.policy;
  * {@link Runnable} classes. Such {@link Runnable} classes will be executed as
  * an own thread and can submit fake elements, to the element buffer at any
  * time.
- * 
+ * <p/>
  * The factory method for runnables of the {@link ActiveTriggerPolicy} gets an
  * instance of this interface as parameter. The describes adding of elements can
  * be done by the runnable using the methods provided in this interface.
- * 
  */
 public interface ActiveTriggerCallback {
 
@@ -36,9 +35,9 @@ public interface ActiveTriggerCallback {
 	 * result of the reduce function. The submission of a fake element causes
 	 * notifications only at the {@link ActiveTriggerPolicy} and
 	 * {@link ActiveEvictionPolicy} implementations.
-	 * 
+	 *
 	 * @param datapoint
-	 *            the fake data point to be added
+	 * 		the fake data point to be added
 	 */
 	public void sendFakeElement(Object datapoint);
 

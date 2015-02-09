@@ -19,9 +19,9 @@ package org.apache.flink.streaming.api.windowing.policy;
 
 /**
  * This policy triggers at every n'th element.
- * 
+ *
  * @param <IN>
- *            The type of the data points which are handled by this policy
+ * 		The type of the data points which are handled by this policy
  */
 public class CountTriggerPolicy<IN> implements CloneableTriggerPolicy<IN> {
 
@@ -38,9 +38,9 @@ public class CountTriggerPolicy<IN> implements CloneableTriggerPolicy<IN> {
 	/**
 	 * This constructor will set up a count based trigger, which triggers after
 	 * max elements have arrived.
-	 * 
+	 *
 	 * @param max
-	 *            The number of arriving elements before the trigger occurs.
+	 * 		The number of arriving elements before the trigger occurs.
 	 */
 	public CountTriggerPolicy(int max) {
 		this(max, DEFAULT_START_VALUE);
@@ -54,11 +54,11 @@ public class CountTriggerPolicy<IN> implements CloneableTriggerPolicy<IN> {
 	 * windows. For example if the size of a window should be 4 and a trigger
 	 * should happen every 2, a start value of -2 would allow to also have the
 	 * first window of size 4.
-	 * 
+	 *
 	 * @param max
-	 *            The number of arriving elements before the trigger occurs.
+	 * 		The number of arriving elements before the trigger occurs.
 	 * @param startValue
-	 *            The start value for the counter of arriving elements.
+	 * 		The start value for the counter of arriving elements.
 	 * @see CountTriggerPolicy#CountTriggerPolicy(int)
 	 */
 	public CountTriggerPolicy(int max, int startValue) {

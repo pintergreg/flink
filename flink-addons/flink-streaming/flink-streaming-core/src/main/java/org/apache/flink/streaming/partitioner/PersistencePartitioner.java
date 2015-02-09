@@ -20,16 +20,18 @@ package org.apache.flink.streaming.partitioner;
 
 import java.io.Serializable;
 
-import org.apache.flink.core.io.IOReadableWritable;
 import org.apache.flink.runtime.io.network.api.writer.ChannelSelector;
+import org.apache.flink.runtime.plugable.SerializationDelegate;
+import org.apache.flink.streaming.api.streamrecord.StreamRecord;
 
-public class PersistencePartitioner<T extends IOReadableWritable> implements
-		ChannelSelector<T>, Serializable {
-
+public class PersistencePartitioner<T> implements
+		ChannelSelector<SerializationDelegate<StreamRecord<T>>>, Serializable {
 	private static final long serialVersionUID = 1L;
 
 	@Override
-	public int[] selectChannels(T record, int numChannels) {
-		return new int[] {0};
+	public int[] selectChannels(SerializationDelegate<StreamRecord<T>> record,
+			int numberOfOutputChannels) {
+		return new int[]{Math.abs(record.getInstance().getId().hashCode()
+				% numberOfOutputChannels)};
 	}
 }

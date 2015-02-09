@@ -31,11 +31,11 @@ import org.apache.flink.streaming.state.OperatorState;
 /**
  * The SingleOutputStreamOperator represents a user defined transformation
  * applied on a {@link DataStream} with one predefined output type.
- * 
+ *
  * @param <OUT>
- *            Output type of the operator.
+ * 		Output type of the operator.
  * @param <O>
- *            Type of the operator.
+ * 		Type of the operator.
  */
 public class SingleOutputStreamOperator<OUT, O extends SingleOutputStreamOperator<OUT, O>> extends
 		DataStream<OUT> {
@@ -70,9 +70,9 @@ public class SingleOutputStreamOperator<OUT, O extends SingleOutputStreamOperato
 	/**
 	 * Sets the degree of parallelism for this operator. The degree must be 1 or
 	 * more.
-	 * 
+	 *
 	 * @param dop
-	 *            The degree of parallelism for this operator.
+	 * 		The degree of parallelism for this operator.
 	 * @return The operator with set degree of parallelism.
 	 */
 	public SingleOutputStreamOperator<OUT, O> setParallelism(int dop) {
@@ -89,9 +89,9 @@ public class SingleOutputStreamOperator<OUT, O extends SingleOutputStreamOperato
 	/**
 	 * Sets the maximum time frequency (ms) for the flushing of the output
 	 * buffer. By default the output buffers flush only when they are full.
-	 * 
+	 *
 	 * @param timeoutMillis
-	 *            The maximum time between two output flushes.
+	 * 		The maximum time between two output flushes.
 	 * @return The operator with buffer timeout set.
 	 */
 	public SingleOutputStreamOperator<OUT, O> setBufferTimeout(long timeoutMillis) {
@@ -105,11 +105,11 @@ public class SingleOutputStreamOperator<OUT, O extends SingleOutputStreamOperato
 	 * during runtime using {@link StreamingRuntimeContext#getState(String)}. To
 	 * obtain the {@link StreamingRuntimeContext} from the user-defined function
 	 * use the {@link RichFunction#getRuntimeContext()} method.
-	 * 
+	 *
 	 * @param name
-	 *            The name of the operator state.
+	 * 		The name of the operator state.
 	 * @param state
-	 *            The state to be registered for this name.
+	 * 		The state to be registered for this name.
 	 * @return The data stream with state registered.
 	 */
 	protected SingleOutputStreamOperator<OUT, O> registerState(String name, OperatorState<?> state) {
@@ -123,9 +123,9 @@ public class SingleOutputStreamOperator<OUT, O extends SingleOutputStreamOperato
 	 * runtime using {@link StreamingRuntimeContext#getState(String)}. To obtain
 	 * the {@link StreamingRuntimeContext} from the user-defined function use
 	 * the {@link RichFunction#getRuntimeContext()} method.
-	 * 
+	 *
 	 * @param states
-	 *            The map containing the states that will be registered.
+	 * 		The map containing the states that will be registered.
 	 * @return The data stream with states registered.
 	 */
 	protected SingleOutputStreamOperator<OUT, O> registerState(Map<String, OperatorState<?>> states) {

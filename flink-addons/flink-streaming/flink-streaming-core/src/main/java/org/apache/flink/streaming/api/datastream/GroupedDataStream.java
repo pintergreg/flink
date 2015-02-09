@@ -31,9 +31,9 @@ import org.slf4j.LoggerFactory;
  * partitioned by the given {@link KeySelector}. Operators like {@link #reduce},
  * {@link #batchReduce} etc. can be applied on the {@link GroupedDataStream} to
  * get additional functionality by the grouping.
- * 
+ *
  * @param <OUT>
- *            The output type of the {@link GroupedDataStream}.
+ * 		The output type of the {@link GroupedDataStream}.
  */
 public class GroupedDataStream<OUT> extends DataStream<OUT> {
 
@@ -62,10 +62,10 @@ public class GroupedDataStream<OUT> extends DataStream<OUT> {
 	 * go to the same reducer.The user can also extend
 	 * {@link RichReduceFunction} to gain access to other features provided by
 	 * the {@link RichFuntion} interface.
-	 * 
+	 *
 	 * @param reducer
-	 *            The {@link ReduceFunction} that will be called for every
-	 *            element of the input values with the same key.
+	 * 		The {@link ReduceFunction} that will be called for every
+	 * 		element of the input values with the same key.
 	 * @return The transformed DataStream.
 	 */
 	@Override
@@ -78,9 +78,9 @@ public class GroupedDataStream<OUT> extends DataStream<OUT> {
 	 * Applies an aggregation that sums the grouped data stream at the given
 	 * position, grouped by the given key position. Input values with the same
 	 * key will be summed.
-	 * 
+	 *
 	 * @param positionToSum
-	 *            The position in the data point to sum
+	 * 		The position in the data point to sum
 	 * @return The transformed DataStream.
 	 */
 	@Override
@@ -92,9 +92,9 @@ public class GroupedDataStream<OUT> extends DataStream<OUT> {
 	 * Applies an aggregation that gives the minimum of the grouped data stream
 	 * at the given position, grouped by the given key position. Input values
 	 * with the same key will be minimized.
-	 * 
+	 *
 	 * @param positionToMin
-	 *            The position in the data point to minimize
+	 * 		The position in the data point to minimize
 	 * @return The transformed DataStream.
 	 */
 	@Override
@@ -107,9 +107,9 @@ public class GroupedDataStream<OUT> extends DataStream<OUT> {
 	 * minimum value at the given position for each group on a grouped data
 	 * stream. If more elements have the minimum value at the given position,
 	 * the operator returns the first one by default.
-	 * 
+	 *
 	 * @param positionToMinBy
-	 *            The position in the data point to minimize
+	 * 		The position in the data point to minimize
 	 * @return The transformed DataStream.
 	 */
 	@Override
@@ -123,12 +123,12 @@ public class GroupedDataStream<OUT> extends DataStream<OUT> {
 	 * stream. If more elements have the minimum value at the given position,
 	 * the operator returns either the first or last one depending on the
 	 * parameters.
-	 * 
+	 *
 	 * @param positionToMinBy
-	 *            The position in the data point to minimize
+	 * 		The position in the data point to minimize
 	 * @param first
-	 *            If true, then the operator return the first element with the
-	 *            maximum value, otherwise returns the last
+	 * 		If true, then the operator return the first element with the
+	 * 		maximum value, otherwise returns the last
 	 * @return The transformed DataStream.
 	 */
 	@Override
@@ -140,9 +140,9 @@ public class GroupedDataStream<OUT> extends DataStream<OUT> {
 	 * Applies an aggregation that gives the maximum of the grouped data stream
 	 * at the given position, grouped by the given key position. Input values
 	 * with the same key will be maximized.
-	 * 
+	 *
 	 * @param positionToMax
-	 *            The position in the data point to maximize
+	 * 		The position in the data point to maximize
 	 * @return The transformed DataStream.
 	 */
 	@Override
@@ -155,9 +155,9 @@ public class GroupedDataStream<OUT> extends DataStream<OUT> {
 	 * maximum value at the given position for each group on a grouped data
 	 * stream. If more elements have the maximum value at the given position,
 	 * the operator returns the first one by default.
-	 * 
+	 *
 	 * @param positionToMaxBy
-	 *            The position in the data point to maximize
+	 * 		The position in the data point to maximize
 	 * @return The transformed DataStream.
 	 */
 	@Override
@@ -171,12 +171,12 @@ public class GroupedDataStream<OUT> extends DataStream<OUT> {
 	 * stream. If more elements have the maximum value at the given position,
 	 * the operator returns either the first or last one depending on the
 	 * parameters.
-	 * 
+	 *
 	 * @param positionToMaxBy
-	 *            The position in the data point to maximize
+	 * 		The position in the data point to maximize
 	 * @param first
-	 *            If true, then the operator return the first element with the
-	 *            maximum value, otherwise returns the last
+	 * 		If true, then the operator return the first element with the
+	 * 		maximum value, otherwise returns the last
 	 * @return The transformed DataStream.
 	 */
 	@Override

@@ -27,7 +27,7 @@ import java.util.ArrayList;
  * Writes tuples in text format.
  *
  * @param <IN>
- *            Input tuple type
+ * 		Input tuple type
  */
 public class WriteFormatAsText<IN> extends WriteFormat<IN> {
 	private static final long serialVersionUID = 1L;

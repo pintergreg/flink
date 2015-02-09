@@ -23,12 +23,12 @@ package org.apache.flink.streaming.api.windowing.policy;
  * {@link ActiveEvictionPolicy#notifyEvictionWithFakeElement(Object, int)} to
  * {@link EvictionPolicy#notifyEviction(Object, boolean, int)} while the
  * triggered parameter will be set to true.
- * 
+ * <p/>
  * This class additionally implements the clone method and can wrap around
  * {@link CloneableEvictionPolicy} to make it active.
- * 
+ *
  * @param <DATA>
- *            The data type handled by this policy
+ * 		The data type handled by this policy
  */
 public class ActiveCloneableEvictionPolicyWrapper<DATA> extends ActiveEvictionPolicyWrapper<DATA>
 		implements CloneableEvictionPolicy<DATA> {
@@ -43,12 +43,12 @@ public class ActiveCloneableEvictionPolicyWrapper<DATA> extends ActiveEvictionPo
 	 * Creates a wrapper which activates the eviction policy which is wrapped
 	 * in. This means that the nested policy will get called on fake elements as
 	 * well as on real elements.
-	 * 
+	 * <p/>
 	 * This specialized version of the {@link ActiveEvictionPolicyWrapper} works
 	 * with {@link CloneableEvictionPolicy} and is thereby cloneable as well.
-	 * 
+	 *
 	 * @param nestedPolicy
-	 *            The policy which should be activated/wrapped in.
+	 * 		The policy which should be activated/wrapped in.
 	 */
 	public ActiveCloneableEvictionPolicyWrapper(CloneableEvictionPolicy<DATA> nestedPolicy) {
 		super(nestedPolicy);

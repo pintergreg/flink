@@ -30,8 +30,7 @@ import org.apache.flink.core.memory.DataOutputView;
 
 /**
  * Object for creating unique IDs for {@link StreamRecord}s.
- * 
- **/
+ */
 public class UID implements IOReadableWritable, Serializable {
 	private static final long serialVersionUID = 1L;
 

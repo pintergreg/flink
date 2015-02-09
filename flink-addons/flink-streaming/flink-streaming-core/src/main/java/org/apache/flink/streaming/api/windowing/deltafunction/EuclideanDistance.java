@@ -22,14 +22,14 @@ import org.apache.flink.streaming.api.windowing.extractor.Extractor;
 /**
  * This delta function calculates the euclidean distance between two given
  * points.
- * 
+ * <p/>
  * Euclidean distance: http://en.wikipedia.org/wiki/Euclidean_distance
- * 
+ *
  * @param <DATA>
- *            The input data type. This delta function works with a double[],
- *            but can extract/convert to it from any other given object in case
- *            the respective extractor has been set. See
- *            {@link ExtractionAwareDeltaFunction} for more information.
+ * 		The input data type. This delta function works with a double[],
+ * 		but can extract/convert to it from any other given object in case
+ * 		the respective extractor has been set. See
+ * 		{@link ExtractionAwareDeltaFunction} for more information.
  */
 public class EuclideanDistance<DATA> extends ExtractionAwareDeltaFunction<DATA, double[]> {
 

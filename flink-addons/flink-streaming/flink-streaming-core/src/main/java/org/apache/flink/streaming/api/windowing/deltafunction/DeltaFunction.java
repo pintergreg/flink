@@ -26,17 +26,17 @@ import java.io.Serializable;
  * points.
  *
  * @param <DATA>
- *            The type of input data which can be compared using this function.
+ * 		The type of input data which can be compared using this function.
  */
 public interface DeltaFunction<DATA> extends Serializable {
 
 	/**
 	 * Calculates the delta between two given data points.
-	 * 
+	 *
 	 * @param oldDataPoint
-	 *            the old data point.
+	 * 		the old data point.
 	 * @param newDataPoint
-	 *            the new data point.
+	 * 		the new data point.
 	 * @return the delta between the two given points.
 	 */
 	public double getDelta(DATA oldDataPoint, DATA newDataPoint);

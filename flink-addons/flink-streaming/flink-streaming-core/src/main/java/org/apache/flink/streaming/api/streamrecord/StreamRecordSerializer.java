@@ -18,12 +18,12 @@
 
 package org.apache.flink.streaming.api.streamrecord;
 
+import java.io.IOException;
+
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.core.memory.DataInputView;
 import org.apache.flink.core.memory.DataOutputView;
-
-import java.io.IOException;
 
 public class StreamRecordSerializer<T> extends TypeSerializer<StreamRecord<T>> {
 

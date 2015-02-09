@@ -21,13 +21,13 @@ package org.apache.flink.streaming.api.windowing.policy;
  * This eviction policy deletes all elements from the buffer in case a trigger
  * occurred. Therefore, it is the default eviction policy to be used for any
  * tumbling window.
- * 
+ * <p/>
  * By default this policy does not react on fake elements. Wrap it in an
  * {@link ActiveEvictionPolicyWrapper} to make it clearing the buffer even on
  * fake elements.
- * 
+ *
  * @param <DATA>
- *            The type of the data points which is handled by this policy
+ * 		The type of the data points which is handled by this policy
  */
 public class TumblingEvictionPolicy<DATA> implements CloneableEvictionPolicy<DATA> {
 
@@ -54,13 +54,13 @@ public class TumblingEvictionPolicy<DATA> implements CloneableEvictionPolicy<DAT
 	/**
 	 * This constructor allows to set a custom start value for the element
 	 * counter.
-	 * 
+	 * <p/>
 	 * This eviction policy deletes all elements from the buffer in case a
 	 * trigger occurred. Therefore, it is the default eviction policy to be used
 	 * for any tumbling window.
-	 * 
+	 *
 	 * @param startValue
-	 *            A start value for the element counter
+	 * 		A start value for the element counter
 	 */
 	public TumblingEvictionPolicy(int startValue) {
 		this.counter = startValue;

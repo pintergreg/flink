@@ -24,14 +24,14 @@ import org.apache.flink.streaming.api.streamrecord.StreamRecord;
 /**
  * Partitioner that selects the same (one) channel for two Tuples having a
  * specified fields equal.
- * 
+ *
  * @param <T>
- *            Type of the Tuple
+ * 		Type of the Tuple
  */
 public class FieldsPartitioner<T> extends StreamPartitioner<T> {
 	private static final long serialVersionUID = 1L;
 
-	private int[] returnArray = new int[1];;
+	private int[] returnArray = new int[1];
 	KeySelector<T, ?> keySelector;
 
 	public FieldsPartitioner(KeySelector<T, ?> keySelector) {
@@ -46,5 +46,9 @@ public class FieldsPartitioner<T> extends StreamPartitioner<T> {
 				% numberOfOutputChannels);
 
 		return returnArray;
+	}
+
+	public KeySelector<T, ?> getKeySelector() {
+		return keySelector;
 	}
 }

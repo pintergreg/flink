@@ -17,18 +17,18 @@
 
 package org.apache.flink.streaming.api.ft.layer.collector;
 
+import java.util.List;
+
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.runtime.io.network.api.writer.RecordWriter;
 import org.apache.flink.runtime.plugable.SerializationDelegate;
 import org.apache.flink.streaming.api.ft.layer.FTLayer;
-import org.apache.flink.streaming.api.ft.layer.util.RecordId;
-import org.apache.flink.streaming.api.ft.layer.util.SemiDeserializedStreamRecord;
+import org.apache.flink.streaming.api.ft.layer.id.RecordId;
+import org.apache.flink.streaming.api.ft.layer.serialization.SemiDeserializedStreamRecord;
 import org.apache.flink.util.Collector;
 import org.apache.flink.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.List;
 
 /**
  * For collecting failed records to tasks successives to a given source.
@@ -43,13 +43,12 @@ public class FailedRecordCollector implements Collector<SemiDeserializedStreamRe
 	public FailedRecordCollector(
 			List<RecordWriter<SerializationDelegate<SemiDeserializedStreamRecord>>> outputs,
 			TypeSerializer<SemiDeserializedStreamRecord> typeSerializer, FTLayer ftLayer) {
-		//TypeSerializer<SemiDeserializedStreamRecord> typeSerializer = new AsStreamRecordSerializer();
 		this.outputs = outputs;
 		this.serializationDelegate = new SerializationDelegate<SemiDeserializedStreamRecord>(
 				typeSerializer);
 		this.ftLayer = ftLayer;
+
 		// TODO set it with serializer
-		// this.serializationDelegate = ...
 	}
 
 	/**

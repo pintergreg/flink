@@ -49,11 +49,11 @@ public abstract class TemporalOperator<I1, I2, OP extends TemporalWindow<OP>> {
 	 * Defines the window size on which the two DataStreams will be transformed.
 	 * To define sliding windows call {@link TemporalWindow#every} on the
 	 * resulting operator.
-	 * 
+	 *
 	 * @param length
-	 *            The size of the window in milliseconds.
+	 * 		The size of the window in milliseconds.
 	 * @param timeUnit
-	 *            The unit if time to be used
+	 * 		The unit if time to be used
 	 * @return An incomplete temporal transformation.
 	 */
 	@SuppressWarnings("unchecked")
@@ -68,15 +68,15 @@ public abstract class TemporalOperator<I1, I2, OP extends TemporalWindow<OP>> {
 	 * Defines the window size on which the two DataStreams will be
 	 * transformed.To define sliding windows call {@link TemporalWindow#every}
 	 * on the resulting operator.
-	 * 
+	 *
 	 * @param windowSize
-	 *            The size of the window in milliseconds.
+	 * 		The size of the window in milliseconds.
 	 * @param timeStamp1
-	 *            The timestamp used to extract time from the elements of the
-	 *            first data stream.
+	 * 		The timestamp used to extract time from the elements of the
+	 * 		first data stream.
 	 * @param timeStamp2
-	 *            The timestamp used to extract time from the elements of the
-	 *            second data stream.
+	 * 		The timestamp used to extract time from the elements of the
+	 * 		second data stream.
 	 * @return An incomplete temporal transformation.
 	 */
 	public OP onWindow(long length, Timestamp<I1> timeStamp1, Timestamp<I2> timeStamp2) {
@@ -88,17 +88,17 @@ public abstract class TemporalOperator<I1, I2, OP extends TemporalWindow<OP>> {
 	 * Defines the window size on which the two DataStreams will be
 	 * transformed.To define sliding windows call {@link TemporalWindow#every}
 	 * on the resulting operator.
-	 * 
+	 *
 	 * @param windowSize
-	 *            The size of the window in milliseconds.
+	 * 		The size of the window in milliseconds.
 	 * @param timeStamp1
-	 *            The timestamp used to extract time from the elements of the
-	 *            first data stream.
+	 * 		The timestamp used to extract time from the elements of the
+	 * 		first data stream.
 	 * @param timeStamp2
-	 *            The timestamp used to extract time from the elements of the
-	 *            second data stream.
+	 * 		The timestamp used to extract time from the elements of the
+	 * 		second data stream.
 	 * @param startTime
-	 *            The start time to measure the first window
+	 * 		The start time to measure the first window
 	 * @return An incomplete temporal transformation.
 	 */
 	public OP onWindow(long length, Timestamp<I1> timeStamp1, Timestamp<I2> timeStamp2,

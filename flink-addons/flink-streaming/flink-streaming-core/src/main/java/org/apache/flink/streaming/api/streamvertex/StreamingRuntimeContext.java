@@ -47,9 +47,9 @@ public class StreamingRuntimeContext extends RuntimeUDFContext {
 
 	/**
 	 * Returns the operator state registered by the given name for the operator.
-	 * 
+	 *
 	 * @param name
-	 *            Name of the operator state to be returned.
+	 * 		Name of the operator state to be returned.
 	 * @return The operator state.
 	 */
 	public OperatorState<?> getState(String name) {
@@ -68,7 +68,7 @@ public class StreamingRuntimeContext extends RuntimeUDFContext {
 
 	/**
 	 * Returns the input split provider associated with the operator.
-	 * 
+	 *
 	 * @return The input split provider.
 	 */
 	public InputSplitProvider getInputSplitProvider() {
@@ -78,7 +78,7 @@ public class StreamingRuntimeContext extends RuntimeUDFContext {
 	/**
 	 * Returns the stub parameters associated with the {@link TaskConfig} of the
 	 * operator.
-	 * 
+	 *
 	 * @return The stub parameters.
 	 */
 	public Configuration getTaskStubParameters() {

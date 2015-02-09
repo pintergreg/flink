@@ -148,7 +148,7 @@ public abstract class SumAggregator {
 
 			if (cType instanceof PojoTypeInfo) {
 				comparator = (PojoComparator<T>) cType.createComparator(
-						new int[] { logicalKeyPosition }, new boolean[] { false }, 0);
+						new int[]{logicalKeyPosition}, new boolean[]{false}, 0);
 			} else {
 				throw new IllegalArgumentException(
 						"Key expressions are only supported on POJO types. "

@@ -19,7 +19,7 @@ package org.apache.flink.streaming.api.function.aggregation;
 
 import java.io.Serializable;
 
-public abstract class SumFunction implements Serializable{
+public abstract class SumFunction implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 

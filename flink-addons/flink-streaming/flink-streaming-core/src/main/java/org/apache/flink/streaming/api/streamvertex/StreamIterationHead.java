@@ -24,7 +24,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.flink.streaming.api.collector.StreamOutput;
-import org.apache.flink.streaming.api.ft.layer.NonFT;
+import org.apache.flink.streaming.api.ft.layer.runtime.NonFTHandler;
 import org.apache.flink.streaming.api.streamrecord.StreamRecord;
 import org.apache.flink.streaming.io.BlockingQueueBroker;
 import org.slf4j.Logger;
@@ -52,8 +52,8 @@ public class StreamIterationHead<OUT> extends StreamSourceVertex<OUT> {
 
 	@Override
 	public void setInputsOutputs() {
-		abstractFT = new NonFT<OUT>();
-		outputHandler = new OutputHandler<OUT>(this, abstractFT);
+		abstractFTHandler = new NonFTHandler<OUT>();
+		outputHandler = new OutputHandler<OUT>(this, abstractFTHandler);
 
 		iterationId = configuration.getIterationId();
 		iterationWaitTime = configuration.getIterationWaitTime();

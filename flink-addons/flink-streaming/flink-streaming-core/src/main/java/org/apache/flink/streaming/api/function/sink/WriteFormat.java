@@ -25,18 +25,18 @@ import java.util.ArrayList;
  * functions.
  *
  * @param <IN>
- *            Input tuple type
+ * 		Input tuple type
  */
 public abstract class WriteFormat<IN> implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 	/**
 	 * Writes the contents of tupleList to the file specified by path.
-	 * 
+	 *
 	 * @param path
-	 *            is the path to the location where the tuples are written
+	 * 		is the path to the location where the tuples are written
 	 * @param tupleList
-	 *            is the list of tuples to be written
+	 * 		is the list of tuples to be written
 	 */
 	protected abstract void write(String path, ArrayList<IN> tupleList);
 

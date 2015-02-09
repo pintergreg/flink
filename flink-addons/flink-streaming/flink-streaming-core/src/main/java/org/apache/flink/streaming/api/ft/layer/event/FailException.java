@@ -37,7 +37,8 @@ public class FailException extends RuntimeException implements Serializable {
 	/**
 	 * Construct a new <code>FailException</code>.
 	 *
-	 * @param message the detail message for this exception
+	 * @param message
+	 * 		the detail message for this exception
 	 */
 	public FailException(String message) {
 		this(message, null);
@@ -46,8 +47,10 @@ public class FailException extends RuntimeException implements Serializable {
 	/**
 	 * Construct a new <code>FailException</code>.
 	 *
-	 * @param message   the detail message for this exception
-	 * @param exception the root cause of the exception
+	 * @param message
+	 * 		the detail message for this exception
+	 * @param exception
+	 * 		the root cause of the exception
 	 */
 	public FailException(String message, Throwable exception) {
 		super(message);

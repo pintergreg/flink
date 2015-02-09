@@ -19,8 +19,8 @@ package org.apache.flink.streaming.api.invokable.operator.co;
 
 import org.apache.flink.api.common.functions.Function;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
-import org.apache.flink.streaming.api.ft.layer.AbstractFT;
 import org.apache.flink.streaming.api.ft.layer.event.FailException;
+import org.apache.flink.streaming.api.ft.layer.runtime.AbstractFTHandler;
 import org.apache.flink.streaming.api.invokable.StreamInvokable;
 import org.apache.flink.streaming.api.streamrecord.StreamRecord;
 import org.apache.flink.streaming.api.streamrecord.StreamRecordSerializer;
@@ -48,7 +48,7 @@ public abstract class CoInvokable<IN1, IN2, OUT> extends StreamInvokable<IN1, OU
 	protected TypeSerializer<IN2> serializer2;
 
 	@Override
-	public void setup(StreamTaskContext<OUT> taskContext, AbstractFT abstractFT) {
+	public void setup(StreamTaskContext<OUT> taskContext, AbstractFTHandler abstractFTHandler) {
 		this.collector = taskContext.getOutputCollector();
 
 		this.recordIterator = taskContext.getCoReader();
@@ -61,7 +61,7 @@ public abstract class CoInvokable<IN1, IN2, OUT> extends StreamInvokable<IN1, OU
 
 		this.serializer1 = srSerializer1.getObjectSerializer();
 		this.serializer2 = srSerializer2.getObjectSerializer();
-		this.abstractFT = abstractFT;
+		this.abstractFTHandler = abstractFTHandler;
 	}
 
 	protected void resetReuseAll() {
@@ -117,12 +117,12 @@ public abstract class CoInvokable<IN1, IN2, OUT> extends StreamInvokable<IN1, OU
 
 	protected void callUserFunctionAndLogException1() {
 		try {
-			abstractFT.setAnchorRecord(reuse1);
+			abstractFTHandler.setAnchorRecord(reuse1);
 			callUserFunction1();
-			abstractFT.xor(reuse1);
+			abstractFTHandler.xor(reuse1);
 		} catch (FailException e) {
-			abstractFT.fail();
-			abstractFT.xor(reuse1);
+			abstractFTHandler.fail();
+			abstractFTHandler.xor(reuse1);
 		} catch (Exception e) {
 			if (LOG.isErrorEnabled()) {
 				LOG.error("Calling user function failed due to: {}",
@@ -133,12 +133,12 @@ public abstract class CoInvokable<IN1, IN2, OUT> extends StreamInvokable<IN1, OU
 
 	protected void callUserFunctionAndLogException2() {
 		try {
-			abstractFT.setAnchorRecord(reuse2);
+			abstractFTHandler.setAnchorRecord(reuse2);
 			callUserFunction2();
-			abstractFT.xor(reuse2);
+			abstractFTHandler.xor(reuse2);
 		} catch (FailException e) {
-			abstractFT.fail();
-			abstractFT.xor(reuse2);
+			abstractFTHandler.fail();
+			abstractFTHandler.xor(reuse2);
 		} catch (Exception e) {
 			if (LOG.isErrorEnabled()) {
 				LOG.error("Calling user function failed due to: {}",

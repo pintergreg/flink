@@ -48,15 +48,15 @@ public abstract class WindowInvokable<IN, OUT> extends StreamInvokable<IN, OUT> 
 	/**
 	 * This constructor created a windowing invokable using trigger and eviction
 	 * policies.
-	 * 
+	 *
 	 * @param userFunction
-	 *            The user defined {@link ReduceFunction}
+	 * 		The user defined {@link ReduceFunction}
 	 * @param triggerPolicies
-	 *            A list of {@link TriggerPolicy}s and/or
-	 *            {@link ActiveTriggerPolicy}s
+	 * 		A list of {@link TriggerPolicy}s and/or
+	 * 		{@link ActiveTriggerPolicy}s
 	 * @param evictionPolicies
-	 *            A list of {@link EvictionPolicy}s and/or
-	 *            {@link ActiveEvictionPolicy}s
+	 * 		A list of {@link EvictionPolicy}s and/or
+	 * 		{@link ActiveEvictionPolicy}s
 	 */
 	public WindowInvokable(Function userFunction, LinkedList<TriggerPolicy<IN>> triggerPolicies,
 			LinkedList<EvictionPolicy<IN>> evictionPolicies) {
@@ -95,7 +95,9 @@ public abstract class WindowInvokable<IN, OUT> extends StreamInvokable<IN, OUT> 
 				thread.start();
 			}
 		}
-	};
+	}
+
+	;
 
 	/**
 	 * This class allows the active trigger threads to call back and push fake
@@ -145,7 +147,7 @@ public abstract class WindowInvokable<IN, OUT> extends StreamInvokable<IN, OUT> 
 	 * This method gets called in case of an grouped windowing in case central
 	 * trigger occurred and the arriving element causing the trigger is not part
 	 * of this group.
-	 * 
+	 * <p/>
 	 * Remark: This is NOT the same as
 	 * {@link WindowInvokable#processFakeElement(Object, TriggerPolicy)}! Here
 	 * the eviction using active policies takes place after the call to the UDF.
@@ -153,12 +155,12 @@ public abstract class WindowInvokable<IN, OUT> extends StreamInvokable<IN, OUT> 
 	 * behaviour is needed to allow the {@link GroupedWindowInvokable} to send
 	 * central triggers to all groups, even if the current element does not
 	 * belong to the group.
-	 * 
+	 *
 	 * @param input
-	 *            a fake input element
+	 * 		a fake input element
 	 * @param policies
-	 *            the list of policies which caused the call with this fake
-	 *            element
+	 * 		the list of policies which caused the call with this fake
+	 * 		element
 	 */
 	protected synchronized void externalTriggerFakeElement(IN input,
 			List<TriggerPolicy<IN>> policies) {
@@ -200,11 +202,11 @@ public abstract class WindowInvokable<IN, OUT> extends StreamInvokable<IN, OUT> 
 	 * This method processed an arrived fake element The method is synchronized
 	 * to ensure that it cannot interleave with
 	 * {@link WindowInvokable#processRealElement(Object)}
-	 * 
+	 *
 	 * @param input
-	 *            a fake input element
+	 * 		a fake input element
 	 * @param currentPolicy
-	 *            the policy which produced this fake element
+	 * 		the policy which produced this fake element
 	 */
 	protected synchronized void processFakeElement(Object input, TriggerPolicy<IN> currentPolicy) {
 
@@ -245,13 +247,13 @@ public abstract class WindowInvokable<IN, OUT> extends StreamInvokable<IN, OUT> 
 	 * This method processed an arrived real element The method is synchronized
 	 * to ensure that it cannot interleave with
 	 * {@link WindowInvokable#processFakeElement(Object)}.
-	 * 
+	 *
 	 * @param input
-	 *            a real input element
+	 * 		a real input element
 	 * @param triggerPolicies
-	 *            Allows to set trigger policies which are maintained
-	 *            externally. This is the case for central policies in
-	 *            {@link GroupedWindowInvokable}.
+	 * 		Allows to set trigger policies which are maintained
+	 * 		externally. This is the case for central policies in
+	 * 		{@link GroupedWindowInvokable}.
 	 */
 	protected synchronized void processRealElement(IN input, List<TriggerPolicy<IN>> triggerPolicies) {
 		this.currentTriggerPolicies.addAll(triggerPolicies);
@@ -262,9 +264,9 @@ public abstract class WindowInvokable<IN, OUT> extends StreamInvokable<IN, OUT> 
 	 * This method processed an arrived real element The method is synchronized
 	 * to ensure that it cannot interleave with
 	 * {@link WindowInvokable#processFakeElement(Object)}
-	 * 
+	 *
 	 * @param input
-	 *            a real input element
+	 * 		a real input element
 	 */
 	protected synchronized void processRealElement(IN input) {
 
@@ -347,7 +349,7 @@ public abstract class WindowInvokable<IN, OUT> extends StreamInvokable<IN, OUT> 
 	 * This method returns whether the element buffer is empty or not. It is
 	 * used to figure out if a group can be deleted or not when
 	 * {@link GroupedWindowInvokable} is used.
-	 * 
+	 *
 	 * @return true in case the buffer is empty otherwise false.
 	 */
 	protected boolean isBufferEmpty() {
@@ -357,11 +359,11 @@ public abstract class WindowInvokable<IN, OUT> extends StreamInvokable<IN, OUT> 
 	/**
 	 * This method does the final reduce at the end of the stream and emits the
 	 * result.
-	 * 
+	 *
 	 * @param centralTriggerPolicies
-	 *            Allows to set trigger policies which are maintained
-	 *            externally. This is the case for central policies in
-	 *            {@link GroupedWindowInvokable}.
+	 * 		Allows to set trigger policies which are maintained
+	 * 		externally. This is the case for central policies in
+	 * 		{@link GroupedWindowInvokable}.
 	 */
 	protected void emitFinalWindow(List<TriggerPolicy<IN>> centralTriggerPolicies) {
 		if (!buffer.isEmpty()) {

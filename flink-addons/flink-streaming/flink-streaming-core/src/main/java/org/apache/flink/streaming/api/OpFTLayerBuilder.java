@@ -17,19 +17,21 @@
 
 package org.apache.flink.streaming.api;
 
+import static org.apache.flink.streaming.partitioner.StreamPartitioner.PartitioningStrategy;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.runtime.jobgraph.AbstractJobVertex;
 import org.apache.flink.runtime.jobgraph.DistributionPattern;
 import org.apache.flink.runtime.jobgraph.JobGraph;
 import org.apache.flink.runtime.jobgraph.tasks.AbstractInvokable;
-import org.apache.flink.streaming.api.ft.layer.FTLayerVertex;
-import org.apache.flink.streaming.api.ft.layer.util.FTLayerConfig;
-import org.apache.flink.streaming.api.streamvertex.StreamVertex;
+import org.apache.flink.streaming.api.ft.layer.runtime.FTLayerConfig;
+import org.apache.flink.streaming.api.ft.layer.runtime.FTLayerVertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +39,6 @@ public class OpFTLayerBuilder implements FTLayerBuilder {
 	private static final Logger LOG = LoggerFactory.getLogger(OpFTLayerBuilder.class);
 
 	private StreamGraph streamGraph;
-	// private JobGraph jobGraph;
 
 	protected AbstractJobVertex ftLayerVertex;
 	private Map<String, AbstractJobVertex> streamVertices;
@@ -79,7 +80,7 @@ public class OpFTLayerBuilder implements FTLayerBuilder {
 			setFTLayerInput(vertexName);
 		} else {
 			setFTLayerOutput(vertexName);
-			ftLayerOutputs.put(vertexName, ftLayerOutputs.size() + 1);
+			ftLayerOutputs.put(vertexName, ftLayerOutputs.size());
 		}
 	}
 
@@ -96,6 +97,9 @@ public class OpFTLayerBuilder implements FTLayerBuilder {
 		AbstractJobVertex upStreamVertex = streamVertices.get(vertexName);
 		AbstractJobVertex downStreamVertex = ftLayerVertex;
 		downStreamVertex.connectNewDataSetAsInput(upStreamVertex, DistributionPattern.ALL_TO_ALL);
+		StreamConfig upStreamConfig = new StreamConfig(upStreamVertex.getConfiguration());
+		KeySelector<?, ?> keySelector = streamGraph.getKeySelector(vertexName);
+		upStreamConfig.setKeySelector(keySelector);
 		if (LOG.isDebugEnabled()) {
 			LOG.debug("CONNECTED to FTLayer: {}", vertexName);
 		}
@@ -105,20 +109,27 @@ public class OpFTLayerBuilder implements FTLayerBuilder {
 	public void setSourceSuccessives() {
 
 		ArrayList<ArrayList<Integer>> sourceSuccessives = new ArrayList<ArrayList<Integer>>();
+		Map<Integer, PartitioningStrategy> partitioningStrategies = new HashMap<Integer, PartitioningStrategy>();
 		Set<String> processingTaskVertices = ftLayerOutputs.keySet();
 		for (String upStreamVertexName : sourceVertices) {
 			List<String> outputs = streamGraph.getOutEdges(upStreamVertexName);
 			ArrayList<Integer> list = new ArrayList<Integer>();
+
 			sourceSuccessives.add(list);
+
 			for (String downStreamVertexName : outputs) {
 				if (processingTaskVertices.contains(downStreamVertexName)) {
 					list.add(ftLayerOutputs.get(downStreamVertexName));
+
+					partitioningStrategies.put(ftLayerOutputs.get(downStreamVertexName), streamGraph.getOutPartitioner(upStreamVertexName, downStreamVertexName)
+							.getStrategy());
 				}
 			}
 		}
 		FTLayerConfig ftLayerConfig = new FTLayerConfig(ftLayerVertex.getConfiguration());
 		ftLayerConfig.setNumberOfOutputs(processingTaskVertices.size());
 		ftLayerConfig.setSourceSuccessives(sourceSuccessives);
+		ftLayerConfig.setPartitioningStrategies(partitioningStrategies);
 	}
 
 	@Override

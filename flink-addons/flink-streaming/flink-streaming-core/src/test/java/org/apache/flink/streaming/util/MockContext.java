@@ -26,8 +26,8 @@ import java.util.List;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.streaming.api.StreamConfig;
-import org.apache.flink.streaming.api.ft.layer.AbstractFT;
-import org.apache.flink.streaming.api.ft.layer.NonFT;
+import org.apache.flink.streaming.api.ft.layer.runtime.AbstractFTHandler;
+import org.apache.flink.streaming.api.ft.layer.runtime.NonFTHandler;
 import org.apache.flink.streaming.api.invokable.StreamInvokable;
 import org.apache.flink.streaming.api.streamrecord.StreamRecord;
 import org.apache.flink.streaming.api.streamrecord.StreamRecordSerializer;
@@ -37,7 +37,7 @@ import org.apache.flink.util.Collector;
 import org.apache.flink.util.MutableObjectIterator;
 
 public class MockContext<IN, OUT> implements StreamTaskContext<OUT> {
-	private static AbstractFT abstractFT;
+	private static AbstractFTHandler abstractFTHandler;
 
 	private Collection<IN> inputs;
 	private List<OUT> outputs;
@@ -58,7 +58,7 @@ public class MockContext<IN, OUT> implements StreamTaskContext<OUT> {
 		iterator = new MockInputIterator();
 		outputs = new ArrayList<OUT>();
 		collector = new MockCollector<OUT>(outputs);
-		abstractFT = new NonFT();
+		abstractFTHandler = new NonFTHandler();
 	}
 
 	private class MockInputIterator implements MutableObjectIterator<StreamRecord<IN>> {
@@ -109,7 +109,7 @@ public class MockContext<IN, OUT> implements StreamTaskContext<OUT> {
 	public static <IN, OUT> List<OUT> createAndExecute(StreamInvokable<IN, OUT> invokable,
 			List<IN> inputs) {
 		MockContext<IN, OUT> mockContext = new MockContext<IN, OUT>(inputs);
-		invokable.setup(mockContext, abstractFT);
+		invokable.setup(mockContext, abstractFTHandler);
 		try {
 			invokable.open(null);
 			invokable.invoke();
@@ -157,8 +157,8 @@ public class MockContext<IN, OUT> implements StreamTaskContext<OUT> {
 	}
 
 	@Override
-	public AbstractFT<OUT> getFT() {
-		return abstractFT;
+	public AbstractFTHandler<OUT> getFT() {
+		return abstractFTHandler;
 	}
 
 	@Override

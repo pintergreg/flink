@@ -27,8 +27,8 @@ import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.streaming.api.StreamConfig;
-import org.apache.flink.streaming.api.ft.layer.AbstractFT;
-import org.apache.flink.streaming.api.ft.layer.NonFT;
+import org.apache.flink.streaming.api.ft.layer.runtime.AbstractFTHandler;
+import org.apache.flink.streaming.api.ft.layer.runtime.NonFTHandler;
 import org.apache.flink.streaming.api.invokable.operator.co.CoInvokable;
 import org.apache.flink.streaming.api.streamrecord.StreamRecord;
 import org.apache.flink.streaming.api.streamrecord.StreamRecordSerializer;
@@ -39,7 +39,7 @@ import org.apache.flink.util.MutableObjectIterator;
 
 public class MockCoContext<IN1, IN2, OUT> implements StreamTaskContext<OUT> {
 
-	private static AbstractFT abstractFT;
+	private static AbstractFTHandler abstractFTHandler;
 
 	// private Collection<IN1> input1;
 	// private Collection<IN2> input2;
@@ -70,7 +70,7 @@ public class MockCoContext<IN1, IN2, OUT> implements StreamTaskContext<OUT> {
 
 		outputs = new ArrayList<OUT>();
 		collector = new MockCollector<OUT>(outputs);
-		abstractFT = new NonFT();
+		abstractFTHandler = new NonFTHandler();
 	}
 
 	private int currentInput = 1;
@@ -160,7 +160,7 @@ public class MockCoContext<IN1, IN2, OUT> implements StreamTaskContext<OUT> {
 	public static <IN1, IN2, OUT> List<OUT> createAndExecute(CoInvokable<IN1, IN2, OUT> invokable,
 			List<IN1> input1, List<IN2> input2) {
 		MockCoContext<IN1, IN2, OUT> mockContext = new MockCoContext<IN1, IN2, OUT>(input1, input2);
-		invokable.setup(mockContext, abstractFT);
+		invokable.setup(mockContext, abstractFTHandler);
 
 		try {
 			invokable.open(null);
@@ -221,8 +221,8 @@ public class MockCoContext<IN1, IN2, OUT> implements StreamTaskContext<OUT> {
 	}
 
 	@Override
-	public AbstractFT<OUT> getFT() {
-		return abstractFT;
+	public AbstractFTHandler<OUT> getFT() {
+		return abstractFTHandler;
 	}
 
 }

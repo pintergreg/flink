@@ -24,15 +24,15 @@ import java.io.Serializable;
  * reduces. In order to work properly, the timestamps must be non-decreasing.
  *
  * @param <T>
- *            Type of the value to create the timestamp from.
+ * 		Type of the value to create the timestamp from.
  */
 public interface Timestamp<T> extends Serializable {
 
 	/**
 	 * Values
-	 * 
+	 *
 	 * @param value
-	 *            The value to create the timestamp from
+	 * 		The value to create the timestamp from
 	 * @return The timestamp
 	 */
 	public long getTimestamp(T value);

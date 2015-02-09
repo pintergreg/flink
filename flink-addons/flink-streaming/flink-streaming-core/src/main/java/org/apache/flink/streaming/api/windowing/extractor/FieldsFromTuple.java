@@ -34,9 +34,9 @@ public class FieldsFromTuple implements Extractor<Tuple, double[]> {
 	/**
 	 * Extracts one or more fields of the the type Double from a tuple and puts
 	 * them into a new double[] (in the specified order).
-	 * 
+	 *
 	 * @param indexes
-	 *            The indexes of the fields to be extracted.
+	 * 		The indexes of the fields to be extracted.
 	 */
 	public FieldsFromTuple(int... indexes) {
 		this.indexes = indexes;

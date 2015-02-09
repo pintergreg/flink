@@ -25,19 +25,19 @@ import org.apache.flink.streaming.api.invokable.operator.GroupedWindowInvokable;
  * which means they get cloned to provide an own instance for each group. This
  * allows each group to trigger individually and only based on the elements
  * belonging to the respective group.
- * 
+ * <p/>
  * This interface extends {@link TriggerPolicy} with such a clone method. It
  * also adds the Java {@link Cloneable} interface as flag.
- * 
+ *
  * @param <DATA>
- *            The data type handled by this policy
+ * 		The data type handled by this policy
  */
 public interface CloneableTriggerPolicy<DATA> extends TriggerPolicy<DATA>, Cloneable {
 
 	/**
 	 * This method should return an exact copy of the object it belongs to
 	 * including the current object state.
-	 * 
+	 *
 	 * @return a copy of this object
 	 */
 	public CloneableTriggerPolicy<DATA> clone();

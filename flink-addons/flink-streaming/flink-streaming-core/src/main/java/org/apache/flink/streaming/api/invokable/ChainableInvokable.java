@@ -18,7 +18,7 @@
 package org.apache.flink.streaming.api.invokable;
 
 import org.apache.flink.api.common.functions.Function;
-import org.apache.flink.streaming.api.ft.layer.AbstractFT;
+import org.apache.flink.streaming.api.ft.layer.runtime.AbstractFTHandler;
 import org.apache.flink.streaming.api.streamrecord.StreamRecordSerializer;
 import org.apache.flink.util.Collector;
 
@@ -33,10 +33,10 @@ public abstract class ChainableInvokable<IN, OUT> extends StreamInvokable<IN, OU
 	}
 
 	public void setup(Collector<OUT> collector, StreamRecordSerializer<IN> inSerializer,
-			AbstractFT abstractFT) {
+			AbstractFTHandler abstractFTHandler) {
 		this.collector = collector;
 		this.inSerializer = inSerializer;
 		this.objectSerializer = inSerializer.getObjectSerializer();
-		this.abstractFT = abstractFT;
+		this.abstractFTHandler = abstractFTHandler;
 	}
 }

@@ -30,7 +30,7 @@ import org.apache.flink.runtime.plugable.ReusingDeserializationDelegate;
 public class CoReaderIterator<T1, T2> {
 
 	private final CoRecordReader<DeserializationDelegate<T1>, DeserializationDelegate<T2>> reader; // the
-																									// source
+	// source
 
 	protected final ReusingDeserializationDelegate<T1> delegate1;
 	protected final ReusingDeserializationDelegate<T2> delegate2;

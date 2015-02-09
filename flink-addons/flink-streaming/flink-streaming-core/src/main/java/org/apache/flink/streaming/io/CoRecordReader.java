@@ -128,8 +128,7 @@ public class CoRecordReader<T1 extends IOReadableWritable, T2 extends IOReadable
 					reader1currentRecordDeserializer = reader1RecordDeserializers[channelIndex];
 					reader1currentRecordDeserializer.setNextBuffer(nextBuffer);
 				}
-			}
-			else if (currentReaderIndex == 2) {
+			} else if (currentReaderIndex == 2) {
 				while (true) {
 					if (reader2currentRecordDeserializer != null) {
 						RecordDeserializer.DeserializationResult result = reader2currentRecordDeserializer.getNextRecord(target2);
@@ -158,8 +157,7 @@ public class CoRecordReader<T1 extends IOReadableWritable, T2 extends IOReadable
 					reader2currentRecordDeserializer = reader2RecordDeserializers[channelIndex];
 					reader2currentRecordDeserializer.setNextBuffer(nextBuffer);
 				}
-			}
-			else {
+			} else {
 				throw new IllegalStateException("Bug: unexpected current reader index.");
 			}
 		}
@@ -177,8 +175,7 @@ public class CoRecordReader<T1 extends IOReadableWritable, T2 extends IOReadable
 	public void onEvent(BufferReaderBase bufferReader) {
 		if (bufferReader == bufferReader1) {
 			availableRecordReaders.add(1);
-		}
-		else if (bufferReader == bufferReader2) {
+		} else if (bufferReader == bufferReader2) {
 			availableRecordReaders.add(2);
 		}
 	}

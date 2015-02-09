@@ -25,9 +25,9 @@ import java.util.ArrayList;
 
 /**
  * Writes tuples in csv format.
- * 
+ *
  * @param <IN>
- *            Input tuple type
+ * 		Input tuple type
  */
 public class WriteFormatAsCsv<IN> extends WriteFormat<IN> {
 	private static final long serialVersionUID = 1L;

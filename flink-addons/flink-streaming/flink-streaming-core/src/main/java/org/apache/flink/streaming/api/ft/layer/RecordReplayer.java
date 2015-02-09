@@ -17,7 +17,7 @@
 
 package org.apache.flink.streaming.api.ft.layer;
 
-import org.apache.flink.streaming.api.ft.layer.util.SemiDeserializedStreamRecord;
+import org.apache.flink.streaming.api.ft.layer.serialization.SemiDeserializedStreamRecord;
 
 public interface RecordReplayer {
 

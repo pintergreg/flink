@@ -17,7 +17,7 @@
 
 package org.apache.flink.streaming.api.streamvertex;
 
-import org.apache.flink.streaming.api.ft.layer.NonFT;
+import org.apache.flink.streaming.api.ft.layer.runtime.NonFTHandler;
 import org.apache.flink.streaming.api.invokable.StreamInvokable;
 import org.apache.flink.streaming.api.streamrecord.StreamRecordSerializer;
 import org.apache.flink.util.MutableObjectIterator;
@@ -30,15 +30,15 @@ public class StreamTaskVertex<IN, OUT> extends StreamVertex<IN, OUT> {
 	@Override
 	public void setInputsOutputs() {
 		inputHandler = new InputHandler<IN>(this);
-		outputHandler = new OutputHandler<OUT>(this, abstractFT);
+		outputHandler = new OutputHandler<OUT>(this, abstractFTHandler);
 		// TODO set FT
-		abstractFT = new NonFT();
+		abstractFTHandler = new NonFTHandler();
 	}
 
 	@Override
 	protected void setInvokable() {
 		userInvokable = configuration.getUserInvokable(userClassLoader);
-		userInvokable.setup(this, abstractFT);
+		userInvokable.setup(this, abstractFTHandler);
 	}
 
 

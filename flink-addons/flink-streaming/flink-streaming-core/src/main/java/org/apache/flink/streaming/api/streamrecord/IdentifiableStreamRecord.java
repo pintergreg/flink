@@ -17,7 +17,7 @@
 
 package org.apache.flink.streaming.api.streamrecord;
 
-import org.apache.flink.streaming.api.ft.layer.util.RecordId;
+import org.apache.flink.streaming.api.ft.layer.id.RecordId;
 
 public interface IdentifiableStreamRecord {
 

@@ -21,9 +21,9 @@ import org.apache.flink.api.java.tuple.Tuple;
 
 /**
  * Extracts a single field out of a tuple.
- * 
+ *
  * @param <OUT>
- *            The type of the extracted field.
+ * 		The type of the extracted field.
  */
 public class FieldFromTuple<OUT> implements Extractor<Tuple, OUT> {
 
@@ -42,9 +42,9 @@ public class FieldFromTuple<OUT> implements Extractor<Tuple, OUT> {
 
 	/**
 	 * Extracts the field with the given id from the tuple.
-	 * 
+	 *
 	 * @param fieldId
-	 *            The id of the field which will be extracted from the tuple.
+	 * 		The id of the field which will be extracted from the tuple.
 	 */
 	public FieldFromTuple(int fieldId) {
 		this.fieldId = fieldId;

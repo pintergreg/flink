@@ -20,7 +20,7 @@ package org.apache.flink.streaming.api.ft;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
-import org.apache.flink.streaming.api.ft.layer.util.RecordId;
+import org.apache.flink.streaming.api.ft.layer.id.RecordId;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -37,7 +37,7 @@ public class TypeSerializerTest {
 		
 		RecordId copyMessage = inputSerializer.copy(msg);
 
-		assertEquals(10L, copyMessage.getRecordId());
+		assertEquals(10L, copyMessage.getCurrentRecordId());
 		assertEquals(15L, copyMessage.getSourceRecordId());
 	}
 

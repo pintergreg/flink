@@ -21,12 +21,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
-import org.apache.flink.runtime.event.task.TaskEvent;
-import org.apache.flink.runtime.io.network.api.reader.BufferReaderBase;
-import org.apache.flink.runtime.io.network.api.reader.MutableRecordReader;
-import org.apache.flink.runtime.io.network.buffer.Buffer;
-import org.apache.flink.runtime.util.event.EventListener;
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -34,6 +28,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+
+import org.apache.flink.runtime.event.task.TaskEvent;
+import org.apache.flink.runtime.io.network.api.reader.BufferReaderBase;
+import org.apache.flink.runtime.io.network.buffer.Buffer;
+import org.apache.flink.runtime.util.event.EventListener;
 
 public class MultiBufferReaderBase implements BufferReaderBase {
 
@@ -124,8 +123,7 @@ public class MultiBufferReaderBase implements BufferReaderBase {
 				else if (isIterative && remainingReaders.isEmpty()) {
 					resetRemainingReaders();
 					return null;
-				}
-				else {
+				} else {
 					while (true) {
 						currentReader = dataAvailabilityListener.getNextReaderBlocking();
 
@@ -140,8 +138,7 @@ public class MultiBufferReaderBase implements BufferReaderBase {
 							// about newer data *before* all other readers have
 							// done so, we delay this notifications.
 							dataAvailabilityListener.addReader(currentReader);
-						}
-						else {
+						} else {
 							break;
 						}
 					}
@@ -161,8 +158,7 @@ public class MultiBufferReaderBase implements BufferReaderBase {
 				currentReader = null;
 
 				return null;
-			}
-			else {
+			} else {
 				currentReader = null;
 				return buffer;
 			}
@@ -302,8 +298,7 @@ public class MultiBufferReaderBase implements BufferReaderBase {
 		void registerListener(EventListener<BufferReaderBase> listener) {
 			if (registeredListener == null) {
 				registeredListener = listener;
-			}
-			else {
+			} else {
 				throw new IllegalStateException("Already registered listener.");
 			}
 		}

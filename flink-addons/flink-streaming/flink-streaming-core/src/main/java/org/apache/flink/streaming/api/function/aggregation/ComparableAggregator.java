@@ -196,7 +196,7 @@ public abstract class ComparableAggregator<T> extends AggregationFunction<T> {
 
 			if (cType instanceof PojoTypeInfo) {
 				pojoComparator = (PojoComparator<T>) cType.createComparator(
-						new int[] { logicalKeyPosition }, new boolean[] { false }, 0);
+						new int[]{logicalKeyPosition}, new boolean[]{false}, 0);
 			} else {
 				throw new IllegalArgumentException(
 						"Key expressions are only supported on POJO types. "
@@ -228,8 +228,8 @@ public abstract class ComparableAggregator<T> extends AggregationFunction<T> {
 			} else {
 				if (c == 1) {
 					keyFields[0].set(value2, field1);
-				} 
-				
+				}
+
 				return value2;
 			}
 		}

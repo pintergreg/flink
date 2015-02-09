@@ -20,12 +20,12 @@ package org.apache.flink.streaming.api.windowing.policy;
 /**
  * This eviction policy allows the eviction of data points from the buffer using
  * a counter of arriving elements and a threshold (maximal buffer size)
- * 
+ * <p/>
  * By default this policy does not react on fake elements. Wrap it in an
  * {@link ActiveEvictionPolicyWrapper} to make it count even fake elements.
- * 
+ *
  * @param <IN>
- *            the type of the incoming data points
+ * 		the type of the incoming data points
  */
 public class CountEvictionPolicy<IN> implements CloneableEvictionPolicy<IN> {
 
@@ -44,10 +44,10 @@ public class CountEvictionPolicy<IN> implements CloneableEvictionPolicy<IN> {
 	 * maxElements parameter by deleting the oldest element in the buffer.
 	 * Eviction only takes place if the counter of arriving elements would be
 	 * higher than maxElements without eviction.
-	 * 
+	 *
 	 * @param maxElements
-	 *            The maximum number of elements before eviction. As soon as one
-	 *            more element arrives, the oldest element will be deleted
+	 * 		The maximum number of elements before eviction. As soon as one
+	 * 		more element arrives, the oldest element will be deleted
 	 */
 	public CountEvictionPolicy(int maxElements) {
 		this(maxElements, 1);
@@ -56,20 +56,20 @@ public class CountEvictionPolicy<IN> implements CloneableEvictionPolicy<IN> {
 	/**
 	 * This constructor allows to set up both, the maximum number of elements
 	 * and the number of elements to be deleted in case of an eviction.
-	 * 
+	 * <p/>
 	 * Eviction only takes place if the counter of arriving elements would be
 	 * higher than maxElements without eviction. In such a case deleteOnEviction
 	 * elements will be removed from the buffer.
-	 * 
+	 * <p/>
 	 * The counter of arriving elements is adjusted respectively, but never set
 	 * below zero:
 	 * counter=(counter-deleteOnEviction<0)?0:counter-deleteOnEviction
-	 * 
+	 *
 	 * @param maxElements
-	 *            maxElements The maximum number of elements before eviction.
+	 * 		maxElements The maximum number of elements before eviction.
 	 * @param deleteOnEviction
-	 *            The number of elements to be deleted on eviction. The counter
-	 *            will be adjusted respectively but never below zero.
+	 * 		The number of elements to be deleted on eviction. The counter
+	 * 		will be adjusted respectively but never below zero.
 	 */
 	public CountEvictionPolicy(int maxElements, int deleteOnEviction) {
 		this(maxElements, deleteOnEviction, 0);
@@ -80,14 +80,14 @@ public class CountEvictionPolicy<IN> implements CloneableEvictionPolicy<IN> {
 	 * Additionally a custom start value for the counter of arriving elements
 	 * can be set. By setting a negative start value the first eviction can be
 	 * delayed.
-	 * 
+	 *
 	 * @param maxElements
-	 *            maxElements The maximum number of elements before eviction.
+	 * 		maxElements The maximum number of elements before eviction.
 	 * @param deleteOnEviction
-	 *            The number of elements to be deleted on eviction. The counter
-	 *            will be adjusted respectively but never below zero.
+	 * 		The number of elements to be deleted on eviction. The counter
+	 * 		will be adjusted respectively but never below zero.
 	 * @param startValue
-	 *            A custom start value for the counter of arriving elements.
+	 * 		A custom start value for the counter of arriving elements.
 	 * @see CountEvictionPolicy#NextGenCountEvictionPolicy(int, int)
 	 */
 	public CountEvictionPolicy(int maxElements, int deleteOnEviction, int startValue) {

@@ -17,8 +17,6 @@
 
 package org.apache.flink.streaming.io;
 
-import java.io.IOException;
-
 import org.apache.flink.core.io.IOReadableWritable;
 import org.apache.flink.runtime.io.network.api.writer.BufferWriter;
 import org.apache.flink.runtime.io.network.api.writer.ChannelSelector;
@@ -56,18 +54,18 @@ public class StreamRecordWriter<T extends IOReadableWritable> extends RecordWrit
 			}
 
 			flush();
-		} catch (IOException e) {
-			e.printStackTrace();
-		} catch (InterruptedException e) {
-			e.printStackTrace();
+		} catch (Exception e) {
+			throw new RuntimeException("Cannot close StreamRecorWriter", e);
 		}
 	}
 
 	private class OutputFlusher extends Thread {
 		private boolean running = true;
+
 		public void terminate() {
 			running = false;
 		}
+
 		@Override
 		public void run() {
 			while (running && !writer.isFinished()) {
@@ -81,6 +79,6 @@ public class StreamRecordWriter<T extends IOReadableWritable> extends RecordWrit
 		}
 	}
 
-	public void initializeSerializers(){
+	public void initializeSerializers() {
 	}
 }

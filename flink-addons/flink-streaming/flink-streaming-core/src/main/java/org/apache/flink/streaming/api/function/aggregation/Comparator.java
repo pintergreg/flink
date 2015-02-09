@@ -29,16 +29,16 @@ public abstract class Comparator implements Serializable {
 
 	public static Comparator getForAggregation(AggregationType type) {
 		switch (type) {
-		case MAX:
-			return new MaxComparator();
-		case MIN:
-			return new MinComparator();
-		case MINBY:
-			return new MinByComparator();
-		case MAXBY:
-			return new MaxByComparator();
-		default:
-			throw new IllegalArgumentException("Unsupported aggregation type.");
+			case MAX:
+				return new MaxComparator();
+			case MIN:
+				return new MinComparator();
+			case MINBY:
+				return new MinByComparator();
+			case MAXBY:
+				return new MaxByComparator();
+			default:
+				throw new IllegalArgumentException("Unsupported aggregation type.");
 		}
 	}
 

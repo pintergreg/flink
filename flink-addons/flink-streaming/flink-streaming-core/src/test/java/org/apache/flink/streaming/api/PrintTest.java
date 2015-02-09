@@ -21,6 +21,8 @@ import java.io.Serializable;
 
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.streaming.api.datastream.DataStream;
+import org.apache.flink.streaming.api.datastream.DataStreamSink;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.function.source.SourceFunction;
 import org.apache.flink.streaming.api.invokable.StreamInvokable;
@@ -38,7 +40,7 @@ public class PrintTest implements Serializable {
 
 		@Override
 		public Long map(Long value) throws Exception {
-			return value + 100;
+			return value;
 		}
 	}
 
@@ -54,12 +56,19 @@ public class PrintTest implements Serializable {
 	@Test
 	public void test() throws Exception {
 		StreamExecutionEnvironment env = new TestStreamEnvironment(1, MEMORYSIZE);
-		env.addSource(new SourceFunction<Long>() {
-			@Override
-			public void invoke(Collector<Long> collector) throws Exception {
-				collector.collect(10L);
-			}
-		}).map(new IdentityMap()).filter(new FilterAll()).print();
+		DataStream<Long> sourceStream = env.generateSequence(1,10);
+		DataStreamSink<Long> print = sourceStream
+				.map(new IdentityMap())
+				.filter(new FilterAll())
+				.print();
 		env.execute();
 	}
+
+    private class MyKeySelector implements org.apache.flink.api.java.functions.KeySelector<Long,String> {
+
+        @Override
+        public String getKey(Long value) throws Exception {
+            return "" + (value % 3);
+        }
+    }
 }

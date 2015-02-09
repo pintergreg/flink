@@ -62,12 +62,12 @@ public class StreamJoinOperator<I1, I2> extends
 		 * that should be used as join keys.<br/>
 		 * <b>Note: Fields can only be selected as join keys on Tuple
 		 * DataStreams.</b><br/>
-		 * 
+		 *
 		 * @param fields
-		 *            The indexes of the other Tuple fields of the first join
-		 *            DataStreams that should be used as keys.
+		 * 		The indexes of the other Tuple fields of the first join
+		 * 		DataStreams that should be used as keys.
 		 * @return An incomplete Join transformation. Call
-		 *         {@link JoinPredicate#equalTo} to continue the Join.
+		 * {@link JoinPredicate#equalTo} to continue the Join.
 		 */
 		public JoinPredicate<I1, I2> where(int... fields) {
 			return new JoinPredicate<I1, I2>(op, KeySelectorUtil.getSelectorForKeys(
@@ -79,12 +79,12 @@ public class StreamJoinOperator<I1, I2> extends
 		 * Defines the fields of the first join {@link DataStream} that should
 		 * be used as grouping keys. Fields are the names of member fields of
 		 * the underlying type of the data stream.
-		 * 
+		 *
 		 * @param fields
-		 *            The fields of the first join DataStream that should be
-		 *            used as keys.
+		 * 		The fields of the first join DataStream that should be
+		 * 		used as keys.
 		 * @return An incomplete Join transformation. Call
-		 *         {@link JoinPredicate#equalTo} to continue the Join.
+		 * {@link JoinPredicate#equalTo} to continue the Join.
 		 */
 		public JoinPredicate<I1, I2> where(String... fields) {
 			return new JoinPredicate<I1, I2>(op, KeySelectorUtil.getSelectorForKeys(
@@ -97,12 +97,12 @@ public class StreamJoinOperator<I1, I2> extends
 		 * .</br> The KeySelector function is called for each element of the
 		 * first DataStream and extracts a single key value on which the
 		 * DataStream is joined. </br>
-		 * 
+		 *
 		 * @param keySelector
-		 *            The KeySelector function which extracts the key values
-		 *            from the DataStream on which it is joined.
+		 * 		The KeySelector function which extracts the key values
+		 * 		from the DataStream on which it is joined.
 		 * @return An incomplete Join transformation. Call
-		 *         {@link JoinPredicate#equalTo} to continue the Join.
+		 * {@link JoinPredicate#equalTo} to continue the Join.
 		 */
 		public <K> JoinPredicate<I1, I2> where(KeySelector<I1, K> keySelector) {
 			return new JoinPredicate<I1, I2>(op, keySelector);
@@ -127,7 +127,6 @@ public class StreamJoinOperator<I1, I2> extends
 	 * Intermediate step of a temporal Join transformation. <br/>
 	 * To continue the Join transformation, select the join key of the second
 	 * input {@link DataStream} by calling {@link JoinPredicate#equalTo}
-	 * 
 	 */
 	public static class JoinPredicate<I1, I2> {
 
@@ -149,12 +148,12 @@ public class StreamJoinOperator<I1, I2> extends
 		 * </p> The resulting operator wraps each pair of joining elements in a
 		 * Tuple2<I1,I2>(first, second). To use a different wrapping function
 		 * use {@link JoinedStream#with(JoinFunction)}
-		 * 
+		 *
 		 * @param fields
-		 *            The indexes of the Tuple fields of the second join
-		 *            DataStream that should be used as keys.
+		 * 		The indexes of the Tuple fields of the second join
+		 * 		DataStream that should be used as keys.
 		 * @return A streaming join operator. Call {@link JoinedStream#with} to
-		 *         apply a custom wrapping
+		 * apply a custom wrapping
 		 */
 		public JoinedStream<I1, I2> equalTo(int... fields) {
 			keys2 = KeySelectorUtil.getSelectorForKeys(new Keys.ExpressionKeys<I2>(fields, type2),
@@ -168,12 +167,12 @@ public class StreamJoinOperator<I1, I2> extends
 		 * The resulting operator wraps each pair of joining elements in a
 		 * Tuple2<I1,I2>(first, second). To use a different wrapping function
 		 * use {@link JoinedStream#with(JoinFunction)}
-		 * 
+		 *
 		 * @param fields
-		 *            The fields of the second join DataStream that should be
-		 *            used as keys.
+		 * 		The fields of the second join DataStream that should be
+		 * 		used as keys.
 		 * @return A streaming join operator. Call {@link JoinedStream#with} to
-		 *         apply a custom wrapping
+		 * apply a custom wrapping
 		 */
 		public JoinedStream<I1, I2> equalTo(String... fields) {
 			this.keys2 = KeySelectorUtil.getSelectorForKeys(new Keys.ExpressionKeys<I2>(fields,
@@ -190,13 +189,12 @@ public class StreamJoinOperator<I1, I2> extends
 		 * joining elements in a Tuple2<I1,I2>(first, second). To use a
 		 * different wrapping function use
 		 * {@link JoinedStream#with(JoinFunction)}
-		 * 
-		 * 
+		 *
 		 * @param keySelector
-		 *            The KeySelector function which extracts the key values
-		 *            from the second DataStream on which it is joined.
+		 * 		The KeySelector function which extracts the key values
+		 * 		from the second DataStream on which it is joined.
 		 * @return A streaming join operator. Call {@link JoinedStream#with} to
-		 *         apply a custom wrapping
+		 * apply a custom wrapping
 		 */
 		public <K> JoinedStream<I1, I2> equalTo(KeySelector<I2, K> keySelector) {
 			this.keys2 = keySelector;
@@ -233,7 +231,7 @@ public class StreamJoinOperator<I1, I2> extends
 		/**
 		 * Completes a stream join. </p> The resulting operator wraps each pair
 		 * of joining elements using the user defined {@link JoinFunction}
-		 * 
+		 *
 		 * @return The joined data stream.
 		 */
 		public <OUT> SingleOutputStreamOperator<OUT, ?> with(JoinFunction<I1, I2, OUT> joinFunction) {

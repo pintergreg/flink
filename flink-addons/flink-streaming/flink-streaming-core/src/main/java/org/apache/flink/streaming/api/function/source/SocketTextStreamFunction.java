@@ -27,7 +27,7 @@ import org.apache.flink.util.Collector;
 
 public class SocketTextStreamFunction extends RichSourceFunction<String> {
 	private static final long serialVersionUID = 1L;
-	
+
 	private String hostname;
 	private int port;
 	private char delimiter;
@@ -44,10 +44,10 @@ public class SocketTextStreamFunction extends RichSourceFunction<String> {
 	public void open(Configuration parameters) throws Exception {
 		super.open(parameters);
 		socket = new Socket();
-		
+
 		socket.connect(new InetSocketAddress(hostname, port), CONNECTION_TIMEOUT_TIME);
 	}
-	
+
 	@Override
 	public void invoke(Collector<String> collector) throws Exception {
 		while (!socket.isClosed() && socket.isConnected()) {

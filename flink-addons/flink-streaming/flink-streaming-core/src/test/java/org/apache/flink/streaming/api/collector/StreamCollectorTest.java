@@ -21,7 +21,7 @@ import static org.junit.Assert.assertArrayEquals;
 
 import org.apache.flink.api.java.tuple.Tuple1;
 import org.apache.flink.runtime.plugable.SerializationDelegate;
-import org.apache.flink.streaming.api.ft.layer.NonFT;
+import org.apache.flink.streaming.api.ft.layer.runtime.NonFTHandler;
 import org.apache.flink.streaming.api.streamrecord.StreamRecord;
 import org.apache.flink.streaming.api.streamvertex.MockRecordWriter;
 import org.apache.flink.streaming.util.MockRecordWriterFactory;
@@ -38,7 +38,7 @@ public class StreamCollectorTest {
 		sd.setInstance(new StreamRecord<Tuple1<Integer>>().setObject(new Tuple1<Integer>()));
 
 		Collector<Tuple1<Integer>> collector = new StreamOutput<Tuple1<Integer>>(recWriter, 2,
-				sd, new NonFT());
+				sd, new NonFTHandler());
 		collector.collect(new Tuple1<Integer>(3));
 		collector.collect(new Tuple1<Integer>(4));
 		collector.collect(new Tuple1<Integer>(5));

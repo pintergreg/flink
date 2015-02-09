@@ -25,19 +25,19 @@ import org.apache.flink.streaming.api.invokable.operator.GroupedWindowInvokable;
  * instance for each group and respectively each individual element buffer as
  * groups maintain their own buffers with the elements belonging to the
  * respective group.
- * 
+ * <p/>
  * This interface extends {@link EvictionPolicy} with such a clone method. It
  * also adds the Java {@link Cloneable} interface as flag.
- * 
+ *
  * @param <DATA>
- *            The data type handled by this policy
+ * 		The data type handled by this policy
  */
 public interface CloneableEvictionPolicy<DATA> extends EvictionPolicy<DATA>, Cloneable {
 
 	/**
 	 * This method should return an exact copy of the object it belongs to
 	 * including the current object state.
-	 * 
+	 *
 	 * @return a copy of this object
 	 */
 	public CloneableEvictionPolicy<DATA> clone();

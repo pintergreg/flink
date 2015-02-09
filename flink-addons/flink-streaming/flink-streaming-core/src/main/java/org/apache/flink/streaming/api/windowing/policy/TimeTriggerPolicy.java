@@ -27,10 +27,10 @@ import org.apache.flink.streaming.api.windowing.helper.TimestampWrapper;
  * given {@link Timestamp} implementation. A point in time is always represented
  * as long. Therefore, parameters such as granularity and delay can be set as
  * long value as well.
- * 
+ *
  * @param <DATA>
- *            The type of the incoming data points which are processed by this
- *            policy.
+ * 		The type of the incoming data points which are processed by this
+ * 		policy.
  */
 public class TimeTriggerPolicy<DATA> implements ActiveTriggerPolicy<DATA>,
 		CloneableTriggerPolicy<DATA> {
@@ -51,18 +51,18 @@ public class TimeTriggerPolicy<DATA> implements ActiveTriggerPolicy<DATA>,
 	 * represented as long. Therefore, parameters such as granularity can be set
 	 * as long value as well. If this value for the granularity is set to 2 for
 	 * example, the policy will trigger at every second point in time.
-	 * 
+	 *
 	 * @param granularity
-	 *            The granularity of the trigger. If this value is set to x the
-	 *            policy will trigger at every x-th time point
+	 * 		The granularity of the trigger. If this value is set to x the
+	 * 		policy will trigger at every x-th time point
 	 * @param timestampWrapper
-	 *            The {@link TimestampWrapper} to measure the time with. This
-	 *            can be either user defined of provided by the API.
+	 * 		The {@link TimestampWrapper} to measure the time with. This
+	 * 		can be either user defined of provided by the API.
 	 * @param timeWrapper
-	 *            This policy creates fake elements to not miss windows in case
-	 *            no element arrived within the duration of the window. This
-	 *            extractor should wrap a long into such an element of type
-	 *            DATA.
+	 * 		This policy creates fake elements to not miss windows in case
+	 * 		no element arrived within the duration of the window. This
+	 * 		extractor should wrap a long into such an element of type
+	 * 		DATA.
 	 */
 	public TimeTriggerPolicy(long granularity, TimestampWrapper<DATA> timestampWrapper) {
 		this(granularity, timestampWrapper, 0);
@@ -74,22 +74,22 @@ public class TimeTriggerPolicy<DATA> implements ActiveTriggerPolicy<DATA>,
 	 * to granularity and timestamp a delay can be specified for the first
 	 * trigger. If the start time given by the timestamp is x, the delay is y,
 	 * and the granularity is z, the first trigger will happen at x+y+z.
-	 * 
+	 *
 	 * @param granularity
-	 *            The granularity of the trigger. If this value is set to 2 the
-	 *            policy will trigger at every second time point
+	 * 		The granularity of the trigger. If this value is set to 2 the
+	 * 		policy will trigger at every second time point
 	 * @param timestampWrapper
-	 *            The {@link TimestampWrapper} to measure the time with. This
-	 *            can be either user defined of provided by the API.
+	 * 		The {@link TimestampWrapper} to measure the time with. This
+	 * 		can be either user defined of provided by the API.
 	 * @param delay
-	 *            A delay for the first trigger. If the start time given by the
-	 *            timestamp is x, the delay is y, and the granularity is z, the
-	 *            first trigger will happen at x+y+z.
+	 * 		A delay for the first trigger. If the start time given by the
+	 * 		timestamp is x, the delay is y, and the granularity is z, the
+	 * 		first trigger will happen at x+y+z.
 	 * @param timeWrapper
-	 *            This policy creates fake elements to not miss windows in case
-	 *            no element arrived within the duration of the window. This
-	 *            extractor should wrap a long into such an element of type
-	 *            DATA.
+	 * 		This policy creates fake elements to not miss windows in case
+	 * 		no element arrived within the duration of the window. This
+	 * 		extractor should wrap a long into such an element of type
+	 * 		DATA.
 	 */
 	public TimeTriggerPolicy(long granularity, TimestampWrapper<DATA> timestampWrapper, long delay) {
 		this.startTime = timestampWrapper.getStartTime() + delay;
@@ -118,12 +118,12 @@ public class TimeTriggerPolicy<DATA> implements ActiveTriggerPolicy<DATA>,
 	 * In case {@link DefaultTimeStamp} is used, a runnable is returned which
 	 * triggers based on the current system time. If any other time measure is
 	 * used the method return null.
-	 * 
+	 *
 	 * @param callback
-	 *            The object which is takes the callbacks for adding fake
-	 *            elements out of the runnable.
+	 * 		The object which is takes the callbacks for adding fake
+	 * 		elements out of the runnable.
 	 * @return A runnable is returned which triggers based on the current system
-	 *         time. If any other time measure is used the method return null.
+	 * time. If any other time measure is used the method return null.
 	 */
 	@Override
 	public Runnable createActiveTriggerRunnable(ActiveTriggerCallback callback) {
@@ -137,9 +137,9 @@ public class TimeTriggerPolicy<DATA> implements ActiveTriggerPolicy<DATA>,
 	/**
 	 * This method is only called in case the runnable triggers a window end
 	 * according to the {@link DefaultTimeStamp}.
-	 * 
+	 *
 	 * @param callback
-	 *            The callback object.
+	 * 		The callback object.
 	 */
 	private synchronized void activeFakeElementEmission(ActiveTriggerCallback callback) {
 

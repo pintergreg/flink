@@ -31,9 +31,11 @@ import java.util.Set;
 
 import org.apache.flink.api.common.io.InputFormat;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.compiler.plan.StreamingPlan;
 import org.apache.flink.runtime.jobgraph.JobGraph;
 import org.apache.flink.runtime.jobgraph.tasks.AbstractInvokable;
+import org.apache.flink.streaming.api.FTLayerBuilder.FTStatus;
 import org.apache.flink.streaming.api.collector.OutputSelector;
 import org.apache.flink.streaming.api.invokable.StreamInvokable;
 import org.apache.flink.streaming.api.invokable.operator.co.CoInvokable;
@@ -43,17 +45,16 @@ import org.apache.flink.streaming.api.streamvertex.StreamIterationHead;
 import org.apache.flink.streaming.api.streamvertex.StreamIterationTail;
 import org.apache.flink.streaming.api.streamvertex.StreamSourceVertex;
 import org.apache.flink.streaming.api.streamvertex.StreamVertex;
+import org.apache.flink.streaming.partitioner.FieldsPartitioner;
 import org.apache.flink.streaming.partitioner.StreamPartitioner;
 import org.apache.flink.streaming.state.OperatorState;
-import org.apache.hadoop.net.NetworkTopology;
+import org.apache.flink.streaming.util.keys.ConstantKeySelector;
 import org.apache.hadoop.net.NetworkTopology.InvalidTopologyException;
 import org.apache.sling.commons.json.JSONArray;
 import org.apache.sling.commons.json.JSONException;
 import org.apache.sling.commons.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.flink.streaming.api.FTLayerBuilder.*;
 
 /**
  * Object for building Apache Flink stream processing graphs
@@ -65,6 +66,7 @@ public class StreamGraph extends StreamingPlan {
 
 	protected boolean chaining = true;
 	protected String jobName = DEAFULT_JOB_NAME;
+
 	private static final FTStatus ftStatus = FTStatus.ON;
 
 	// Graph attributes
@@ -92,6 +94,7 @@ public class StreamGraph extends StreamingPlan {
 	private Map<String, Long> iterationTimeouts;
 	private Map<String, Map<String, OperatorState<?>>> operatorStates;
 	private Map<String, InputFormat<String, ?>> inputFormatLists;
+	private Map<String, KeySelector<?, ?>> keySelectors;
 
 
 	public StreamGraph() {
@@ -128,6 +131,7 @@ public class StreamGraph extends StreamingPlan {
 		iterationTimeouts = new HashMap<String, Long>();
 		operatorStates = new HashMap<String, Map<String, OperatorState<?>>>();
 		inputFormatLists = new HashMap<String, InputFormat<String, ?>>();
+		keySelectors = new HashMap<String, KeySelector<?, ?>>();
 	}
 
 	public <IN, OUT> void addSourceVertex(String vertexName,
@@ -150,19 +154,19 @@ public class StreamGraph extends StreamingPlan {
 
 	/**
 	 * Adds a vertex to the streaming graph with the given parameters
-	 * 
+	 *
 	 * @param vertexName
-	 *            Name of the vertex
+	 * 		Name of the vertex
 	 * @param invokableObject
-	 *            User defined operator
+	 * 		User defined operator
 	 * @param inTypeInfo
-	 *            Input type for serialization
+	 * 		Input type for serialization
 	 * @param outTypeInfo
-	 *            Output type for serialization
+	 * 		Output type for serialization
 	 * @param operatorName
-	 *            Operator type
+	 * 		Operator type
 	 * @param parallelism
-	 *            Number of parallel instances created
+	 * 		Number of parallel instances created
 	 */
 	public <IN, OUT> void addStreamVertex(String vertexName, Class<? extends AbstractInvokable>
 			vertexClass, StreamInvokable<IN, OUT> invokableObject, TypeInformation<IN> inTypeInfo,
@@ -185,17 +189,17 @@ public class StreamGraph extends StreamingPlan {
 	/**
 	 * Adds a vertex for the iteration head to the {@link JobGraph}. The
 	 * iterated values will be fed from this vertex back to the graph.
-	 * 
+	 *
 	 * @param vertexName
-	 *            Name of the vertex
+	 * 		Name of the vertex
 	 * @param iterationHead
-	 *            Id of the iteration head
+	 * 		Id of the iteration head
 	 * @param iterationID
-	 *            ID of iteration for multiple iterations
+	 * 		ID of iteration for multiple iterations
 	 * @param parallelism
-	 *            Number of parallel instances created
+	 * 		Number of parallel instances created
 	 * @param waitTime
-	 *            Max wait time for next record
+	 * 		Max wait time for next record
 	 */
 	public void addIterationHead(String vertexName, String iterationHead, Integer iterationID,
 			int parallelism, long waitTime) {
@@ -231,15 +235,15 @@ public class StreamGraph extends StreamingPlan {
 	 * Adds a vertex for the iteration tail to the {@link JobGraph}. The values
 	 * intended to be iterated will be sent to this sink from the iteration
 	 * head.
-	 * 
+	 *
 	 * @param vertexName
-	 *            Name of the vertex
+	 * 		Name of the vertex
 	 * @param iterationTail
-	 *            Id of the iteration tail
+	 * 		Id of the iteration tail
 	 * @param iterationID
-	 *            ID of iteration for mulitple iterations
+	 * 		ID of iteration for mulitple iterations
 	 * @param waitTime
-	 *            Max waiting time for next record
+	 * 		Max waiting time for next record
 	 */
 	public void addIterationTail(String vertexName, String iterationTail, Integer iterationID,
 			long waitTime) {
@@ -287,17 +291,17 @@ public class StreamGraph extends StreamingPlan {
 
 	/**
 	 * Sets vertex parameters in the JobGraph
-	 * 
+	 *
 	 * @param vertexName
-	 *            Name of the vertex
+	 * 		Name of the vertex
 	 * @param vertexClass
-	 *            The class of the vertex
+	 * 		The class of the vertex
 	 * @param invokableObject
-	 *            The user defined invokable object
+	 * 		The user defined invokable object
 	 * @param operatorName
-	 *            Type of the user defined operator
+	 * 		Type of the user defined operator
 	 * @param parallelism
-	 *            Number of parallel instances created
+	 * 		Number of parallel instances created
 	 */
 	private void addVertex(String vertexName, Class<? extends AbstractInvokable> vertexClass,
 			StreamInvokable<?, ?> invokableObject, String operatorName, int parallelism) {
@@ -318,17 +322,17 @@ public class StreamGraph extends StreamingPlan {
 	/**
 	 * Connects two vertices in the JobGraph using the selected partitioner
 	 * settings
-	 * 
+	 *
 	 * @param upStreamVertexName
-	 *            Name of the upstream(output) vertex
+	 * 		Name of the upstream(output) vertex
 	 * @param downStreamVertexName
-	 *            Name of the downstream(input) vertex
+	 * 		Name of the downstream(input) vertex
 	 * @param partitionerObject
-	 *            Partitioner object
+	 * 		Partitioner object
 	 * @param typeNumber
-	 *            Number of the type (used at co-functions)
+	 * 		Number of the type (used at co-functions)
 	 * @param outputNames
-	 *            User defined names of the out edge
+	 * 		User defined names of the out edge
 	 */
 	public void setEdge(String upStreamVertexName, String downStreamVertexName,
 			StreamPartitioner<?> partitionerObject, int typeNumber, List<String> outputNames) {
@@ -342,6 +346,13 @@ public class StreamGraph extends StreamingPlan {
 		outEdgeTypes.get(upStreamVertexName).add(typeNumber);
 		inEdgeLists.get(downStreamVertexName).add(upStreamVertexName);
 		outputPartitioners.get(upStreamVertexName).add(partitionerObject);
+		if (sourceVertices.contains(upStreamVertexName)) {
+			if (partitionerObject instanceof FieldsPartitioner) {
+				keySelectors.put(upStreamVertexName, ((FieldsPartitioner<?>) partitionerObject).getKeySelector());
+			} else if (!keySelectors.containsKey(upStreamVertexName)) {
+				keySelectors.put(upStreamVertexName, new ConstantKeySelector());
+			}
+		}
 		selectedNames.get(upStreamVertexName).add(outputNames);
 	}
 
@@ -356,11 +367,11 @@ public class StreamGraph extends StreamingPlan {
 
 	/**
 	 * Sets the number of parallel instances created for the given vertex.
-	 * 
+	 *
 	 * @param vertexName
-	 *            Name of the vertex
+	 * 		Name of the vertex
 	 * @param parallelism
-	 *            Number of parallel instances created
+	 * 		Number of parallel instances created
 	 */
 	public void setParallelism(String vertexName, int parallelism) {
 		operatorParallelisms.put(vertexName, parallelism);
@@ -370,14 +381,24 @@ public class StreamGraph extends StreamingPlan {
 		return operatorParallelisms.get(vertexName);
 	}
 
+	public int getFTParallelism() {
+		switch (ftStatus) {
+			case ON:
+				return 1;
+			case OFF:
+			default:
+				return 0;
+		}
+	}
+
 	/**
 	 * Sets the input format for the given vertex.
-	 * 
+	 *
 	 * @param vertexName
-	 *            Name of the vertex
+	 * 		Name of the vertex
 	 * @param inputFormat
-	 *            input format of the file source associated with the given
-	 *            vertex
+	 * 		input format of the file source associated with the given
+	 * 		vertex
 	 */
 	public void setInputFormat(String vertexName, InputFormat<String, ?> inputFormat) {
 		inputFormatLists.put(vertexName, inputFormat);
@@ -410,11 +431,11 @@ public class StreamGraph extends StreamingPlan {
 	/**
 	 * Sets a user defined {@link OutputSelector} for the given operator. Used
 	 * for directed emits.
-	 * 
+	 *
 	 * @param vertexName
-	 *            Name of the vertex for which the output selector will be set
+	 * 		Name of the vertex for which the output selector will be set
 	 * @param outputSelector
-	 *            The outputselector object
+	 * 		The outputselector object
 	 */
 	public <T> void setOutputSelector(String vertexName, OutputSelector<T> outputSelector) {
 		outputSelectors.get(vertexName).add(outputSelector);
@@ -461,11 +482,11 @@ public class StreamGraph extends StreamingPlan {
 	/**
 	 * Sets TypeSerializerWrapper from one vertex to another, used with some
 	 * sinks.
-	 * 
+	 *
 	 * @param from
-	 *            from
+	 * 		from
 	 * @param to
-	 *            to
+	 * 		to
 	 */
 	public void setSerializersFrom(String from, String to) {
 		operatorNames.put(to, operatorNames.get(from));
@@ -486,9 +507,9 @@ public class StreamGraph extends StreamingPlan {
 	/**
 	 * Gets the assembled {@link JobGraph} and adds a user specified name for
 	 * it.
-	 * 
+	 *
 	 * @param jobGraphName
-	 *            name of the jobGraph
+	 * 		name of the jobGraph
 	 */
 	public JobGraph getJobGraph(String jobGraphName) {
 
@@ -655,5 +676,9 @@ public class StreamGraph extends StreamingPlan {
 
 	public FTStatus getFTStatus() {
 		return ftStatus;
+	}
+
+	public KeySelector<?, ?> getKeySelector(String upStreamVertexName) {
+		return keySelectors.get(upStreamVertexName);
 	}
 }

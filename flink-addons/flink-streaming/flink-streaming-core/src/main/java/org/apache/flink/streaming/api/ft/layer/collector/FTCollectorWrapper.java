@@ -17,30 +17,27 @@
 
 package org.apache.flink.streaming.api.ft.layer.collector;
 
-import org.apache.flink.streaming.api.ft.layer.AbstractFT;
-import org.apache.flink.streaming.api.ft.layer.util.RecordId;
+import org.apache.flink.streaming.api.ft.layer.runtime.AbstractFTHandler;
 import org.apache.flink.streaming.api.streamrecord.StreamRecord;
 import org.apache.flink.util.Collector;
 
 public class FTCollectorWrapper<T> implements Collector<T> {
 
 	private Collector<T> outerCollector;
-	private AbstractFT<T> abstractFT;
+	private AbstractFTHandler<T> abstractFTHandler;
 	private StreamRecord<T> streamRecord;
 
-	public FTCollectorWrapper(Collector<T> outerCollector, AbstractFT<T> abstractFT) {
+	public FTCollectorWrapper(Collector<T> outerCollector, AbstractFTHandler<T> abstractFTHandler) {
 		this.streamRecord = new StreamRecord<T>();
 		this.outerCollector = outerCollector;
-		this.abstractFT = abstractFT;
+		this.abstractFTHandler = abstractFTHandler;
 	}
 
 	@Override
 	public void collect(T record) {
-		System.out.println("Emit of " + record + " in " + Thread.currentThread()   + " started.");
 		streamRecord.setObject(record);
-		abstractFT.persist(streamRecord);
+		abstractFTHandler.persist(streamRecord);
 		outerCollector.collect(record);
-		System.out.println("Emit of " + record + " in " + this.getClass()   + " ended.");
 	}
 
 	@Override

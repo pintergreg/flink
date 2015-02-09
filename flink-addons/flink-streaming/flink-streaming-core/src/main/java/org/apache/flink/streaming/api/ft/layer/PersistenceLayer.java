@@ -17,7 +17,7 @@
 
 package org.apache.flink.streaming.api.ft.layer;
 
-import org.apache.flink.streaming.api.ft.layer.util.RecordWithHashCode;
+import org.apache.flink.streaming.api.ft.layer.id.RecordWithHashCode;
 
 public class PersistenceLayer extends AbstractPersistenceLayer<Long, RecordWithHashCode> {
 	private static final long serialVersionUID = 1L;

@@ -42,18 +42,18 @@ public class RemoteStreamEnvironment extends StreamExecutionEnvironment {
 	/**
 	 * Creates a new RemoteStreamEnvironment that points to the master
 	 * (JobManager) described by the given host name and port.
-	 * 
+	 *
 	 * @param host
-	 *            The host name or address of the master (JobManager), where the
-	 *            program should be executed.
+	 * 		The host name or address of the master (JobManager), where the
+	 * 		program should be executed.
 	 * @param port
-	 *            The port of the master (JobManager), where the program should
-	 *            be executed.
+	 * 		The port of the master (JobManager), where the program should
+	 * 		be executed.
 	 * @param jarFiles
-	 *            The JAR files with code that needs to be shipped to the
-	 *            cluster. If the program uses user-defined functions,
-	 *            user-defined input formats, or any libraries, those must be
-	 *            provided in the JAR files.
+	 * 		The JAR files with code that needs to be shipped to the
+	 * 		cluster. If the program uses user-defined functions,
+	 * 		user-defined input formats, or any libraries, those must be
+	 * 		provided in the JAR files.
 	 */
 	public RemoteStreamEnvironment(String host, int port, String... jarFiles) {
 		if (host == null) {
@@ -94,9 +94,9 @@ public class RemoteStreamEnvironment extends StreamExecutionEnvironment {
 
 	/**
 	 * Executes the remote job.
-	 * 
+	 *
 	 * @param jobGraph
-	 *            jobGraph to execute
+	 * 		jobGraph to execute
 	 */
 	private void executeRemotely(JobGraph jobGraph) {
 		if (LOG.isInfoEnabled()) {

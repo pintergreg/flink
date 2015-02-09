@@ -17,6 +17,8 @@
 
 package org.apache.flink.streaming.api;
 
+import static org.apache.flink.streaming.api.FTLayerBuilder.FTStatus;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -42,8 +44,6 @@ import org.apache.flink.streaming.partitioner.StreamPartitioner;
 import org.apache.flink.streaming.partitioner.StreamPartitioner.PartitioningStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.flink.streaming.api.FTLayerBuilder.*;
 
 public class StreamingJobGraphGenerator {
 
@@ -258,7 +258,6 @@ public class StreamingJobGraphGenerator {
 
 		StreamPartitioner<?> partitioner = streamGraph.getOutPartitioner(upStreamVertexName,
 				downStreamVertexName);
-
 		upStreamConfig.setPartitioner(downStreamVertexName, partitioner);
 
 		if (partitioner.getStrategy() == PartitioningStrategy.FORWARD) {

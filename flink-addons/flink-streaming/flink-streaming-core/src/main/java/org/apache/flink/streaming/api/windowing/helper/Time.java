@@ -28,10 +28,10 @@ import org.apache.flink.streaming.api.windowing.policy.TriggerPolicy;
  * This helper represents a time based count or eviction policy. By default the
  * time is measured with {@link System#currentTimeMillis()} in
  * {@link DefaultTimeStamp}.
- * 
+ *
  * @param <DATA>
- *            The data type which is handled by the time stamp used in the
- *            policy represented by this helper
+ * 		The data type which is handled by the time stamp used in the
+ * 		policy represented by this helper
  */
 public class Time<DATA> implements WindowingHelper<DATA> {
 
@@ -43,19 +43,19 @@ public class Time<DATA> implements WindowingHelper<DATA> {
 	/**
 	 * Creates a helper representing a trigger which triggers every given
 	 * length or an eviction which evicts all elements older than length.
-	 * 
+	 *
 	 * @param length
-	 *            The number of time units
+	 * 		The number of time units
 	 * @param timeUnit
-	 *            The unit of time such as minute oder millisecond. Note that
-	 *            the smallest possible granularity is milliseconds. Any smaller
-	 *            time unit might cause an error at runtime due to conversion
-	 *            problems.
+	 * 		The unit of time such as minute oder millisecond. Note that
+	 * 		the smallest possible granularity is milliseconds. Any smaller
+	 * 		time unit might cause an error at runtime due to conversion
+	 * 		problems.
 	 * @param timestamp
-	 *            The user defined timestamp that will be used to extract time
-	 *            information from the incoming elements
+	 * 		The user defined timestamp that will be used to extract time
+	 * 		information from the incoming elements
 	 * @param startTime
-	 *            The startTime of the stream for computing the first window
+	 * 		The startTime of the stream for computing the first window
 	 */
 	private Time(long length, TimeUnit timeUnit, Timestamp<DATA> timestamp, long startTime) {
 		this(length, timeUnit, new TimestampWrapper<DATA>(timestamp, startTime));
@@ -64,17 +64,17 @@ public class Time<DATA> implements WindowingHelper<DATA> {
 	/**
 	 * Creates a helper representing a trigger which triggers every given
 	 * length or an eviction which evicts all elements older than length.
-	 * 
+	 *
 	 * @param length
-	 *            The number of time units
+	 * 		The number of time units
 	 * @param timeUnit
-	 *            The unit of time such as minute oder millisecond. Note that
-	 *            the smallest possible granularity is milliseconds. Any smaller
-	 *            time unit might cause an error at runtime due to conversion
-	 *            problems.
+	 * 		The unit of time such as minute oder millisecond. Note that
+	 * 		the smallest possible granularity is milliseconds. Any smaller
+	 * 		time unit might cause an error at runtime due to conversion
+	 * 		problems.
 	 * @param timestampWrapper
-	 *            The user defined {@link TimestampWrapper} that will be used to
-	 *            extract time information from the incoming elements
+	 * 		The user defined {@link TimestampWrapper} that will be used to
+	 * 		extract time information from the incoming elements
 	 */
 	private Time(long length, TimeUnit timeUnit, TimestampWrapper<DATA> timestampWrapper) {
 		this.length = length;
@@ -97,14 +97,14 @@ public class Time<DATA> implements WindowingHelper<DATA> {
 	 * Creates a helper representing a time trigger which triggers every given
 	 * length (slide size) or a time eviction which evicts all elements older
 	 * than length (window size) using System time.
-	 * 
+	 *
 	 * @param length
-	 *            The number of time units
+	 * 		The number of time units
 	 * @param timeUnit
-	 *            The unit of time such as minute oder millisecond. Note that
-	 *            the smallest possible granularity is milliseconds. Any smaller
-	 *            time unit might cause an error at runtime due to conversion
-	 *            problems.
+	 * 		The unit of time such as minute oder millisecond. Note that
+	 * 		the smallest possible granularity is milliseconds. Any smaller
+	 * 		time unit might cause an error at runtime due to conversion
+	 * 		problems.
 	 * @return Helper representing the time based trigger and eviction policy
 	 */
 	@SuppressWarnings("unchecked")
@@ -117,14 +117,14 @@ public class Time<DATA> implements WindowingHelper<DATA> {
 	 * Creates a helper representing a time trigger which triggers every given
 	 * length (slide size) or a time eviction which evicts all elements older
 	 * than length (window size) using a user defined timestamp extractor.
-	 * 
+	 *
 	 * @param length
-	 *            The number of time units
+	 * 		The number of time units
 	 * @param timestamp
-	 *            The user defined timestamp that will be used to extract time
-	 *            information from the incoming elements
+	 * 		The user defined timestamp that will be used to extract time
+	 * 		information from the incoming elements
 	 * @param startTime
-	 *            The startTime used to compute the first window
+	 * 		The startTime used to compute the first window
 	 * @return Helper representing the time based trigger and eviction policy
 	 */
 	public static <DATA> Time<DATA> of(long length, Timestamp<DATA> timestamp, long startTime) {
@@ -136,12 +136,12 @@ public class Time<DATA> implements WindowingHelper<DATA> {
 	 * length (slide size) or a time eviction which evicts all elements older
 	 * than length (window size) using a user defined timestamp extractor. By
 	 * default the start time is set to 0.
-	 * 
+	 *
 	 * @param length
-	 *            The number of time units
+	 * 		The number of time units
 	 * @param timestamp
-	 *            The user defined timestamp that will be used to extract time
-	 *            information from the incoming elements
+	 * 		The user defined timestamp that will be used to extract time
+	 * 		information from the incoming elements
 	 * @return Helper representing the time based trigger and eviction policy
 	 */
 	public static <DATA> Time<DATA> of(long length, Timestamp<DATA> timestamp) {
@@ -150,9 +150,9 @@ public class Time<DATA> implements WindowingHelper<DATA> {
 
 	/**
 	 * Sets the delay for the first processed window.
-	 * 
+	 *
 	 * @param delay
-	 *            The number of time units before the first processed window.
+	 * 		The number of time units before the first processed window.
 	 * @return Helper representing the time based trigger and eviction policy
 	 */
 	public Time<DATA> withDelay(long delay) {

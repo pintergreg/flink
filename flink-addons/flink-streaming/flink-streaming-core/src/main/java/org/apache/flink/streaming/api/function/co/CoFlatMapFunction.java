@@ -28,11 +28,11 @@ import org.apache.flink.util.Collector;
  * input types.
  *
  * @param <IN1>
- *            Type of the first input.
+ * 		Type of the first input.
  * @param <IN2>
- *            Type of the second input.
+ * 		Type of the second input.
  * @param <OUT>
- *            Output type.
+ * 		Output type.
  */
 public interface CoFlatMapFunction<IN1, IN2, OUT> extends Function, Serializable {
 

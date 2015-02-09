@@ -17,35 +17,33 @@
 
 package org.apache.flink.streaming.api.streamvertex;
 
-import org.apache.flink.runtime.io.network.api.writer.RoundRobinChannelSelector;
+import static org.apache.flink.streaming.api.FTLayerBuilder.FTStatus;
+
+import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.runtime.plugable.SerializationDelegate;
-import org.apache.flink.streaming.api.FTLayerBuilder;
-import org.apache.flink.streaming.api.ft.layer.Anchorer;
-import org.apache.flink.streaming.api.ft.layer.FT;
-import org.apache.flink.streaming.api.ft.layer.NonFT;
-import org.apache.flink.streaming.api.ft.layer.Persister;
-import org.apache.flink.streaming.api.ft.layer.Xorer;
-import org.apache.flink.streaming.api.ft.layer.util.AsSemiDeserializedStreamRecordSerializer;
-import org.apache.flink.streaming.api.ft.layer.util.FTAnchorer;
-import org.apache.flink.streaming.api.ft.layer.util.FTPersister;
-import org.apache.flink.streaming.api.ft.layer.util.SourceFTXorer;
+import org.apache.flink.streaming.api.ft.layer.runtime.AnchorHandler;
+import org.apache.flink.streaming.api.ft.layer.runtime.FTAnchorHandler;
+import org.apache.flink.streaming.api.ft.layer.runtime.FTHandler;
+import org.apache.flink.streaming.api.ft.layer.runtime.FTPersister;
+import org.apache.flink.streaming.api.ft.layer.runtime.NonFTHandler;
+import org.apache.flink.streaming.api.ft.layer.runtime.NonFTXorHandler;
+import org.apache.flink.streaming.api.ft.layer.runtime.Persister;
+import org.apache.flink.streaming.api.ft.layer.runtime.XorHandler;
+import org.apache.flink.streaming.api.ft.layer.serialization.AsSemiDeserializedStreamRecordSerializer;
 import org.apache.flink.streaming.api.invokable.SourceInvokable;
 import org.apache.flink.streaming.api.streamrecord.StreamRecord;
 import org.apache.flink.streaming.api.streamrecord.StreamRecordSerializer;
 import org.apache.flink.streaming.io.StreamRecordWriter;
+import org.apache.flink.streaming.partitioner.PersistencePartitioner;
 import org.apache.flink.util.MutableObjectIterator;
-
-import static org.apache.flink.streaming.api.FTLayerBuilder.*;
 
 public class StreamSourceVertex<OUT> extends StreamVertex<OUT, OUT> {
 
 	private SourceInvokable<OUT> sourceInvokable;
-	// private StreamRecordWriter<SerializationDelegate<StreamRecord<OUT>>> ftWriter;
 
 	public StreamSourceVertex() {
 		super();
 		sourceInvokable = null;
-		// ftWriter = null;
 	}
 
 	@Override
@@ -55,32 +53,33 @@ public class StreamSourceVertex<OUT> extends StreamVertex<OUT, OUT> {
 
 	@Override
 	public void setInputsOutputs() {
-		// TODO set FT RecordWriter, PersistencePartitioner
 		if (ftStatus == FTStatus.ON) {
 			StreamRecordWriter<SerializationDelegate<StreamRecord<OUT>>> ftWriter = new
 					StreamRecordWriter<SerializationDelegate<StreamRecord<OUT>>>
-					(getNextWriter(), new RoundRobinChannelSelector<SerializationDelegate
-							<StreamRecord<OUT>>>(), 10);
+					(getNextWriter(), new PersistencePartitioner<OUT>(), 10);
 			StreamRecordSerializer<OUT> serializer = configuration
 					.getTypeSerializerOut1(userClassLoader);
+			KeySelector<OUT, ?> keySelector = configuration.getKeySelector(userClassLoader);
 			AsSemiDeserializedStreamRecordSerializer<OUT> semiDeserializedSerializer = new
-					AsSemiDeserializedStreamRecordSerializer<OUT>(serializer);
-			Anchorer anchorer = new FTAnchorer();
-			Persister<OUT> persister = new FTPersister<OUT>(anchorer, ftWriter,
+					AsSemiDeserializedStreamRecordSerializer<OUT>(serializer, keySelector);
+			AnchorHandler anchorHandler = new FTAnchorHandler();
+			Persister<OUT> persister = new FTPersister<OUT>(anchorHandler, ftWriter,
 					semiDeserializedSerializer);
-			Xorer sourceXorer = new SourceFTXorer(ftWriter);
-			abstractFT = new FT(persister, sourceXorer, anchorer);
+			// TODO activate xor if events are working
+//			XorHandler sourceXorHandler = new SourceFTXorHandler(ftWriter);
+			XorHandler sourceXorHandler = new NonFTXorHandler();
+			abstractFTHandler = new FTHandler(persister, sourceXorHandler, anchorHandler);
 		} else {
-			abstractFT = new NonFT();
+			abstractFTHandler = new NonFTHandler();
 		}
 		userInvokable = sourceInvokable;
-		outputHandler = new OutputHandler<OUT>(this, abstractFT);
+		outputHandler = new OutputHandler<OUT>(this, abstractFTHandler);
 	}
 
 	@Override
 	protected void setInvokable() {
 		sourceInvokable = configuration.getUserInvokable(userClassLoader);
-		sourceInvokable.setup(this, abstractFT);
+		sourceInvokable.setup(this, abstractFTHandler);
 	}
 
 	@Override
@@ -88,11 +87,7 @@ public class StreamSourceVertex<OUT> extends StreamVertex<OUT, OUT> {
 		initializeInvoke();
 		inputHandler = new InputHandler<OUT>(this);
 		outputHandler.invokeUserFunction("SOURCE", sourceInvokable);
-		abstractFT.close();
-//		while(true){
-//			System.out.println("Waiting in SourceVertex");
-//			Thread.sleep(500);
-//		}
+		abstractFTHandler.close();
 	}
 
 	@SuppressWarnings("unchecked")

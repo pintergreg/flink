@@ -25,10 +25,10 @@ import org.apache.flink.streaming.api.windowing.policy.TriggerPolicy;
 /**
  * This helper represents a trigger or eviction policy based on a
  * {@link DeltaFunction}.
- * 
+ *
  * @param <DATA>
- *            the data type handled by the delta function represented by this
- *            helper.
+ * 		the data type handled by the delta function represented by this
+ * 		helper.
  */
 public class Delta<DATA> implements WindowingHelper<DATA> {
 
@@ -38,15 +38,15 @@ public class Delta<DATA> implements WindowingHelper<DATA> {
 
 	/**
 	 * Creates a delta helper representing a delta count or eviction policy
-	 * 
+	 *
 	 * @param deltaFunction
-	 *            The delta function which should be used to calculate the delta
-	 *            between points.
+	 * 		The delta function which should be used to calculate the delta
+	 * 		between points.
 	 * @param initVal
-	 *            The initial value which will be used to calculate the first
-	 *            delta.
+	 * 		The initial value which will be used to calculate the first
+	 * 		delta.
 	 * @param threshold
-	 *            The threshold used by the delta function.
+	 * 		The threshold used by the delta function.
 	 */
 	public Delta(DeltaFunction<DATA> deltaFunction, DATA initVal, double threshold) {
 		this.deltaFunction = deltaFunction;
@@ -73,15 +73,15 @@ public class Delta<DATA> implements WindowingHelper<DATA> {
 	 * buffer and removes all elements from the buffer which have a higher delta
 	 * then the threshold. As soon as there is an element with a lower delta,
 	 * the eviction stops.
-	 * 
+	 *
 	 * @param deltaFunction
-	 *            The delta function which should be used to calculate the delta
-	 *            between points.
+	 * 		The delta function which should be used to calculate the delta
+	 * 		between points.
 	 * @param initVal
-	 *            The initial value which will be used to calculate the first
-	 *            delta.
+	 * 		The initial value which will be used to calculate the first
+	 * 		delta.
 	 * @param threshold
-	 *            The threshold used by the delta function.
+	 * 		The threshold used by the delta function.
 	 * @return Helper representing a delta trigger or eviction policy
 	 */
 	public static <DATA> Delta<DATA> of(double threshold, DeltaFunction<DATA> deltaFunction,

@@ -24,9 +24,9 @@ import java.io.Serializable;
  * deleted from the buffer. Deletions must be done only in the order the
  * elements arrived. Therefore, the policy only returns the number of elements
  * to evict on each element arrival.
- * 
+ *
  * @param <DATA>
- *            the type of the data handled by this policy
+ * 		the type of the data handled by this policy
  */
 public interface EvictionPolicy<DATA> extends Serializable {
 
@@ -36,11 +36,11 @@ public interface EvictionPolicy<DATA> extends Serializable {
 	 * the UDF but before the adding of the new data point.
 	 *
 	 * @param datapoint
-	 *            data point the data point which arrived
+	 * 		data point the data point which arrived
 	 * @param triggered
-	 *            Information whether the UDF was triggered or not
+	 * 		Information whether the UDF was triggered or not
 	 * @param bufferSize
-	 *            The current size of the element buffer at the invokable
+	 * 		The current size of the element buffer at the invokable
 	 * @return The number of elements to be deleted from the buffer
 	 */
 	public int notifyEviction(DATA datapoint, boolean triggered, int bufferSize);

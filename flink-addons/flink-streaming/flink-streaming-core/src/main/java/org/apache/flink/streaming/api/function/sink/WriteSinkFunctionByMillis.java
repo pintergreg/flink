@@ -20,9 +20,9 @@ package org.apache.flink.streaming.api.function.sink;
 /**
  * Implementation of WriteSinkFunction. Writes tuples to file in every millis
  * milliseconds.
- * 
+ *
  * @param <IN>
- *            Input tuple type
+ * 		Input tuple type
  */
 public class WriteSinkFunctionByMillis<IN> extends WriteSinkFunction<IN> {
 	private static final long serialVersionUID = 1L;

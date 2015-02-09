@@ -23,7 +23,7 @@ import org.apache.flink.runtime.io.network.api.reader.BufferReader;
 import org.apache.flink.runtime.io.network.api.reader.BufferReaderBase;
 import org.apache.flink.runtime.io.network.api.reader.UnionBufferReader;
 import org.apache.flink.runtime.plugable.DeserializationDelegate;
-import org.apache.flink.streaming.api.ft.layer.NonFT;
+import org.apache.flink.streaming.api.ft.layer.runtime.NonFTHandler;
 import org.apache.flink.streaming.api.invokable.operator.co.CoInvokable;
 import org.apache.flink.streaming.api.streamrecord.StreamRecord;
 import org.apache.flink.streaming.api.streamrecord.StreamRecordSerializer;
@@ -58,8 +58,8 @@ public class CoStreamVertex<IN1, IN2, OUT> extends StreamVertex<IN1, OUT> {
 
 	@Override
 	public void setInputsOutputs() {
-		abstractFT = new NonFT<OUT>();
-		outputHandler = new OutputHandler<OUT>(this, abstractFT);
+		abstractFTHandler = new NonFTHandler<OUT>();
+		outputHandler = new OutputHandler<OUT>(this, abstractFTHandler);
 
 		setConfigInputs();
 
@@ -70,7 +70,7 @@ public class CoStreamVertex<IN1, IN2, OUT> extends StreamVertex<IN1, OUT> {
 	@Override
 	protected void setInvokable() {
 		userInvokable = configuration.getUserInvokable(userClassLoader);
-		userInvokable.setup(this, abstractFT);
+		userInvokable.setup(this, abstractFTHandler);
 	}
 
 	protected void setConfigInputs() throws StreamVertexException {
@@ -124,6 +124,7 @@ public class CoStreamVertex<IN1, IN2, OUT> extends StreamVertex<IN1, OUT> {
 				throw new IllegalArgumentException("CoStreamVertex has only 2 inputs");
 		}
 	}
+
 	@SuppressWarnings("unchecked")
 	@Override
 	public <X> StreamRecordSerializer<X> getInputSerializer(int index) {
@@ -136,6 +137,7 @@ public class CoStreamVertex<IN1, IN2, OUT> extends StreamVertex<IN1, OUT> {
 				throw new IllegalArgumentException("CoStreamVertex has only 2 inputs");
 		}
 	}
+
 	@SuppressWarnings("unchecked")
 	@Override
 	public <X, Y> CoReaderIterator<X, Y> getCoReader() {

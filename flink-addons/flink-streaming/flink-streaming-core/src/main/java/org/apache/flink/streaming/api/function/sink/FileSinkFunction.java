@@ -32,9 +32,9 @@ import org.slf4j.LoggerFactory;
  * OutputFormat format. Tuples are collected to a list and written to the file
  * periodically. The target path and the overwrite mode are pre-packaged in
  * format.
- * 
+ *
  * @param <IN>
- *            Input type
+ * 		Input type
  */
 public abstract class FileSinkFunction<IN> extends RichSinkFunction<IN> {
 	private static final long serialVersionUID = 1L;
@@ -105,7 +105,7 @@ public abstract class FileSinkFunction<IN> extends RichSinkFunction<IN> {
 
 	/**
 	 * Condition for writing the contents of tupleList and clearing it.
-	 * 
+	 *
 	 * @return value of the updating condition
 	 */
 	protected abstract boolean updateCondition();

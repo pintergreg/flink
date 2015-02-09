@@ -36,11 +36,11 @@ public class Count implements WindowingHelper {
 	/**
 	 * Specifies on which element a trigger or an eviction should happen (based
 	 * on the count of the elements).
-	 * 
+	 * <p/>
 	 * This constructor does exactly the same as {@link Count#of(int)}.
-	 * 
+	 *
 	 * @param count
-	 *            the number of elements to count before trigger/evict
+	 * 		the number of elements to count before trigger/evict
 	 */
 	public Count(int count) {
 		this.count = count;
@@ -60,11 +60,10 @@ public class Count implements WindowingHelper {
 	 * Sets the number of elements deleted at each eviction (i.e when the number
 	 * elements exceeds the window size). By default the elements get deleted
 	 * one by one (deleteOnEvition = 1)
-	 * 
+	 *
 	 * @param deleteOnEviction
-	 *            The number of elements deleted at each evition
+	 * 		The number of elements deleted at each evition
 	 * @return Helper representing the count based policy
-	 * 
 	 */
 	public Count withDelete(int deleteOnEviction) {
 		this.deleteOnEviction = deleteOnEviction;
@@ -73,11 +72,10 @@ public class Count implements WindowingHelper {
 
 	/**
 	 * Sets the initial value of the counter. 0 by default
-	 * 
+	 *
 	 * @param startValue
-	 *            Starting value of the window counter
+	 * 		Starting value of the window counter
 	 * @return Helper representing the count based policy
-	 * 
 	 */
 	public Count startingAt(int startValue) {
 		this.startValue = startValue;
@@ -89,9 +87,9 @@ public class Count implements WindowingHelper {
 	 * size). For eviction 'count' defines the number of elements in each
 	 * window. For trigger 'count' defines how often do we call the user
 	 * function in terms of number of elements received.
-	 * 
+	 *
 	 * @param count
-	 *            the number of elements to count before trigger/evict
+	 * 		the number of elements to count before trigger/evict
 	 * @return Helper representing the count based policy
 	 */
 	public static Count of(int count) {

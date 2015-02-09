@@ -25,12 +25,12 @@ import org.apache.flink.streaming.api.invokable.StreamInvokable;
  * Represents the end of a DataStream.
  *
  * @param <IN>
- *            The type of the DataStream closed by the sink.
+ * 		The type of the DataStream closed by the sink.
  */
 public class DataStreamSink<IN> extends SingleOutputStreamOperator<IN, DataStreamSink<IN>> {
 
 	protected DataStreamSink(StreamExecutionEnvironment environment, String operatorType,
-			TypeInformation<IN> outTypeInfo, StreamInvokable<?,?> invokable) {
+			TypeInformation<IN> outTypeInfo, StreamInvokable<?, ?> invokable) {
 		super(environment, operatorType, outTypeInfo, invokable);
 	}
 

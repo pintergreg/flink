@@ -22,9 +22,9 @@ import org.apache.flink.api.common.io.OutputFormat;
 /**
  * Implementation of FileSinkFunction. Writes tuples to file in every millis
  * milliseconds.
- * 
+ *
  * @param <IN>
- *            Input type
+ * 		Input type
  */
 public class FileSinkFunctionByMillis<IN> extends FileSinkFunction<IN> {
 	private static final long serialVersionUID = 1L;
@@ -40,7 +40,7 @@ public class FileSinkFunctionByMillis<IN> extends FileSinkFunction<IN> {
 
 	/**
 	 * Condition for writing the contents of tupleList and clearing it.
-	 * 
+	 *
 	 * @return value of the updating condition
 	 */
 	@Override

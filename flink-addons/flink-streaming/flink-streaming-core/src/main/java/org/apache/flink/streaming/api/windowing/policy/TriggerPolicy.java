@@ -24,9 +24,9 @@ import java.io.Serializable;
  * occurs (return value true) the UDF will be executed on the current element
  * buffer without the last added element which is provided as parameter. This
  * element will be added to the buffer after the execution of the UDF.
- * 
+ *
  * @param <DATA>
- *            The data type which can be handled by this policy
+ * 		The data type which can be handled by this policy
  */
 public interface TriggerPolicy<DATA> extends Serializable {
 
@@ -36,7 +36,7 @@ public interface TriggerPolicy<DATA> extends Serializable {
 	 * element buffer without the last added element which is provided as
 	 * parameter. This element will be added to the buffer after the execution
 	 * of the UDF.
-	 * 
+	 * <p/>
 	 * There are possibly different strategies for eviction and triggering: 1)
 	 * including last data point: Better/faster for count eviction 2) excluding
 	 * last data point: Essentially required for time based eviction and delta
@@ -44,10 +44,10 @@ public interface TriggerPolicy<DATA> extends Serializable {
 	 * small for the others, policies are implemented according to 2).
 	 *
 	 * @param datapoint
-	 *            the data point which arrived
+	 * 		the data point which arrived
 	 * @return true if the current windows should be closed, otherwise false. In
-	 *         true case the given data point will be part of the next window
-	 *         and will not be included in the current one.
+	 * true case the given data point will be part of the next window
+	 * and will not be included in the current one.
 	 */
 	public boolean notifyTrigger(DATA datapoint);
 

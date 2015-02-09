@@ -32,9 +32,9 @@ import org.slf4j.LoggerFactory;
 /**
  * A StreamCollector that uses user defined output names and a user defined
  * output selector to make directed emits.
- * 
+ *
  * @param <OUT>
- *            Type of the Tuple collected.
+ * 		Type of the Tuple collected.
  */
 public class DirectedCollectorWrapper<OUT> extends CollectorWrapper<OUT> {
 
@@ -49,9 +49,9 @@ public class DirectedCollectorWrapper<OUT> extends CollectorWrapper<OUT> {
 
 	/**
 	 * Creates a new DirectedStreamCollector
-	 * 
+	 *
 	 * @param outputSelector
-	 *            User defined {@link OutputSelector}
+	 * 		User defined {@link OutputSelector}
 	 */
 	public DirectedCollectorWrapper(List<OutputSelector<OUT>> outputSelectors) {
 		this.outputSelectors = outputSelectors;

@@ -25,29 +25,31 @@ import org.apache.flink.streaming.api.streamvertex.StreamingRuntimeContext;
 /**
  * Implementation of the SinkFunction writing every tuple to the standard
  * output or standard error stream.
- * 
+ *
  * @param <IN>
- *            Input record type
+ * 		Input record type
  */
 public class PrintSinkFunction<IN> extends RichSinkFunction<IN> {
 	private static final long serialVersionUID = 1L;
 
 	private static final boolean STD_OUT = false;
 	private static final boolean STD_ERR = true;
-	
-	private boolean target; 
+
+	private boolean target;
 	private transient PrintStream stream;
 	private transient String prefix;
-	
+
 	/**
 	 * Instantiates a print sink function that prints to standard out.
 	 */
-	public PrintSinkFunction() {}
-	
+	public PrintSinkFunction() {
+	}
+
 	/**
 	 * Instantiates a print sink function that prints to standard out.
-	 * 
-	 * @param stdErr True, if the format should print to standard error instead of standard out.
+	 *
+	 * @param stdErr
+	 * 		True, if the format should print to standard error instead of standard out.
 	 */
 	public PrintSinkFunction(boolean stdErr) {
 		target = stdErr;
@@ -56,20 +58,20 @@ public class PrintSinkFunction<IN> extends RichSinkFunction<IN> {
 	public void setTargetToStandardOut() {
 		target = STD_OUT;
 	}
-	
+
 	public void setTargetToStandardErr() {
 		target = STD_ERR;
 	}
-	
+
 	@Override
 	public void open(Configuration parameters) throws Exception {
 		super.open(parameters);
 		StreamingRuntimeContext context = (StreamingRuntimeContext) getRuntimeContext();
 		// get the target stream
 		stream = target == STD_OUT ? System.out : System.err;
-		
+
 		// set the prefix if we have a >1 DOP
-		prefix = (context.getNumberOfParallelSubtasks() > 1) ? 
+		prefix = (context.getNumberOfParallelSubtasks() > 1) ?
 				((context.getIndexOfThisSubtask() + 1) + "> ") : null;
 	}
 
@@ -77,19 +79,18 @@ public class PrintSinkFunction<IN> extends RichSinkFunction<IN> {
 	public void invoke(IN record) {
 		if (prefix != null) {
 			stream.println(prefix + record.toString());
-		}
-		else {
+		} else {
 			stream.println(record.toString());
 		}
 	}
-	
+
 	@Override
 	public void close() throws Exception {
 		this.stream = null;
 		this.prefix = null;
 		super.close();
 	}
-	
+
 	@Override
 	public String toString() {
 		return "Print to " + (target == STD_OUT ? "System.out" : "System.err");

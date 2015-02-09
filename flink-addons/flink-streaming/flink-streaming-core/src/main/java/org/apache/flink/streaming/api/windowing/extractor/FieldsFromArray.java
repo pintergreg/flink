@@ -24,9 +24,9 @@ import java.lang.reflect.Array;
  * specified type.
  *
  * @param <OUT>
- *            The type of the output array. If out is set to String, the output
- *            of the extractor will be a String[]. If it is set to String[] the
- *            output will be String[][].
+ * 		The type of the output array. If out is set to String, the output
+ * 		of the extractor will be a String[]. If it is set to String[] the
+ * 		output will be String[][].
  */
 public class FieldsFromArray<OUT> implements Extractor<Object, OUT[]> {
 
@@ -40,14 +40,14 @@ public class FieldsFromArray<OUT> implements Extractor<Object, OUT[]> {
 	/**
 	 * Extracts multiple fields from an array and puts them in the given order
 	 * into a new array of the specified type.
-	 * 
+	 *
 	 * @param clazz
-	 *            the Class object representing the component type of the new
-	 *            array
+	 * 		the Class object representing the component type of the new
+	 * 		array
 	 * @param indexes
-	 *            The indexes of the fields to be extracted. Any order is
-	 *            possible, but not more than 255 fields due to limitations in
-	 *            {@link Array#newInstance(Class, int...)}.
+	 * 		The indexes of the fields to be extracted. Any order is
+	 * 		possible, but not more than 255 fields due to limitations in
+	 * 		{@link Array#newInstance(Class, int...)}.
 	 */
 	public FieldsFromArray(Class<OUT> clazz, int... indexes) {
 		this.order = indexes;

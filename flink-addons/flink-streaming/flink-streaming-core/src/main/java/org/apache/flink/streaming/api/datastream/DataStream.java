@@ -85,10 +85,10 @@ import org.apache.flink.streaming.util.keys.KeySelectorUtil;
  * <li>{@link DataStream#filter}, or</li>
  * <li>{@link DataStream#aggregate}.</li>
  * </ul>
- * 
+ *
  * @param <OUT>
- *            The type of the DataStream, i.e., the type of the elements of the
- *            DataStream.
+ * 		The type of the DataStream, i.e., the type of the elements of the
+ * 		DataStream.
  */
 public class DataStream<OUT> {
 
@@ -108,13 +108,13 @@ public class DataStream<OUT> {
 	/**
 	 * Create a new {@link DataStream} in the given execution environment with
 	 * partitioning set to forward by default.
-	 * 
+	 *
 	 * @param environment
-	 *            StreamExecutionEnvironment
+	 * 		StreamExecutionEnvironment
 	 * @param operatorType
-	 *            The type of the operator in the component
+	 * 		The type of the operator in the component
 	 * @param typeInfo
-	 *            Type of the datastream
+	 * 		Type of the datastream
 	 */
 	public DataStream(StreamExecutionEnvironment environment, String operatorType,
 			TypeInformation<OUT> typeInfo) {
@@ -137,9 +137,9 @@ public class DataStream<OUT> {
 
 	/**
 	 * Create a new DataStream by creating a copy of another DataStream
-	 * 
+	 *
 	 * @param dataStream
-	 *            The DataStream that will be copied.
+	 * 		The DataStream that will be copied.
 	 */
 	public DataStream(DataStream<OUT> dataStream) {
 		this.environment = dataStream.environment;
@@ -162,7 +162,7 @@ public class DataStream<OUT> {
 
 	/**
 	 * Returns the ID of the {@link DataStream}.
-	 * 
+	 *
 	 * @return ID of the DataStream
 	 */
 	public String getId() {
@@ -171,7 +171,7 @@ public class DataStream<OUT> {
 
 	/**
 	 * Gets the degree of parallelism for this operator.
-	 * 
+	 *
 	 * @return The parallelism set for this operator.
 	 */
 	public int getParallelism() {
@@ -180,7 +180,7 @@ public class DataStream<OUT> {
 
 	/**
 	 * Gets the type of the stream.
-	 * 
+	 *
 	 * @return The type of the datastream.
 	 */
 	@SuppressWarnings("unchecked")
@@ -211,9 +211,9 @@ public class DataStream<OUT> {
 	 * Creates a new {@link DataStream} by merging {@link DataStream} outputs of
 	 * the same type with each other. The DataStreams merged using this operator
 	 * will be transformed simultaneously.
-	 * 
+	 *
 	 * @param streams
-	 *            The DataStreams to merge output with.
+	 * 		The DataStreams to merge output with.
 	 * @return The {@link DataStream}.
 	 */
 	public DataStream<OUT> merge(DataStream<OUT>... streams) {
@@ -232,11 +232,11 @@ public class DataStream<OUT> {
 	 * Operator used for directing tuples to specific named outputs using an
 	 * {@link org.apache.flink.streaming.api.collector.OutputSelector}. Calling
 	 * this method on an operator creates a new {@link SplitDataStream}.
-	 * 
+	 *
 	 * @param outputSelector
-	 *            The user defined
-	 *            {@link org.apache.flink.streaming.api.collector.OutputSelector}
-	 *            for directing the tuples.
+	 * 		The user defined
+	 * 		{@link org.apache.flink.streaming.api.collector.OutputSelector}
+	 * 		for directing the tuples.
 	 * @return The {@link SplitDataStream}
 	 */
 	public SplitDataStream<OUT> split(OutputSelector<OUT> outputSelector) {
@@ -251,9 +251,9 @@ public class DataStream<OUT> {
 	 * Creates a new {@link ConnectedDataStream} by connecting
 	 * {@link DataStream} outputs of different type with each other. The
 	 * DataStreams connected using this operators can be used with CoFunctions.
-	 * 
+	 *
 	 * @param dataStream
-	 *            The DataStream with which this stream will be joined.
+	 * 		The DataStream with which this stream will be joined.
 	 * @return The {@link ConnectedDataStream}.
 	 */
 	public <R> ConnectedDataStream<OUT, R> connect(DataStream<R> dataStream) {
@@ -266,10 +266,10 @@ public class DataStream<OUT> {
 	 * {@link GroupedDataStream#reduce(ReduceFunction)}</p> This operator also
 	 * affects the partitioning of the stream, by forcing values with the same
 	 * key to go to the same processing instance.
-	 * 
+	 *
 	 * @param fields
-	 *            The position of the fields on which the {@link DataStream}
-	 *            will be grouped.
+	 * 		The position of the fields on which the {@link DataStream}
+	 * 		will be grouped.
 	 * @return The grouped {@link DataStream}
 	 */
 	public GroupedDataStream<OUT> groupBy(int... fields) {
@@ -288,12 +288,12 @@ public class DataStream<OUT> {
 	 * returns an {@link GroupedDataStream}.</p> This operator also affects the
 	 * partitioning of the stream, by forcing values with the same key to go to
 	 * the same processing instance.
-	 * 
+	 *
 	 * @param fields
-	 *            One or more field expressions on which the DataStream will be
-	 *            grouped.
+	 * 		One or more field expressions on which the DataStream will be
+	 * 		grouped.
 	 * @return The grouped {@link DataStream}
-	 **/
+	 */
 	public GroupedDataStream<OUT> groupBy(String... fields) {
 
 		return groupBy(new Keys.ExpressionKeys<OUT>(fields, getType()));
@@ -307,10 +307,10 @@ public class DataStream<OUT> {
 	 * <p/>
 	 * This operator also affects the partitioning of the stream, by forcing
 	 * values with the same key to go to the same processing instance.
-	 * 
+	 *
 	 * @param keySelector
-	 *            The {@link KeySelector} that will be used to extract keys for
-	 *            the values
+	 * 		The {@link KeySelector} that will be used to extract keys for
+	 * 		the values
 	 * @return The grouped {@link DataStream}
 	 */
 	public GroupedDataStream<OUT> groupBy(KeySelector<OUT, ?> keySelector) {
@@ -327,7 +327,7 @@ public class DataStream<OUT> {
 	 * partitioned using the given {@link KeySelector}. This setting only
 	 * effects the how the outputs will be distributed between the parallel
 	 * instances of the next processing operator.
-	 * 
+	 *
 	 * @param keySelector
 	 * @return
 	 */
@@ -340,7 +340,7 @@ public class DataStream<OUT> {
 	 * are broadcasted to every parallel instance of the next component. This
 	 * setting only effects the how the outputs will be distributed between the
 	 * parallel instances of the next processing operator.
-	 * 
+	 *
 	 * @return The DataStream with broadcast partitioning set.
 	 */
 	public DataStream<OUT> broadcast() {
@@ -352,7 +352,7 @@ public class DataStream<OUT> {
 	 * are shuffled to the next component. This setting only effects the how the
 	 * outputs will be distributed between the parallel instances of the next
 	 * processing operator.
-	 * 
+	 *
 	 * @return The DataStream with shuffle partitioning set.
 	 */
 	public DataStream<OUT> shuffle() {
@@ -365,7 +365,7 @@ public class DataStream<OUT> {
 	 * possible). This is the default partitioner setting. This setting only
 	 * effects the how the outputs will be distributed between the parallel
 	 * instances of the next processing operator.
-	 * 
+	 *
 	 * @return The DataStream with shuffle partitioning set.
 	 */
 	public DataStream<OUT> forward() {
@@ -377,7 +377,7 @@ public class DataStream<OUT> {
 	 * are distributed evenly to the next component.This setting only effects
 	 * the how the outputs will be distributed between the parallel instances of
 	 * the next processing operator.
-	 * 
+	 *
 	 * @return The DataStream with shuffle partitioning set.
 	 */
 	public DataStream<OUT> distribute() {
@@ -389,7 +389,7 @@ public class DataStream<OUT> {
 	 * all go to the first instance of the next processing operator. Use this
 	 * setting with care since it might cause a serious performance bottleneck
 	 * in the application.
-	 * 
+	 *
 	 * @return The DataStream with shuffle partitioning set.
 	 */
 	public DataStream<OUT> global() {
@@ -406,15 +406,15 @@ public class DataStream<OUT> {
 	 * iteration head. A common usage pattern for streaming iterations is to use
 	 * output splitting to send a part of the closing data stream to the head.
 	 * Refer to {@link #split(OutputSelector)} for more information.
-	 * <p>
+	 * <p/>
 	 * The iteration edge will be partitioned the same way as the first input of
 	 * the iteration head.
-	 * <p>
+	 * <p/>
 	 * By default a DataStream with iteration will never terminate, but the user
 	 * can use the the maxWaitTime parameter to set a max waiting time for the
 	 * iteration head. If no data received in the set time, the stream
 	 * terminates.
-	 * 
+	 *
 	 * @return The iterative data stream created.
 	 */
 	public IterativeDataStream<OUT> iterate() {
@@ -431,19 +431,18 @@ public class DataStream<OUT> {
 	 * iteration head. A common usage pattern for streaming iterations is to use
 	 * output splitting to send a part of the closing data stream to the head.
 	 * Refer to {@link #split(OutputSelector)} for more information.
-	 * <p>
+	 * <p/>
 	 * The iteration edge will be partitioned the same way as the first input of
 	 * the iteration head.
-	 * <p>
+	 * <p/>
 	 * By default a DataStream with iteration will never terminate, but the user
 	 * can use the the maxWaitTime parameter to set a max waiting time for the
 	 * iteration head. If no data received in the set time, the stream
 	 * terminates.
-	 * 
+	 *
 	 * @param maxWaitTimeMillis
-	 *            Number of milliseconds to wait between inputs before shutting
-	 *            down
-	 * 
+	 * 		Number of milliseconds to wait between inputs before shutting
+	 * 		down
 	 * @return The iterative data stream created.
 	 */
 	public IterativeDataStream<OUT> iterate(long maxWaitTimeMillis) {
@@ -456,12 +455,12 @@ public class DataStream<OUT> {
 	 * MapFunction call returns exactly one element. The user can also extend
 	 * {@link RichMapFunction} to gain access to other features provided by the
 	 * {@link org.apache.flink.api.common.functions.RichFunction} interface.
-	 * 
+	 *
 	 * @param mapper
-	 *            The MapFunction that is called for each element of the
-	 *            DataStream.
+	 * 		The MapFunction that is called for each element of the
+	 * 		DataStream.
 	 * @param <R>
-	 *            output type
+	 * 		output type
 	 * @return The transformed {@link DataStream}.
 	 */
 	public <R> SingleOutputStreamOperator<R, ?> map(MapFunction<OUT, R> mapper) {
@@ -478,13 +477,12 @@ public class DataStream<OUT> {
 	 * including none. The user can also extend {@link RichFlatMapFunction} to
 	 * gain access to other features provided by the
 	 * {@link org.apache.flink.api.common.functions.RichFunction} interface.
-	 * 
+	 *
 	 * @param flatMapper
-	 *            The FlatMapFunction that is called for each element of the
-	 *            DataStream
-	 * 
+	 * 		The FlatMapFunction that is called for each element of the
+	 * 		DataStream
 	 * @param <R>
-	 *            output type
+	 * 		output type
 	 * @return The transformed {@link DataStream}.
 	 */
 	public <R> SingleOutputStreamOperator<R, ?> flatMap(FlatMapFunction<OUT, R> flatMapper) {
@@ -501,10 +499,10 @@ public class DataStream<OUT> {
 	 * extend the {@link RichReduceFunction} to gain access to other features
 	 * provided by the
 	 * {@link org.apache.flink.api.common.functions.RichFunction} interface.
-	 * 
+	 *
 	 * @param reducer
-	 *            The {@link ReduceFunction} that will be called for every
-	 *            element of the input values.
+	 * 		The {@link ReduceFunction} that will be called for every
+	 * 		element of the input values.
 	 * @return The transformed DataStream.
 	 */
 	public SingleOutputStreamOperator<OUT, ?> reduce(ReduceFunction<OUT> reducer) {
@@ -521,10 +519,10 @@ public class DataStream<OUT> {
 	 * user can also extend {@link RichFilterFunction} to gain access to other
 	 * features provided by the
 	 * {@link org.apache.flink.api.common.functions.RichFunction} interface.
-	 * 
+	 *
 	 * @param filter
-	 *            The FilterFunction that is called for each element of the
-	 *            DataSet.
+	 * 		The FilterFunction that is called for each element of the
+	 * 		DataSet.
 	 * @return The filtered DataStream.
 	 */
 	public SingleOutputStreamOperator<OUT, ?> filter(FilterFunction<OUT> filter) {
@@ -539,15 +537,14 @@ public class DataStream<OUT> {
 	 * fields.</br> This method returns a {@link StreamProjection} on which
 	 * {@link StreamProjection#types(Class)} needs to be called to completed the
 	 * transformation.
-	 * 
+	 *
 	 * @param fieldIndexes
-	 *            The field indexes of the input tuples that are retained. The
-	 *            order of fields in the output tuple corresponds to the order
-	 *            of field indexes.
+	 * 		The field indexes of the input tuples that are retained. The
+	 * 		order of fields in the output tuple corresponds to the order
+	 * 		of field indexes.
 	 * @return A StreamProjection that needs to be converted into a DataStream
-	 *         to complete the project transformation by calling
-	 *         {@link StreamProjection#types(Class)}.
-	 * 
+	 * to complete the project transformation by calling
+	 * {@link StreamProjection#types(Class)}.
 	 * @see Tuple
 	 * @see DataStream
 	 */
@@ -561,20 +558,19 @@ public class DataStream<OUT> {
 	 * into one DataStream over a specified time window. It builds all pair
 	 * combinations of elements of both DataStreams, i.e., it builds a Cartesian
 	 * product.
-	 * 
-	 * <p>
+	 * <p/>
+	 * <p/>
 	 * This method returns a {@link StreamCrossOperator} on which the
 	 * {@link StreamCrossOperator#onWindow} should be called to define the
 	 * window.
-	 * <p>
+	 * <p/>
 	 * Call {@link StreamCrossOperator.CrossWindow#with(crossFunction)} to
 	 * define a custom cross function.
-	 * 
+	 *
 	 * @param dataStreamToCross
-	 *            The other DataStream with which this DataStream is crossed.
+	 * 		The other DataStream with which this DataStream is crossed.
 	 * @return A {@link StreamCrossOperator} to continue the definition of the
-	 *         cross transformation.
-	 * 
+	 * cross transformation.
 	 */
 	public <IN2> StreamCrossOperator<OUT, IN2> cross(DataStream<IN2> dataStreamToCross) {
 		return new StreamCrossOperator<OUT, IN2>(this, dataStreamToCross);
@@ -584,7 +580,7 @@ public class DataStream<OUT> {
 	 * Initiates a temporal Join transformation. <br/>
 	 * A temporal Join transformation joins the elements of two
 	 * {@link DataStream}s on key equality over a specified time window.</br>
-	 * 
+	 * <p/>
 	 * This method returns a {@link StreamJoinOperator} on which the
 	 * {@link StreamJoinOperator#onWindow} should be called to define the
 	 * window, and then the {@link StreamJoinOperator.JoinWindow#where} and
@@ -592,12 +588,11 @@ public class DataStream<OUT> {
 	 * the join keys.</p> The user can also use the
 	 * {@link StreamJoinOperator.JoinedStream#with(joinFunction)} to apply
 	 * custom join function.
-	 * 
+	 *
 	 * @param other
-	 *            The other DataStream with which this DataStream is joined.
+	 * 		The other DataStream with which this DataStream is joined.
 	 * @return A {@link StreamJoinOperator} to continue the definition of the
-	 *         Join transformation.
-	 * 
+	 * Join transformation.
 	 */
 	public <IN2> StreamJoinOperator<OUT, IN2> join(DataStream<IN2> dataStreamToJoin) {
 		return new StreamJoinOperator<OUT, IN2>(this, dataStreamToJoin);
@@ -605,9 +600,9 @@ public class DataStream<OUT> {
 
 	/**
 	 * Applies an aggregation that sums the data stream at the given position.
-	 * 
+	 *
 	 * @param positionToSum
-	 *            The position in the data point to sum
+	 * 		The position in the data point to sum
 	 * @return The transformed DataStream.
 	 */
 	public SingleOutputStreamOperator<OUT, ?> sum(int positionToSum) {
@@ -622,10 +617,10 @@ public class DataStream<OUT> {
 	 * name of a public field or a getter method with parentheses of the
 	 * {@link DataStream}S underlying type. A dot can be used to drill down into
 	 * objects, as in {@code "field1.getInnerField2()" }.
-	 * 
+	 *
 	 * @param field
-	 *            The field expression based on which the aggregation will be
-	 *            applied.
+	 * 		The field expression based on which the aggregation will be
+	 * 		applied.
 	 * @return The transformed DataStream.
 	 */
 	public SingleOutputStreamOperator<OUT, ?> sum(String field) {
@@ -635,9 +630,9 @@ public class DataStream<OUT> {
 	/**
 	 * Applies an aggregation that that gives the current minimum of the data
 	 * stream at the given position.
-	 * 
+	 *
 	 * @param positionToMin
-	 *            The position in the data point to minimize
+	 * 		The position in the data point to minimize
 	 * @return The transformed DataStream.
 	 */
 	public SingleOutputStreamOperator<OUT, ?> min(int positionToMin) {
@@ -652,10 +647,10 @@ public class DataStream<OUT> {
 	 * the name of a public field or a getter method with parentheses of the
 	 * {@link DataStream}S underlying type. A dot can be used to drill down into
 	 * objects, as in {@code "field1.getInnerField2()" }.
-	 * 
+	 *
 	 * @param field
-	 *            The field expression based on which the aggregation will be
-	 *            applied.
+	 * 		The field expression based on which the aggregation will be
+	 * 		applied.
 	 * @return The transformed DataStream.
 	 */
 	public SingleOutputStreamOperator<OUT, ?> min(String field) {
@@ -666,9 +661,9 @@ public class DataStream<OUT> {
 	/**
 	 * Applies an aggregation that gives the current maximum of the data stream
 	 * at the given position.
-	 * 
+	 *
 	 * @param positionToMax
-	 *            The position in the data point to maximize
+	 * 		The position in the data point to maximize
 	 * @return The transformed DataStream.
 	 */
 	public SingleOutputStreamOperator<OUT, ?> max(int positionToMax) {
@@ -683,10 +678,10 @@ public class DataStream<OUT> {
 	 * the name of a public field or a getter method with parentheses of the
 	 * {@link DataStream}S underlying type. A dot can be used to drill down into
 	 * objects, as in {@code "field1.getInnerField2()" }.
-	 * 
+	 *
 	 * @param field
-	 *            The field expression based on which the aggregation will be
-	 *            applied.
+	 * 		The field expression based on which the aggregation will be
+	 * 		applied.
 	 * @return The transformed DataStream.
 	 */
 	public SingleOutputStreamOperator<OUT, ?> max(String field) {
@@ -700,13 +695,13 @@ public class DataStream<OUT> {
 	 * either the name of a public field or a getter method with parentheses of
 	 * the {@link DataStream}S underlying type. A dot can be used to drill down
 	 * into objects, as in {@code "field1.getInnerField2()" }.
-	 * 
+	 *
 	 * @param field
-	 *            The field expression based on which the aggregation will be
-	 *            applied.
+	 * 		The field expression based on which the aggregation will be
+	 * 		applied.
 	 * @param first
-	 *            If True then in case of field equality the first object will
-	 *            be returned
+	 * 		If True then in case of field equality the first object will
+	 * 		be returned
 	 * @return The transformed DataStream.
 	 */
 	public SingleOutputStreamOperator<OUT, ?> minBy(String field, boolean first) {
@@ -720,13 +715,13 @@ public class DataStream<OUT> {
 	 * either the name of a public field or a getter method with parentheses of
 	 * the {@link DataStream}S underlying type. A dot can be used to drill down
 	 * into objects, as in {@code "field1.getInnerField2()" }.
-	 * 
+	 *
 	 * @param field
-	 *            The field expression based on which the aggregation will be
-	 *            applied.
+	 * 		The field expression based on which the aggregation will be
+	 * 		applied.
 	 * @param first
-	 *            If True then in case of field equality the first object will
-	 *            be returned
+	 * 		If True then in case of field equality the first object will
+	 * 		be returned
 	 * @return The transformed DataStream.
 	 */
 	public SingleOutputStreamOperator<OUT, ?> maxBy(String field, boolean first) {
@@ -739,9 +734,9 @@ public class DataStream<OUT> {
 	 * minimum value at the given position, if more elements have the minimum
 	 * value at the given position, the operator returns the first one by
 	 * default.
-	 * 
+	 *
 	 * @param positionToMinBy
-	 *            The position in the data point to minimize
+	 * 		The position in the data point to minimize
 	 * @return The transformed DataStream.
 	 */
 	public SingleOutputStreamOperator<OUT, ?> minBy(int positionToMinBy) {
@@ -753,9 +748,9 @@ public class DataStream<OUT> {
 	 * minimum value at the given position, if more elements have the minimum
 	 * value at the given position, the operator returns the first one by
 	 * default.
-	 * 
+	 *
 	 * @param positionToMinBy
-	 *            The position in the data point to minimize
+	 * 		The position in the data point to minimize
 	 * @return The transformed DataStream.
 	 */
 	public SingleOutputStreamOperator<OUT, ?> minBy(String positionToMinBy) {
@@ -767,12 +762,12 @@ public class DataStream<OUT> {
 	 * minimum value at the given position, if more elements have the minimum
 	 * value at the given position, the operator returns either the first or
 	 * last one, depending on the parameter set.
-	 * 
+	 *
 	 * @param positionToMinBy
-	 *            The position in the data point to minimize
+	 * 		The position in the data point to minimize
 	 * @param first
-	 *            If true, then the operator return the first element with the
-	 *            minimal value, otherwise returns the last
+	 * 		If true, then the operator return the first element with the
+	 * 		minimal value, otherwise returns the last
 	 * @return The transformed DataStream.
 	 */
 	public SingleOutputStreamOperator<OUT, ?> minBy(int positionToMinBy, boolean first) {
@@ -786,9 +781,9 @@ public class DataStream<OUT> {
 	 * maximum value at the given position, if more elements have the maximum
 	 * value at the given position, the operator returns the first one by
 	 * default.
-	 * 
+	 *
 	 * @param positionToMaxBy
-	 *            The position in the data point to maximize
+	 * 		The position in the data point to maximize
 	 * @return The transformed DataStream.
 	 */
 	public SingleOutputStreamOperator<OUT, ?> maxBy(int positionToMaxBy) {
@@ -800,9 +795,9 @@ public class DataStream<OUT> {
 	 * maximum value at the given position, if more elements have the maximum
 	 * value at the given position, the operator returns the first one by
 	 * default.
-	 * 
+	 *
 	 * @param positionToMaxBy
-	 *            The position in the data point to maximize
+	 * 		The position in the data point to maximize
 	 * @return The transformed DataStream.
 	 */
 	public SingleOutputStreamOperator<OUT, ?> maxBy(String positionToMaxBy) {
@@ -814,12 +809,12 @@ public class DataStream<OUT> {
 	 * maximum value at the given position, if more elements have the maximum
 	 * value at the given position, the operator returns either the first or
 	 * last one, depending on the parameter set.
-	 * 
+	 *
 	 * @param positionToMaxBy
-	 *            The position in the data point to maximize.
+	 * 		The position in the data point to maximize.
 	 * @param first
-	 *            If true, then the operator return the first element with the
-	 *            maximum value, otherwise returns the last
+	 * 		If true, then the operator return the first element with the
+	 * 		maximum value, otherwise returns the last
 	 * @return The transformed DataStream.
 	 */
 	public SingleOutputStreamOperator<OUT, ?> maxBy(int positionToMaxBy, boolean first) {
@@ -831,7 +826,7 @@ public class DataStream<OUT> {
 	/**
 	 * Creates a new DataStream containing the current number (count) of
 	 * received records.
-	 * 
+	 *
 	 * @return The transformed DataStream.
 	 */
 	public SingleOutputStreamOperator<Long, ?> count() {
@@ -855,16 +850,16 @@ public class DataStream<OUT> {
 	 * create sliding windows use the
 	 * {@link WindowedDataStream#every(WindowingHelper...)} </br></br> The same
 	 * example with 3 second slides:</br>
-	 * 
+	 * <p/>
 	 * {@code ds.window(Time.of(5, TimeUnit.SECONDS)).every(Time.of(3,
-	 *       TimeUnit.SECONDS)).sum(field)}
-	 * 
+	 * TimeUnit.SECONDS)).sum(field)}
+	 *
 	 * @param policyHelpers
-	 *            Any {@link WindowingHelper} such as {@link Time},
-	 *            {@link Count} and {@link Delta} to define the window.
+	 * 		Any {@link WindowingHelper} such as {@link Time},
+	 * 		{@link Count} and {@link Delta} to define the window.
 	 * @return A {@link WindowedDataStream} providing further operations.
 	 */
-	@SuppressWarnings({ "rawtypes", "unchecked" })
+	@SuppressWarnings({"rawtypes", "unchecked"})
 	public WindowedDataStream<OUT> window(WindowingHelper... policyHelpers) {
 		return new WindowedDataStream<OUT>(this, policyHelpers);
 	}
@@ -875,13 +870,13 @@ public class DataStream<OUT> {
 	 * transformation like {@link WindowedDataStream#reduce} or aggregations on
 	 * preset chunks(windows) of the data stream.</br></br>For most common
 	 * use-cases please refer to {@link #window(WindowingHelper...)}
-	 * 
+	 *
 	 * @param triggers
-	 *            The list of {@link TriggerPolicy}s that will determine how
-	 *            often the user function is called on the window.
+	 * 		The list of {@link TriggerPolicy}s that will determine how
+	 * 		often the user function is called on the window.
 	 * @param evicters
-	 *            The list of {@link EvictionPolicy}s that will determine the
-	 *            number of elements in each time window.
+	 * 		The list of {@link EvictionPolicy}s that will determine the
+	 * 		number of elements in each time window.
 	 * @return A {@link WindowedDataStream} providing further operations.
 	 */
 	public WindowedDataStream<OUT> window(List<TriggerPolicy<OUT>> triggers,
@@ -893,7 +888,7 @@ public class DataStream<OUT> {
 	 * Writes a DataStream to the standard output stream (stdout).<br>
 	 * For each element of the DataStream the result of
 	 * {@link Object#toString()} is written.
-	 * 
+	 *
 	 * @return The closed DataStream.
 	 */
 	public DataStreamSink<OUT> print() {
@@ -907,7 +902,7 @@ public class DataStream<OUT> {
 	 * Writes a DataStream to the standard output stream (stderr).<br>
 	 * For each element of the DataStream the result of
 	 * {@link Object#toString()} is written.
-	 * 
+	 *
 	 * @return The closed DataStream.
 	 */
 	public DataStreamSink<OUT> printToErr() {
@@ -921,10 +916,9 @@ public class DataStream<OUT> {
 	 * Writes a DataStream to the file specified by path in text format. For
 	 * every element of the DataStream the result of {@link Object#toString()}
 	 * is written.
-	 * 
+	 *
 	 * @param path
-	 *            the path pointing to the location the text file is written to
-	 * 
+	 * 		the path pointing to the location the text file is written to
 	 * @return the closed DataStream.
 	 */
 	public DataStreamSink<OUT> writeAsText(String path) {
@@ -936,12 +930,11 @@ public class DataStream<OUT> {
 	 * writing is performed periodically, in every millis milliseconds. For
 	 * every element of the DataStream the result of {@link Object#toString()}
 	 * is written.
-	 * 
+	 *
 	 * @param path
-	 *            the path pointing to the location the text file is written to
+	 * 		the path pointing to the location the text file is written to
 	 * @param millis
-	 *            the file update frequency
-	 * 
+	 * 		the file update frequency
 	 * @return the closed DataStream
 	 */
 	public DataStreamSink<OUT> writeAsText(String path, long millis) {
@@ -953,13 +946,12 @@ public class DataStream<OUT> {
 	 * Writes a DataStream to the file specified by path in text format. For
 	 * every element of the DataStream the result of {@link Object#toString()}
 	 * is written.
-	 * 
+	 *
 	 * @param path
-	 *            the path pointing to the location the text file is written to
+	 * 		the path pointing to the location the text file is written to
 	 * @param writeMode
-	 *            Control the behavior for existing files. Options are
-	 *            NO_OVERWRITE and OVERWRITE.
-	 * 
+	 * 		Control the behavior for existing files. Options are
+	 * 		NO_OVERWRITE and OVERWRITE.
 	 * @return the closed DataStream.
 	 */
 	public DataStreamSink<OUT> writeAsText(String path, WriteMode writeMode) {
@@ -972,15 +964,14 @@ public class DataStream<OUT> {
 	 * Writes a DataStream to the file specified by path in text format. For
 	 * every element of the DataStream the result of {@link Object#toString()}
 	 * is written.
-	 * 
+	 *
 	 * @param path
-	 *            the path pointing to the location the text file is written to
+	 * 		the path pointing to the location the text file is written to
 	 * @param writeMode
-	 *            Controls the behavior for existing files. Options are
-	 *            NO_OVERWRITE and OVERWRITE.
+	 * 		Controls the behavior for existing files. Options are
+	 * 		NO_OVERWRITE and OVERWRITE.
 	 * @param millis
-	 *            the file update frequency
-	 * 
+	 * 		the file update frequency
 	 * @return the closed DataStream.
 	 */
 	public DataStreamSink<OUT> writeAsText(String path, WriteMode writeMode, long millis) {
@@ -993,10 +984,9 @@ public class DataStream<OUT> {
 	 * Writes a DataStream to the file specified by path in csv format. For
 	 * every element of the DataStream the result of {@link Object#toString()}
 	 * is written. This method can only be used on data streams of tuples.
-	 * 
+	 *
 	 * @param path
-	 *            the path pointing to the location the text file is written to
-	 * 
+	 * 		the path pointing to the location the text file is written to
 	 * @return the closed DataStream
 	 */
 	@SuppressWarnings("unchecked")
@@ -1013,12 +1003,11 @@ public class DataStream<OUT> {
 	 * writing is performed periodically, in every millis milliseconds. For
 	 * every element of the DataStream the result of {@link Object#toString()}
 	 * is written. This method can only be used on data streams of tuples.
-	 * 
+	 *
 	 * @param path
-	 *            the path pointing to the location the text file is written to
+	 * 		the path pointing to the location the text file is written to
 	 * @param millis
-	 *            the file update frequency
-	 * 
+	 * 		the file update frequency
 	 * @return the closed DataStream
 	 */
 	@SuppressWarnings("unchecked")
@@ -1034,13 +1023,12 @@ public class DataStream<OUT> {
 	 * Writes a DataStream to the file specified by path in csv format. For
 	 * every element of the DataStream the result of {@link Object#toString()}
 	 * is written. This method can only be used on data streams of tuples.
-	 * 
+	 *
 	 * @param path
-	 *            the path pointing to the location the text file is written to
+	 * 		the path pointing to the location the text file is written to
 	 * @param writeMode
-	 *            Controls the behavior for existing files. Options are
-	 *            NO_OVERWRITE and OVERWRITE.
-	 * 
+	 * 		Controls the behavior for existing files. Options are
+	 * 		NO_OVERWRITE and OVERWRITE.
 	 * @return the closed DataStream
 	 */
 	@SuppressWarnings("unchecked")
@@ -1060,15 +1048,14 @@ public class DataStream<OUT> {
 	 * writing is performed periodically, in every millis milliseconds. For
 	 * every element of the DataStream the result of {@link Object#toString()}
 	 * is written. This method can only be used on data streams of tuples.
-	 * 
+	 *
 	 * @param path
-	 *            the path pointing to the location the text file is written to
+	 * 		the path pointing to the location the text file is written to
 	 * @param writeMode
-	 *            Controls the behavior for existing files. Options are
-	 *            NO_OVERWRITE and OVERWRITE.
+	 * 		Controls the behavior for existing files. Options are
+	 * 		NO_OVERWRITE and OVERWRITE.
 	 * @param millis
-	 *            the file update frequency
-	 * 
+	 * 		the file update frequency
 	 * @return the closed DataStream
 	 */
 	@SuppressWarnings("unchecked")
@@ -1102,21 +1089,21 @@ public class DataStream<OUT> {
 	/**
 	 * Method for passing user defined invokables along with the type
 	 * informations that will transform the DataStream.
-	 * 
+	 *
 	 * @param operatorName
-	 *            name of the operator, for logging purposes
+	 * 		name of the operator, for logging purposes
 	 * @param outTypeInfo
-	 *            the output type of the operator
+	 * 		the output type of the operator
 	 * @param invokable
-	 *            the object containing the transformation logic
+	 * 		the object containing the transformation logic
 	 * @param <R>
-	 *            type of the return stream
+	 * 		type of the return stream
 	 * @return the data stream constructed
 	 */
 	public <R> SingleOutputStreamOperator<R, ?> transform(String operatorName,
 			TypeInformation<R> outTypeInfo, StreamInvokable<OUT, R> invokable) {
 		DataStream<OUT> inputStream = this.copy();
-		@SuppressWarnings({ "unchecked", "rawtypes" })
+		@SuppressWarnings({"unchecked", "rawtypes"})
 		SingleOutputStreamOperator<R, ?> returnStream = new SingleOutputStreamOperator(environment,
 				operatorName, outTypeInfo, invokable);
 
@@ -1130,9 +1117,9 @@ public class DataStream<OUT> {
 
 	/**
 	 * Internal function for setting the partitioner for the DataStream
-	 * 
+	 *
 	 * @param partitioner
-	 *            Partitioner to set.
+	 * 		Partitioner to set.
 	 * @return The modified DataStream.
 	 */
 	protected DataStream<OUT> setConnectionType(StreamPartitioner<OUT> partitioner) {
@@ -1150,13 +1137,13 @@ public class DataStream<OUT> {
 	 * {@link org.apache.flink.runtime.jobgraph.JobGraph} of the job. Connects
 	 * the outputs of the given input stream to the specified output stream
 	 * given by the outputID.
-	 * 
+	 *
 	 * @param inputStream
-	 *            input data stream
+	 * 		input data stream
 	 * @param outputID
-	 *            ID of the output
+	 * 		ID of the output
 	 * @param typeNumber
-	 *            Number of the type (used at co-functions)
+	 * 		Number of the type (used at co-functions)
 	 */
 	protected <X> void connectGraph(DataStream<X> inputStream, String outputID, int typeNumber) {
 		for (DataStream<X> stream : inputStream.mergedStreams) {
@@ -1170,9 +1157,9 @@ public class DataStream<OUT> {
 	 * Adds the given sink to this DataStream. Only streams with sinks added
 	 * will be executed once the {@link StreamExecutionEnvironment#execute()}
 	 * method is called.
-	 * 
+	 *
 	 * @param sinkFunction
-	 *            The object containing the sink's invoke function.
+	 * 		The object containing the sink's invoke function.
 	 * @return The closed DataStream.
 	 */
 	public DataStreamSink<OUT> addSink(SinkFunction<OUT> sinkFunction) {
@@ -1192,9 +1179,9 @@ public class DataStream<OUT> {
 
 	/**
 	 * Gets the class of the field at the given position
-	 * 
+	 *
 	 * @param pos
-	 *            Position of the field
+	 * 		Position of the field
 	 * @return The class of the field
 	 */
 	@SuppressWarnings("rawtypes")
@@ -1238,9 +1225,9 @@ public class DataStream<OUT> {
 
 	/**
 	 * Checks if the given field position is allowed for the output type
-	 * 
+	 *
 	 * @param pos
-	 *            Position to check
+	 * 		Position to check
 	 */
 	protected void checkFieldRange(int pos) {
 		try {
@@ -1261,7 +1248,7 @@ public class DataStream<OUT> {
 
 	/**
 	 * Creates a copy of the {@link DataStream}
-	 * 
+	 *
 	 * @return The copy
 	 */
 	public DataStream<OUT> copy() {

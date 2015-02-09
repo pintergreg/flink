@@ -42,7 +42,7 @@ import org.apache.flink.streaming.api.windowing.policy.TriggerPolicy;
  * This invokable allows windowing based on {@link TriggerPolicy} and
  * {@link EvictionPolicy} instances including their active and cloneable
  * versions. It is additionally aware of the creation of windows per group.
- * 
+ * <p/>
  * A {@link KeySelector} is used to specify the key position or key extraction.
  * The {@link ReduceFunction} will be executed on each group separately.
  * Policies might either be centralized or distributed. It is not possible to
@@ -52,7 +52,7 @@ import org.apache.flink.streaming.api.windowing.policy.TriggerPolicy;
  * instances for each group. At the startup time the distributed policies will
  * be stored as sample, and only clones of them will be used to maintain the
  * groups. Therefore, each group starts with the initial policy states.
- * 
+ * <p/>
  * While a distributed policy only gets notified with the elements belonging to
  * the respective group, a centralized policy get notified with all arriving
  * elements. When a centralized trigger occurred, all groups get triggered. This
@@ -60,16 +60,16 @@ import org.apache.flink.streaming.api.windowing.policy.TriggerPolicy;
  * the groups it belongs to and as fake element to all other groups. Within the
  * groups the element might be further processed, causing more triggers,
  * prenotifications of active distributed policies and evictions like usual.
- * 
+ * <p/>
  * Central policies can be instance of {@link ActiveTriggerPolicy} and also
  * implement the
  * {@link ActiveTriggerPolicy#createActiveTriggerRunnable(ActiveTriggerCallback)}
  * method. Fake elements created on prenotification will be forwarded to all
  * groups. The {@link ActiveTriggerCallback} is also implemented in a way, that
  * it forwards/distributed calls all groups.
- * 
+ *
  * @param <IN>
- *            The type of input elements handled by this operator invokable.
+ * 		The type of input elements handled by this operator invokable.
  */
 public class GroupedWindowInvokable<IN, OUT> extends StreamInvokable<IN, OUT> {
 
@@ -93,7 +93,7 @@ public class GroupedWindowInvokable<IN, OUT> extends StreamInvokable<IN, OUT> {
 
 	/**
 	 * This constructor creates an instance of the grouped windowing invokable.
-	 * 
+	 * <p/>
 	 * A {@link KeySelector} is used to specify the key position or key
 	 * extraction. The {@link ReduceFunction} will be executed on each group
 	 * separately. Policies might either be centralized or distributed. It is
@@ -104,7 +104,7 @@ public class GroupedWindowInvokable<IN, OUT> extends StreamInvokable<IN, OUT> {
 	 * will be stored as sample, and only clones of them will be used to
 	 * maintain the groups. Therefore, each group starts with the initial policy
 	 * states.
-	 * 
+	 * <p/>
 	 * While a distributed policy only gets notified with the elements belonging
 	 * to the respective group, a centralized policy get notified with all
 	 * arriving elements. When a centralized trigger occurred, all groups get
@@ -113,39 +113,39 @@ public class GroupedWindowInvokable<IN, OUT> extends StreamInvokable<IN, OUT> {
 	 * to all other groups. Within the groups the element might be further
 	 * processed, causing more triggers, prenotifications of active distributed
 	 * policies and evictions like usual.
-	 * 
+	 * <p/>
 	 * Central policies can be instance of {@link ActiveTriggerPolicy} and also
 	 * implement the
 	 * {@link ActiveTriggerPolicy#createActiveTriggerRunnable(ActiveTriggerCallback)}
 	 * method. Fake elements created on prenotification will be forwarded to all
 	 * groups. The {@link ActiveTriggerCallback} is also implemented in a way,
 	 * that it forwards/distributed calls all groups.
-	 * 
+	 *
 	 * @param userFunction
-	 *            The user defined function.
+	 * 		The user defined function.
 	 * @param keySelector
-	 *            A key selector to extract the key for the groups from the
-	 *            input data.
+	 * 		A key selector to extract the key for the groups from the
+	 * 		input data.
 	 * @param distributedTriggerPolicies
-	 *            Trigger policies to be distributed and maintained individually
-	 *            within each group.
+	 * 		Trigger policies to be distributed and maintained individually
+	 * 		within each group.
 	 * @param distributedEvictionPolicies
-	 *            Eviction policies to be distributed and maintained
-	 *            individually within each group. Note that there cannot be
-	 *            both, central and distributed eviction policies at the same
-	 *            time.
+	 * 		Eviction policies to be distributed and maintained
+	 * 		individually within each group. Note that there cannot be
+	 * 		both, central and distributed eviction policies at the same
+	 * 		time.
 	 * @param centralTriggerPolicies
-	 *            Trigger policies which will only exist once at a central
-	 *            place. In case a central policy triggers, it will cause all
-	 *            groups to be emitted. (Remark: Empty groups cannot be emitted.
-	 *            If only one element is contained a group, this element itself
-	 *            is returned as aggregated result.)
+	 * 		Trigger policies which will only exist once at a central
+	 * 		place. In case a central policy triggers, it will cause all
+	 * 		groups to be emitted. (Remark: Empty groups cannot be emitted.
+	 * 		If only one element is contained a group, this element itself
+	 * 		is returned as aggregated result.)
 	 * @param centralEvictionPolicies
-	 *            Eviction which will only exist once at a central place. Note
-	 *            that there cannot be both, central and distributed eviction
-	 *            policies at the same time. The central eviction policy will
-	 *            work on an simulated element buffer containing all elements no
-	 *            matter which group they belong to.
+	 * 		Eviction which will only exist once at a central place. Note
+	 * 		that there cannot be both, central and distributed eviction
+	 * 		policies at the same time. The central eviction policy will
+	 * 		work on an simulated element buffer containing all elements no
+	 * 		matter which group they belong to.
 	 */
 	public GroupedWindowInvokable(Function userFunction, KeySelector<IN, ?> keySelector,
 			LinkedList<CloneableTriggerPolicy<IN>> distributedTriggerPolicies,
@@ -322,14 +322,14 @@ public class GroupedWindowInvokable<IN, OUT> extends StreamInvokable<IN, OUT> {
 	 * element arrives which has a key which was not seen before. The method
 	 * created a nested {@link WindowInvokable} and therefore created clones of
 	 * all distributed trigger and eviction policies.
-	 * 
+	 *
 	 * @param element
-	 *            The element which leads to the generation of a new group
-	 *            (previously unseen key)
+	 * 		The element which leads to the generation of a new group
+	 * 		(previously unseen key)
 	 * @throws Exception
-	 *             In case the {@link KeySelector} throws an exception in
-	 *             {@link KeySelector#getKey(Object)}, the exception is not
-	 *             catched by this method.
+	 * 		In case the {@link KeySelector} throws an exception in
+	 * 		{@link KeySelector#getKey(Object)}, the exception is not
+	 * 		catched by this method.
 	 */
 	@SuppressWarnings("unchecked")
 	private WindowInvokable<IN, OUT> makeNewGroup(StreamRecord<IN> element) throws Exception {
@@ -354,7 +354,7 @@ public class GroupedWindowInvokable<IN, OUT> extends StreamInvokable<IN, OUT> {
 					clonedDistributedEvictionPolicies);
 		}
 
-		groupInvokable.setup(taskContext, abstractFT);
+		groupInvokable.setup(taskContext, abstractFTHandler);
 		groupInvokable.open(this.parameters);
 		windowingGroups.put(keySelector.getKey(element.getObject()), groupInvokable);
 
@@ -373,16 +373,18 @@ public class GroupedWindowInvokable<IN, OUT> extends StreamInvokable<IN, OUT> {
 				thread.start();
 			}
 		}
-	};
+	}
+
+	;
 
 	/**
 	 * This method is used to notify central eviction policies with a real
 	 * element.
-	 * 
+	 *
 	 * @param input
-	 *            the real element to notify the eviction policy.
+	 * 		the real element to notify the eviction policy.
 	 * @param triggered
-	 *            whether a central trigger occurred or not.
+	 * 		whether a central trigger occurred or not.
 	 * @return The number of elements to be deleted from the buffer.
 	 */
 	private int centralEviction(IN input, boolean triggered) {
@@ -405,10 +407,10 @@ public class GroupedWindowInvokable<IN, OUT> extends StreamInvokable<IN, OUT> {
 	/**
 	 * This method is used to notify active central eviction policies with a
 	 * fake element.
-	 * 
+	 *
 	 * @param input
-	 *            the fake element to notify the active central eviction
-	 *            policies.
+	 * 		the fake element to notify the active central eviction
+	 * 		policies.
 	 * @return The number of elements to be deleted from the buffer.
 	 */
 	private int centralActiveEviction(Object input) {
@@ -431,10 +433,10 @@ public class GroupedWindowInvokable<IN, OUT> extends StreamInvokable<IN, OUT> {
 	/**
 	 * This method is used in central eviction to delete a given number of
 	 * elements from the buffer.
-	 * 
+	 *
 	 * @param numToEvict
-	 *            number of elements to delete from the virtual central element
-	 *            buffer.
+	 * 		number of elements to delete from the virtual central element
+	 * 		buffer.
 	 */
 	private void evictElements(int numToEvict) {
 		HashSet<WindowInvokable<IN, OUT>> usedGroups = new HashSet<WindowInvokable<IN, OUT>>();
@@ -463,10 +465,10 @@ public class GroupedWindowInvokable<IN, OUT> extends StreamInvokable<IN, OUT> {
 	/**
 	 * Checks if the element buffer of a given windowing group is empty. If so,
 	 * the group will be deleted.
-	 * 
+	 *
 	 * @param group
-	 *            The windowing group to be checked and and removed in case its
-	 *            buffer is empty.
+	 * 		The windowing group to be checked and and removed in case its
+	 * 		buffer is empty.
 	 */
 	private void checkForEmptyGroupBuffer(WindowInvokable<IN, OUT> group) {
 		if (group.isBufferEmpty()) {
@@ -477,7 +479,7 @@ public class GroupedWindowInvokable<IN, OUT> extends StreamInvokable<IN, OUT> {
 	/**
 	 * This callback class allows to handle the the callbacks done by threads
 	 * defined in active trigger policies
-	 * 
+	 *
 	 * @see ActiveTriggerPolicy#createActiveTriggerRunnable(ActiveTriggerCallback)
 	 */
 	private class WindowingCallback implements ActiveTriggerCallback {

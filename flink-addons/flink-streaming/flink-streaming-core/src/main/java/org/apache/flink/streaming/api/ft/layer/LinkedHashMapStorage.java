@@ -19,7 +19,7 @@ package org.apache.flink.streaming.api.ft.layer;
 
 import java.util.LinkedHashMap;
 
-import org.apache.flink.streaming.api.ft.layer.util.RecordWithHashCode;
+import org.apache.flink.streaming.api.ft.layer.id.RecordWithHashCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,8 +35,8 @@ public class LinkedHashMapStorage implements AbstractPersistenceStorage<Long, Re
 	@Override
 	public void put(Long id, RecordWithHashCode record) {
 		backup.put(id, record);
-		if (LOG.isDebugEnabled()) {
-			LOG.debug("Added to PersistenceLayer: ({},{})", Long.toHexString(id), record);
+		if (LOG.isInfoEnabled()) {
+			LOG.info("Added to PersistenceLayer: ({},{})", Long.toHexString(id), record);
 		}
 	}
 

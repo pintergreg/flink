@@ -21,7 +21,7 @@ import java.io.IOException;
 
 import org.apache.flink.runtime.io.network.api.writer.RecordWriter;
 import org.apache.flink.runtime.plugable.SerializationDelegate;
-import org.apache.flink.streaming.api.ft.layer.AbstractFT;
+import org.apache.flink.streaming.api.ft.layer.runtime.AbstractFTHandler;
 import org.apache.flink.streaming.api.streamrecord.StreamRecord;
 import org.apache.flink.streaming.io.StreamRecordWriter;
 import org.apache.flink.util.Collector;
@@ -37,14 +37,14 @@ public class StreamOutput<OUT> implements Collector<OUT> {
 	private SerializationDelegate<StreamRecord<OUT>> serializationDelegate;
 	private StreamRecord<OUT> streamRecord;
 	private int channelID;
-	private AbstractFT<?> abstractFT;
+	private AbstractFTHandler<?> abstractFTHandler;
 
 	public StreamOutput(RecordWriter<SerializationDelegate<StreamRecord<OUT>>> output,
 			int channelID, SerializationDelegate<StreamRecord<OUT>> serializationDelegate,
-			AbstractFT<?> abstractFT) {
+			AbstractFTHandler<?> abstractFTHandler) {
 
 		this.serializationDelegate = serializationDelegate;
-		this.abstractFT = abstractFT;
+		this.abstractFTHandler = abstractFTHandler;
 
 		if (serializationDelegate != null) {
 			this.streamRecord = serializationDelegate.getInstance();
@@ -66,9 +66,9 @@ public class StreamOutput<OUT> implements Collector<OUT> {
 		serializationDelegate.setInstance(streamRecord);
 
 		try {
-			abstractFT.setOutRecordId(serializationDelegate);
+			abstractFTHandler.setOutRecordId(serializationDelegate);
 			output.emit(serializationDelegate);
-			abstractFT.xor(serializationDelegate.getInstance());
+			abstractFTHandler.xor(serializationDelegate.getInstance());
 		} catch (Exception e) {
 			if (LOG.isErrorEnabled()) {
 				LOG.error("Emit failed due to: {}", StringUtils.stringifyException(e));
@@ -80,7 +80,7 @@ public class StreamOutput<OUT> implements Collector<OUT> {
 		try {
 			output.flush();
 		} catch (IOException e) {
-			e.printStackTrace();
+			throw new RuntimeException("Cannot flush output", e);
 		}
 	}
 
@@ -89,11 +89,7 @@ public class StreamOutput<OUT> implements Collector<OUT> {
 		if (output instanceof StreamRecordWriter) {
 			((StreamRecordWriter<SerializationDelegate<StreamRecord<OUT>>>) output).close();
 		} else {
-			try {
-				output.flush();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+			flush();
 		}
 	}
 

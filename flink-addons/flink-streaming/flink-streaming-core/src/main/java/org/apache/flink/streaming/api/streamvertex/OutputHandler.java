@@ -31,7 +31,7 @@ import org.apache.flink.streaming.api.StreamConfig;
 import org.apache.flink.streaming.api.collector.CollectorWrapper;
 import org.apache.flink.streaming.api.collector.DirectedCollectorWrapper;
 import org.apache.flink.streaming.api.collector.StreamOutput;
-import org.apache.flink.streaming.api.ft.layer.AbstractFT;
+import org.apache.flink.streaming.api.ft.layer.runtime.AbstractFTHandler;
 import org.apache.flink.streaming.api.invokable.ChainableInvokable;
 import org.apache.flink.streaming.api.invokable.StreamInvokable;
 import org.apache.flink.streaming.api.streamrecord.StreamRecord;
@@ -56,9 +56,9 @@ public class OutputHandler<OUT> {
 	private Map<String, StreamOutput<?>> outputMap;
 	private Map<String, StreamConfig> chainedConfigs;
 	private List<Tuple2<String, String>> outEdgesInOrder;
-	private AbstractFT<OUT> abstractFT;
+	private AbstractFTHandler<OUT> abstractFTHandler;
 
-	public OutputHandler(StreamVertex<?, OUT> vertex, AbstractFT<OUT> abstractFT) {
+	public OutputHandler(StreamVertex<?, OUT> vertex, AbstractFTHandler<OUT> abstractFTHandler) {
 
 		// Initialize some fields
 		this.vertex = vertex;
@@ -66,7 +66,7 @@ public class OutputHandler<OUT> {
 		this.chainedInvokables = new ArrayList<ChainableInvokable<?, ?>>();
 		this.outputMap = new HashMap<String, StreamOutput<?>>();
 		this.cl = vertex.getUserCodeClassLoader();
-		this.abstractFT = abstractFT;
+		this.abstractFTHandler = abstractFTHandler;
 
 		// We read the chained configs, and the order of record writer
 		// registrations by outputname
@@ -87,7 +87,7 @@ public class OutputHandler<OUT> {
 		// in the chain
 
 		this.outerCollector = createChainedCollector(configuration);
-		this.wrappedOuterCollector = abstractFT.wrap(outerCollector);
+		this.wrappedOuterCollector = abstractFTHandler.wrap(outerCollector);
 	}
 
 	public Collection<StreamOutput<?>> getOutputs() {
@@ -99,8 +99,9 @@ public class OutputHandler<OUT> {
 	 * chained operators and their network output. The result of this recursive
 	 * call will be passed as collector to the first invokable in the chain.
 	 *
-	 * @param chainedTaskConfig The configuration of the starting operator of the chain, we
-	 *                          use this paramater to recursively build the whole chain
+	 * @param chainedTaskConfig
+	 * 		The configuration of the starting operator of the chain, we
+	 * 		use this paramater to recursively build the whole chain
 	 * @return Returns the collector for the chain starting from the given
 	 * config
 	 */
@@ -149,7 +150,7 @@ public class OutputHandler<OUT> {
 					.getUserCodeClassLoader());
 			chainableInvokable.setup(wrapper,
 					chainedTaskConfig.getTypeSerializerIn1(vertex.getUserCodeClassLoader()),
-					abstractFT);
+					abstractFTHandler);
 
 			chainedInvokables.add(chainableInvokable);
 			return chainableInvokable;
@@ -165,8 +166,10 @@ public class OutputHandler<OUT> {
 	 * We create the StreamOutput for the specific output given by the name, and
 	 * the configuration of its source task
 	 *
-	 * @param outputVertex  Name of the output to which the streamoutput will be set up
-	 * @param configuration The config of upStream task
+	 * @param outputVertex
+	 * 		Name of the output to which the streamoutput will be set up
+	 * @param configuration
+	 * 		The config of upStream task
 	 * @return
 	 */
 	private <T> StreamOutput<T> createStreamOutput(String outputVertex, StreamConfig configuration,
@@ -203,7 +206,7 @@ public class OutputHandler<OUT> {
 		}
 
 		StreamOutput<T> streamOutput = new StreamOutput<T>(output, vertex.instanceID,
-				outSerializationDelegate, abstractFT);
+				outSerializationDelegate, abstractFTHandler);
 
 		if (LOG.isTraceEnabled()) {
 			LOG.trace("Partitioner set: {} with {} outputs for {}", outputPartitioner.getClass()

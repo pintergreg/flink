@@ -22,7 +22,7 @@ import java.io.IOException;
 import org.apache.flink.core.memory.DataInputView;
 import org.apache.flink.core.memory.DataOutputView;
 import org.apache.flink.runtime.event.task.TaskEvent;
-import org.apache.flink.streaming.api.ft.layer.util.RecordId;
+import org.apache.flink.streaming.api.ft.layer.id.RecordId;
 
 public class XorEvent extends TaskEvent {
 

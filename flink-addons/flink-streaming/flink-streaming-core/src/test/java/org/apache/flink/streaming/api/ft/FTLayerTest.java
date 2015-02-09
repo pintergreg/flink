@@ -20,8 +20,8 @@ package org.apache.flink.streaming.api.ft;
 import org.apache.flink.streaming.api.ft.layer.AckerTable;
 import org.apache.flink.streaming.api.ft.layer.FTLayer;
 import org.apache.flink.streaming.api.ft.layer.PersistenceLayer;
-import org.apache.flink.streaming.api.ft.layer.util.RecordId;
-import org.apache.flink.streaming.api.ft.layer.util.SemiDeserializedStreamRecord;
+import org.apache.flink.streaming.api.ft.layer.id.RecordId;
+import org.apache.flink.streaming.api.ft.layer.serialization.SemiDeserializedStreamRecord;
 import org.junit.Test;
 
 import java.io.Serializable;
@@ -217,44 +217,44 @@ public class FTLayerTest {
 
 		// source1 --> flatMap3, source2 --> flatMap3
 		ftLayer.xor(id1);
-		ackValue1 ^= id1.getRecordId();
+		ackValue1 ^= id1.getCurrentRecordId();
 		checkAfterXor(ftLayer, ackValue1, idToPL1, false);
 		ftLayer.xor(id2);
-		ackValue2 ^= id2.getRecordId();
+		ackValue2 ^= id2.getCurrentRecordId();
 		checkAfterXor(ftLayer, ackValue2, idToPL2, false);
 		ftLayer.xor(id3);
-		ackValue3 ^= id3.getRecordId();
+		ackValue3 ^= id3.getCurrentRecordId();
 		checkAfterXor(ftLayer, ackValue3, idToPL3, false);
 
 		// flatMap3 --> sink4
 		ftLayer.xor(id11);
-		ackValue1 ^= id11.getRecordId();
+		ackValue1 ^= id11.getCurrentRecordId();
 		checkAfterXor(ftLayer, ackValue1, idToPL1, false);
 		ftLayer.xor(id12);
-		ackValue1 ^= id12.getRecordId();
+		ackValue1 ^= id12.getCurrentRecordId();
 		checkAfterXor(ftLayer, ackValue1, idToPL1, false);
 		ftLayer.xor(id1);
-		ackValue1 ^= id1.getRecordId();
+		ackValue1 ^= id1.getCurrentRecordId();
 		checkAfterXor(ftLayer, ackValue1, idToPL1, false);
 		ftLayer.xor(id21);
-		ackValue2 ^= id21.getRecordId();
+		ackValue2 ^= id21.getCurrentRecordId();
 		checkAfterXor(ftLayer, ackValue2, idToPL2, false);
 		ftLayer.xor(id2);
-		ackValue2 ^= id2.getRecordId();
+		ackValue2 ^= id2.getCurrentRecordId();
 		checkAfterXor(ftLayer, ackValue2, idToPL2, false);
 		ftLayer.xor(id3);
-		ackValue3 ^= id3.getRecordId();
+		ackValue3 ^= id3.getCurrentRecordId();
 		checkAfterXor(ftLayer, ackValue3, idToPL3, true);
 
 		// sink4
 		ftLayer.xor(id11);
-		ackValue1 ^= id11.getRecordId();
+		ackValue1 ^= id11.getCurrentRecordId();
 		checkAfterXor(ftLayer, ackValue1, idToPL1, false);
 		ftLayer.xor(id12);
-		ackValue1 ^= id12.getRecordId();
+		ackValue1 ^= id12.getCurrentRecordId();
 		checkAfterXor(ftLayer, ackValue1, idToPL1, true);
 		ftLayer.xor(id21);
-		ackValue2 ^= id21.getRecordId();
+		ackValue2 ^= id21.getCurrentRecordId();
 		checkAfterXor(ftLayer, ackValue2, idToPL2, true);
 	}
 

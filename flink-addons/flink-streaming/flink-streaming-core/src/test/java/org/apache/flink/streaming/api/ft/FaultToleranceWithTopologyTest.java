@@ -31,12 +31,12 @@ import org.apache.flink.streaming.api.StreamingJobGraphGenerator;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.ft.layer.FTLayer;
-import org.apache.flink.streaming.api.ft.layer.FTLayerVertex;
+import org.apache.flink.streaming.api.ft.layer.runtime.FTLayerVertex;
 import org.apache.flink.streaming.api.ft.layer.event.FailException;
-import org.apache.flink.streaming.api.ft.layer.util.FTLayerConfig;
-import org.apache.flink.streaming.api.ft.layer.util.RecordId;
-import org.apache.flink.streaming.api.ft.layer.util.RecordWithHashCode;
-import org.apache.flink.streaming.api.ft.layer.util.SemiDeserializedStreamRecord;
+import org.apache.flink.streaming.api.ft.layer.runtime.FTLayerConfig;
+import org.apache.flink.streaming.api.ft.layer.id.RecordId;
+import org.apache.flink.streaming.api.ft.layer.id.RecordWithHashCode;
+import org.apache.flink.streaming.api.ft.layer.serialization.SemiDeserializedStreamRecord;
 import org.apache.flink.streaming.api.function.sink.SinkFunction;
 import org.apache.flink.streaming.api.function.source.SourceFunction;
 import org.apache.flink.streaming.util.TestStreamEnvironment;
@@ -245,15 +245,15 @@ public class FaultToleranceWithTopologyTest {
 					isSourceRecordIdProcessed.put(sourceRecordId, new ArrayList<Boolean>());
 				}
 				HashMap<Long, Integer> recordIdMap = xorMessagesReceived.get(sourceRecordId);
-				if (recordIdMap.containsKey(recordId.getRecordId())) {
-					int counter = recordIdMap.get(recordId.getRecordId());
-					recordIdMap.put(recordId.getRecordId(), ++counter);
+				if (recordIdMap.containsKey(recordId.getCurrentRecordId())) {
+					int counter = recordIdMap.get(recordId.getCurrentRecordId());
+					recordIdMap.put(recordId.getCurrentRecordId(), ++counter);
 
 				} else {
-					recordIdMap.put(recordId.getRecordId(), 1);
+					recordIdMap.put(recordId.getCurrentRecordId(), 1);
 				}
 				isSourceRecordIdProcessed.get(recordId.getSourceRecordId()).add(false);
-				ackerTable.xor(sourceRecordId, recordId.getRecordId());
+				ackerTable.xor(sourceRecordId, recordId.getCurrentRecordId());
 			}
 		}
 

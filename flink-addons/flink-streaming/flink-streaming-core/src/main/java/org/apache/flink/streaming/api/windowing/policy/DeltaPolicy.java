@@ -26,18 +26,18 @@ import org.apache.flink.streaming.api.windowing.deltafunction.DeltaFunction;
  * This policy calculates a delta between the data point which triggered last
  * and the currently arrived data point. It triggers if the delta is higher than
  * a specified threshold.
- * 
+ * <p/>
  * In case it gets used for eviction, this policy starts from the first element
  * of the buffer and removes all elements from the buffer which have a higher
  * delta then the threshold. As soon as there is an element with a lower delta,
  * the eviction stops.
- * 
+ * <p/>
  * By default this policy does not react on fake elements. Wrap it in an
  * {@link ActiveEvictionPolicyWrapper} to make it calculate the delta even on
  * fake elements.
- * 
+ *
  * @param <DATA>
- *            The type of the data points which are handled by this policy
+ * 		The type of the data points which are handled by this policy
  */
 public class DeltaPolicy<DATA> implements CloneableTriggerPolicy<DATA>,
 		CloneableEvictionPolicy<DATA> {
@@ -56,19 +56,19 @@ public class DeltaPolicy<DATA> implements CloneableTriggerPolicy<DATA>,
 	 * Crates a delta policy which calculates a delta between the data point
 	 * which triggered last and the currently arrived data point. It triggers if
 	 * the delta is higher than a specified threshold.
-	 * 
+	 * <p/>
 	 * In case it gets used for eviction, this policy starts from the first
 	 * element of the buffer and removes all elements from the buffer which have
 	 * a higher delta then the threshold. As soon as there is an element with a
 	 * lower delta, the eviction stops.
-	 * 
+	 *
 	 * @param deltaFuntion
-	 *            The delta function to be used.
+	 * 		The delta function to be used.
 	 * @param init
-	 *            The initial to be used for the calculation of a delta before
-	 *            the first trigger.
+	 * 		The initial to be used for the calculation of a delta before
+	 * 		the first trigger.
 	 * @param threshold
-	 *            The threshold upon which a triggering should happen.
+	 * 		The threshold upon which a triggering should happen.
 	 */
 	public DeltaPolicy(DeltaFunction<DATA> deltaFuntion, DATA init, double threshold) {
 		this.deltaFuntion = deltaFuntion;

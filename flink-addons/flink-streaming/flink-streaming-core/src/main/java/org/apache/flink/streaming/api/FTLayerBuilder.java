@@ -17,9 +17,9 @@
 
 package org.apache.flink.streaming.api;
 
-import org.apache.flink.runtime.jobgraph.JobGraph;
-
 import java.io.Serializable;
+
+import org.apache.flink.runtime.jobgraph.JobGraph;
 
 public interface FTLayerBuilder {
 

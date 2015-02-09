@@ -23,20 +23,20 @@ import org.apache.flink.streaming.api.windowing.extractor.Extractor;
  * This policy can be used to trigger and evict based on a punctuation which is
  * present within the arriving data. Using this policy, one can react on an
  * externally defined arbitrary windowing semantic.
- * 
+ * <p/>
  * In case this policy is used for eviction, the complete buffer will get
  * deleted in case the punctuation is detected.
- * 
+ * <p/>
  * By default this policy does not react on fake elements. Wrap it in an
  * {@link ActiveEvictionPolicyWrapper} to make it react on punctuation even in
  * fake elements.
- * 
+ *
  * @param <IN>
- *            The type of the input data handled by this policy. An
- *            {@link Extractor} can be used to extract DATA for IN.
+ * 		The type of the input data handled by this policy. An
+ * 		{@link Extractor} can be used to extract DATA for IN.
  * @param <DATA>
- *            The type of the punctuation. An {@link Extractor} can be used to
- *            extract DATA for IN.
+ * 		The type of the punctuation. An {@link Extractor} can be used to
+ * 		extract DATA for IN.
  */
 public class PunctuationPolicy<IN, DATA> implements CloneableTriggerPolicy<IN>,
 		CloneableEvictionPolicy<IN> {
@@ -52,9 +52,9 @@ public class PunctuationPolicy<IN, DATA> implements CloneableTriggerPolicy<IN>,
 	/**
 	 * Creates the punctuation policy without using any extractor. To make this
 	 * work IN and DATA must not be different types.
-	 * 
+	 *
 	 * @param punctuation
-	 *            the punctuation which leads to trigger/evict.
+	 * 		the punctuation which leads to trigger/evict.
 	 */
 	public PunctuationPolicy(DATA punctuation) {
 		this(punctuation, null);
@@ -63,11 +63,11 @@ public class PunctuationPolicy<IN, DATA> implements CloneableTriggerPolicy<IN>,
 	/**
 	 * Creates the punctuation policy which uses the specified extractor to
 	 * isolate the punctuation from the data.
-	 * 
+	 *
 	 * @param punctuation
-	 *            the punctuation which leads to trigger/evict.
+	 * 		the punctuation which leads to trigger/evict.
 	 * @param extractor
-	 *            An {@link Extractor} which converts IN to DATA.
+	 * 		An {@link Extractor} which converts IN to DATA.
 	 */
 	public PunctuationPolicy(DATA punctuation, Extractor<IN, DATA> extractor) {
 		this.punctuation = punctuation;

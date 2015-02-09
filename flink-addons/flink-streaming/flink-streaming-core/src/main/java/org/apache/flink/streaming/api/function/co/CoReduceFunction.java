@@ -29,25 +29,25 @@ import org.apache.flink.api.common.functions.Function;
  * groups of elements of the second input with the same key to a single value.
  * Each produced values are mapped to the same type by map1 and map2,
  * respectively, to form one output stream.
- * 
+ * <p/>
  * The basic syntax for using a grouped ReduceFunction is as follows:
- * 
+ * <p/>
  * <pre>
  * <blockquote>
  * ConnectedDataStream<X> input = ...;
- * 
+ *
  * ConnectedDataStream<X> result = input.groupBy(keyPosition1, keyPosition2)
  *          .reduce(new MyCoReduceFunction(), keyPosition1, keyPosition2).addSink(...);
  * </blockquote>
  * </pre>
- * <p>
- * 
+ * <p/>
+ *
  * @param <IN1>
- *            Type of the first input.
+ * 		Type of the first input.
  * @param <IN2>
- *            Type of the second input.
+ * 		Type of the second input.
  * @param <OUT>
- *            Output type.
+ * 		Output type.
  */
 public interface CoReduceFunction<IN1, IN2, OUT> extends Function, Serializable {
 
@@ -58,14 +58,13 @@ public interface CoReduceFunction<IN1, IN2, OUT> extends Function, Serializable 
 	 * remains.
 	 *
 	 * @param value1
-	 *            The first value to combine.
+	 * 		The first value to combine.
 	 * @param value2
-	 *            The second value to combine.
+	 * 		The second value to combine.
 	 * @return The combined value of both input values.
-	 *
 	 * @throws Exception
-	 *             This method may throw exceptions. Throwing an exception will
-	 *             cause the operation to fail and may trigger recovery.
+	 * 		This method may throw exceptions. Throwing an exception will
+	 * 		cause the operation to fail and may trigger recovery.
 	 */
 	public IN1 reduce1(IN1 value1, IN1 value2);
 
@@ -76,31 +75,30 @@ public interface CoReduceFunction<IN1, IN2, OUT> extends Function, Serializable 
 	 * remains.
 	 *
 	 * @param value1
-	 *            The first value to combine.
+	 * 		The first value to combine.
 	 * @param value2
-	 *            The second value to combine.
+	 * 		The second value to combine.
 	 * @return The combined value of both input values.
-	 *
 	 * @throws Exception
-	 *             This method may throw exceptions. Throwing an exception will
-	 *             cause the operation to fail and may trigger recovery.
+	 * 		This method may throw exceptions. Throwing an exception will
+	 * 		cause the operation to fail and may trigger recovery.
 	 */
 	public IN2 reduce2(IN2 value1, IN2 value2);
 
 	/**
 	 * Maps the reduced first input to the output type.
-	 * 
+	 *
 	 * @param value
-	 *            Type of the first input.
+	 * 		Type of the first input.
 	 * @return the output type.
 	 */
 	public OUT map1(IN1 value);
 
 	/**
 	 * Maps the reduced second input to the output type.
-	 * 
+	 *
 	 * @param value
-	 *            Type of the second input.
+	 * 		Type of the second input.
 	 * @return the output type.
 	 */
 	public OUT map2(IN2 value);

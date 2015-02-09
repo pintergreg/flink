@@ -27,10 +27,10 @@ import org.apache.flink.streaming.api.windowing.helper.TimestampWrapper;
  * time. The time is measured using a given {@link Timestamp} implementation. A
  * point in time is always represented as long. Therefore, the granularity can
  * be set as long value as well.
- * 
+ *
  * @param <DATA>
- *            The type of the incoming data points which are processed by this
- *            policy.
+ * 		The type of the incoming data points which are processed by this
+ * 		policy.
  */
 public class TimeEvictionPolicy<DATA> implements ActiveEvictionPolicy<DATA>,
 		CloneableEvictionPolicy<DATA> {
@@ -50,20 +50,20 @@ public class TimeEvictionPolicy<DATA> implements ActiveEvictionPolicy<DATA>,
 	 * implementation. A point in time is always represented as long. Therefore,
 	 * the granularity can be set as long value as well. If this value is set to
 	 * 2 the policy will evict all elements which are older as 2.
-	 * 
+	 * <p/>
 	 * <code>
-	 *   while (time(firstInBuffer)<current time-granularity){
-	 *   	evict firstInBuffer;
-	 *   }
+	 * while (time(firstInBuffer)<current time-granularity){
+	 * evict firstInBuffer;
+	 * }
 	 * </code>
-	 * 
+	 *
 	 * @param granularity
-	 *            The granularity of the eviction. If this value is set to 2 the
-	 *            policy will evict all elements which are older as 2(if
-	 *            (time(X)<current time-granularity) evict X).
+	 * 		The granularity of the eviction. If this value is set to 2 the
+	 * 		policy will evict all elements which are older as 2(if
+	 * 		(time(X)<current time-granularity) evict X).
 	 * @param timestampWrapper
-	 *            The {@link TimestampWrapper} to measure the time with. This
-	 *            can be either user defined of provided by the API.
+	 * 		The {@link TimestampWrapper} to measure the time with. This
+	 * 		can be either user defined of provided by the API.
 	 */
 	public TimeEvictionPolicy(long granularity, TimestampWrapper<DATA> timestampWrapper) {
 		this.timestampWrapper = timestampWrapper;

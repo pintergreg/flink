@@ -17,7 +17,8 @@
 
 package org.apache.flink.streaming.api;
 
-import java.io.IOException;
+import static org.apache.flink.streaming.api.FTLayerBuilder.FTStatus;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,6 +27,7 @@ import java.util.Map;
 
 import org.apache.commons.lang3.SerializationException;
 import org.apache.commons.lang3.SerializationUtils;
+import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.collector.OutputSelector;
@@ -37,8 +39,6 @@ import org.apache.flink.streaming.partitioner.StreamPartitioner;
 import org.apache.flink.streaming.state.OperatorState;
 import org.apache.flink.util.InstantiationUtil;
 
-import static org.apache.flink.streaming.api.FTLayerBuilder.*;
-
 public class StreamConfig implements Serializable {
 	private static final long serialVersionUID = 1L;
 	private static final String INPUT_TYPE = "inputType_";
@@ -49,6 +49,7 @@ public class StreamConfig implements Serializable {
 	private static final String IS_CHAINED_VERTEX = "isChainedSubtask";
 	private static final String OUTPUT_NAME = "outputName_";
 	private static final String PARTITIONER_OBJECT = "partitionerObject_";
+	private static final String KEY_SELECTOR = "keySelector";
 	private static final String VERTEX_NAME = "vertexName";
 	private static final String ITERATION_ID = "iteration-id";
 	private static final String OUTPUT_SELECTOR = "outputSelector";
@@ -242,6 +243,21 @@ public class StreamConfig implements Serializable {
 		}
 	}
 
+	public void setKeySelector(KeySelector<?, ?> keySelector) {
+		config.setBytes(KEY_SELECTOR,
+				SerializationUtils.serialize((Serializable) keySelector));
+	}
+
+	@SuppressWarnings("unchecked")
+	public <IN, KEY> KeySelector<IN, KEY> getKeySelector(ClassLoader cl) {
+		try {
+			return (KeySelector<IN, KEY>) InstantiationUtil.readObjectFromConfig(this.config,
+					KEY_SELECTOR, cl);
+		} catch (Exception e) {
+			throw new StreamVertexException("Cannot deserialize and instantiate KeySelector", e);
+		}
+	}
+
 	public void setSelectedNames(String output, List<String> selected) {
 		if (selected != null) {
 			config.setBytes(OUTPUT_NAME + output,
@@ -362,7 +378,7 @@ public class StreamConfig implements Serializable {
 		return config.getBoolean(IS_CHAINED_VERTEX, false);
 	}
 
-	public void setFTStatus(FTStatus ftStatus){
+	public void setFTStatus(FTStatus ftStatus) {
 		config.setBytes(FT_STATUS,
 				SerializationUtils.serialize((Serializable) ftStatus));
 	}
@@ -405,4 +421,5 @@ public class StreamConfig implements Serializable {
 		}
 		return builder.toString();
 	}
+
 }

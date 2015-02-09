@@ -50,9 +50,9 @@ import org.apache.flink.streaming.api.windowing.policy.TumblingEvictionPolicy;
  * into windows (predefined chunks). User defined function such as
  * {@link #reduce(ReduceFunction)}, {@link #reduceGroup(GroupReduceFunction)} or
  * aggregations can be applied to the windows.
- * 
+ *
  * @param <OUT>
- *            The output type of the {@link WindowedDataStream}
+ * 		The output type of the {@link WindowedDataStream}
  */
 public class WindowedDataStream<OUT> {
 
@@ -137,13 +137,12 @@ public class WindowedDataStream<OUT> {
 	 * {@code ds.window(Count.of(5)).every(Time.of(2,TimeUnit.SECONDS))}
 	 * </br></br> The user function in this case will be called on the 5 most
 	 * recent elements every 2 seconds
-	 * 
+	 *
 	 * @param policyHelpers
-	 *            The policies that define the triggering frequency
-	 * 
+	 * 		The policies that define the triggering frequency
 	 * @return The windowed data stream with triggering set
 	 */
-	@SuppressWarnings({ "unchecked", "rawtypes" })
+	@SuppressWarnings({"unchecked", "rawtypes"})
 	public WindowedDataStream<OUT> every(WindowingHelper... policyHelpers) {
 		WindowedDataStream<OUT> ret = this.copy();
 		if (ret.evictionHelpers == null) {
@@ -163,9 +162,9 @@ public class WindowedDataStream<OUT> {
 	 * defined functions will be applied on a per group basis. </br></br> To get
 	 * windows and triggers on a per group basis apply the
 	 * {@link DataStream#window} operator on an already grouped data stream.
-	 * 
+	 *
 	 * @param fields
-	 *            The position of the fields to group by.
+	 * 		The position of the fields to group by.
 	 * @return The grouped {@link WindowedDataStream}
 	 */
 	public WindowedDataStream<OUT> groupBy(int... fields) {
@@ -187,9 +186,9 @@ public class WindowedDataStream<OUT> {
 	 * getter method with parentheses of the stream's underlying type. A dot can
 	 * be used to drill down into objects, as in
 	 * {@code "field1.getInnerField2()" }.
-	 * 
+	 *
 	 * @param fields
-	 *            The fields to group by
+	 * 		The fields to group by
 	 * @return The grouped {@link WindowedDataStream}
 	 */
 	public WindowedDataStream<OUT> groupBy(String... fields) {
@@ -207,9 +206,9 @@ public class WindowedDataStream<OUT> {
 	 * but the user defined functions will be applied on a per group basis.
 	 * </br></br> To get windows and triggers on a per group basis apply the
 	 * {@link DataStream#window} operator on an already grouped data stream.
-	 * 
+	 *
 	 * @param keySelector
-	 *            The keySelector used to extract the key for grouping.
+	 * 		The keySelector used to extract the key for grouping.
 	 * @return The grouped {@link WindowedDataStream}
 	 */
 	public WindowedDataStream<OUT> groupBy(KeySelector<OUT, ?> keySelector) {
@@ -225,9 +224,9 @@ public class WindowedDataStream<OUT> {
 	 * the current window at every trigger.The user can also extend the
 	 * {@link RichReduceFunction} to gain access to other features provided by
 	 * the {@link org.apache.flink.api.common.functions.RichFunction} interface.
-	 * 
+	 *
 	 * @param reduceFunction
-	 *            The reduce function that will be applied to the windows.
+	 * 		The reduce function that will be applied to the windows.
 	 * @return The transformed DataStream
 	 */
 	public SingleOutputStreamOperator<OUT, ?> reduce(ReduceFunction<OUT> reduceFunction) {
@@ -243,9 +242,9 @@ public class WindowedDataStream<OUT> {
 	 * The user can also extend the {@link RichGroupReduceFunction} to gain
 	 * access to other features provided by the
 	 * {@link org.apache.flink.api.common.functions.RichFunction} interface.
-	 * 
+	 *
 	 * @param reduceFunction
-	 *            The reduce function that will be applied to the windows.
+	 * 		The reduce function that will be applied to the windows.
 	 * @return The transformed DataStream
 	 */
 	public <R> SingleOutputStreamOperator<R, ?> reduceGroup(
@@ -271,9 +270,9 @@ public class WindowedDataStream<OUT> {
 	 * typeinformation for serializaton. Use this only when the system is unable
 	 * to detect type information using:
 	 * {@link #reduceGroup(GroupReduceFunction)}
-	 * 
+	 *
 	 * @param reduceFunction
-	 *            The reduce function that will be applied to the windows.
+	 * 		The reduce function that will be applied to the windows.
 	 * @return The transformed DataStream
 	 */
 	public <R> SingleOutputStreamOperator<R, ?> reduceGroup(
@@ -286,9 +285,9 @@ public class WindowedDataStream<OUT> {
 	/**
 	 * Applies an aggregation that sums every window of the data stream at the
 	 * given position.
-	 * 
+	 *
 	 * @param positionToSum
-	 *            The position in the tuple/array to sum
+	 * 		The position in the tuple/array to sum
 	 * @return The transformed DataStream.
 	 */
 	public SingleOutputStreamOperator<OUT, ?> sum(int positionToSum) {
@@ -303,9 +302,9 @@ public class WindowedDataStream<OUT> {
 	 * the name of a public field or a getter method with parentheses of the
 	 * stream's underlying type. A dot can be used to drill down into objects,
 	 * as in {@code "field1.getInnerField2()" }.
-	 * 
+	 *
 	 * @param positionToSum
-	 *            The field to sum
+	 * 		The field to sum
 	 * @return The transformed DataStream.
 	 */
 	public SingleOutputStreamOperator<OUT, ?> sum(String field) {
@@ -315,9 +314,9 @@ public class WindowedDataStream<OUT> {
 	/**
 	 * Applies an aggregation that that gives the minimum value of every window
 	 * of the data stream at the given position.
-	 * 
+	 *
 	 * @param positionToMin
-	 *            The position to minimize
+	 * 		The position to minimize
 	 * @return The transformed DataStream.
 	 */
 	public SingleOutputStreamOperator<OUT, ?> min(int positionToMin) {
@@ -332,10 +331,10 @@ public class WindowedDataStream<OUT> {
 	 * expression is either the name of a public field or a getter method with
 	 * parentheses of the {@link DataStream}S underlying type. A dot can be used
 	 * to drill down into objects, as in {@code "field1.getInnerField2()" }.
-	 * 
+	 *
 	 * @param field
-	 *            The field expression based on which the aggregation will be
-	 *            applied.
+	 * 		The field expression based on which the aggregation will be
+	 * 		applied.
 	 * @return The transformed DataStream.
 	 */
 	public SingleOutputStreamOperator<OUT, ?> min(String field) {
@@ -347,9 +346,9 @@ public class WindowedDataStream<OUT> {
 	 * Applies an aggregation that gives the minimum element of every window of
 	 * the data stream by the given position. If more elements have the same
 	 * minimum value the operator returns the first element by default.
-	 * 
+	 *
 	 * @param positionToMinBy
-	 *            The position to minimize by
+	 * 		The position to minimize by
 	 * @return The transformed DataStream.
 	 */
 	public SingleOutputStreamOperator<OUT, ?> minBy(int positionToMinBy) {
@@ -360,9 +359,9 @@ public class WindowedDataStream<OUT> {
 	 * Applies an aggregation that gives the minimum element of every window of
 	 * the data stream by the given position. If more elements have the same
 	 * minimum value the operator returns the first element by default.
-	 * 
+	 *
 	 * @param positionToMinBy
-	 *            The position to minimize by
+	 * 		The position to minimize by
 	 * @return The transformed DataStream.
 	 */
 	public SingleOutputStreamOperator<OUT, ?> minBy(String positionToMinBy) {
@@ -374,12 +373,12 @@ public class WindowedDataStream<OUT> {
 	 * the data stream by the given position. If more elements have the same
 	 * minimum value the operator returns either the first or last one depending
 	 * on the parameter setting.
-	 * 
+	 *
 	 * @param positionToMinBy
-	 *            The position to minimize
+	 * 		The position to minimize
 	 * @param first
-	 *            If true, then the operator return the first element with the
-	 *            minimum value, otherwise returns the last
+	 * 		If true, then the operator return the first element with the
+	 * 		minimum value, otherwise returns the last
 	 * @return The transformed DataStream.
 	 */
 	public SingleOutputStreamOperator<OUT, ?> minBy(int positionToMinBy, boolean first) {
@@ -394,13 +393,13 @@ public class WindowedDataStream<OUT> {
 	 * expression is either the name of a public field or a getter method with
 	 * parentheses of the {@link DataStream}S underlying type. A dot can be used
 	 * to drill down into objects, as in {@code "field1.getInnerField2()" }.
-	 * 
+	 *
 	 * @param field
-	 *            The field expression based on which the aggregation will be
-	 *            applied.
+	 * 		The field expression based on which the aggregation will be
+	 * 		applied.
 	 * @param first
-	 *            If True then in case of field equality the first object will
-	 *            be returned
+	 * 		If True then in case of field equality the first object will
+	 * 		be returned
 	 * @return The transformed DataStream.
 	 */
 	public SingleOutputStreamOperator<OUT, ?> minBy(String field, boolean first) {
@@ -411,9 +410,9 @@ public class WindowedDataStream<OUT> {
 	/**
 	 * Applies an aggregation that gives the maximum value of every window of
 	 * the data stream at the given position.
-	 * 
+	 *
 	 * @param positionToMax
-	 *            The position to maximize
+	 * 		The position to maximize
 	 * @return The transformed DataStream.
 	 */
 	public SingleOutputStreamOperator<OUT, ?> max(int positionToMax) {
@@ -428,10 +427,10 @@ public class WindowedDataStream<OUT> {
 	 * is either the name of a public field or a getter method with parentheses
 	 * of the {@link DataStream}S underlying type. A dot can be used to drill
 	 * down into objects, as in {@code "field1.getInnerField2()" }.
-	 * 
+	 *
 	 * @param field
-	 *            The field expression based on which the aggregation will be
-	 *            applied.
+	 * 		The field expression based on which the aggregation will be
+	 * 		applied.
 	 * @return The transformed DataStream.
 	 */
 	public SingleOutputStreamOperator<OUT, ?> max(String field) {
@@ -443,9 +442,9 @@ public class WindowedDataStream<OUT> {
 	 * Applies an aggregation that gives the maximum element of every window of
 	 * the data stream by the given position. If more elements have the same
 	 * maximum value the operator returns the first by default.
-	 * 
+	 *
 	 * @param positionToMaxBy
-	 *            The position to maximize by
+	 * 		The position to maximize by
 	 * @return The transformed DataStream.
 	 */
 	public SingleOutputStreamOperator<OUT, ?> maxBy(int positionToMaxBy) {
@@ -456,9 +455,9 @@ public class WindowedDataStream<OUT> {
 	 * Applies an aggregation that gives the maximum element of every window of
 	 * the data stream by the given position. If more elements have the same
 	 * maximum value the operator returns the first by default.
-	 * 
+	 *
 	 * @param positionToMaxBy
-	 *            The position to maximize by
+	 * 		The position to maximize by
 	 * @return The transformed DataStream.
 	 */
 	public SingleOutputStreamOperator<OUT, ?> maxBy(String positionToMaxBy) {
@@ -470,12 +469,12 @@ public class WindowedDataStream<OUT> {
 	 * the data stream by the given position. If more elements have the same
 	 * maximum value the operator returns either the first or last one depending
 	 * on the parameter setting.
-	 * 
+	 *
 	 * @param positionToMaxBy
-	 *            The position to maximize by
+	 * 		The position to maximize by
 	 * @param first
-	 *            If true, then the operator return the first element with the
-	 *            maximum value, otherwise returns the last
+	 * 		If true, then the operator return the first element with the
+	 * 		maximum value, otherwise returns the last
 	 * @return The transformed DataStream.
 	 */
 	public SingleOutputStreamOperator<OUT, ?> maxBy(int positionToMaxBy, boolean first) {
@@ -490,13 +489,13 @@ public class WindowedDataStream<OUT> {
 	 * expression is either the name of a public field or a getter method with
 	 * parentheses of the {@link DataStream}S underlying type. A dot can be used
 	 * to drill down into objects, as in {@code "field1.getInnerField2()" }.
-	 * 
+	 *
 	 * @param field
-	 *            The field expression based on which the aggregation will be
-	 *            applied.
+	 * 		The field expression based on which the aggregation will be
+	 * 		applied.
 	 * @param first
-	 *            If True then in case of field equality the first object will
-	 *            be returned
+	 * 		If True then in case of field equality the first object will
+	 * 		be returned
 	 * @return The transformed DataStream.
 	 */
 	public SingleOutputStreamOperator<OUT, ?> maxBy(String field, boolean first) {
@@ -541,15 +540,15 @@ public class WindowedDataStream<OUT> {
 			}
 		} else {
 			if (userEvicters == null) {
-				boolean notOnlyTime=false;
-				for (WindowingHelper<OUT> helper : triggerHelpers){
-					if (helper instanceof Time<?>){
+				boolean notOnlyTime = false;
+				for (WindowingHelper<OUT> helper : triggerHelpers) {
+					if (helper instanceof Time<?>) {
 						evicters.add(helper.toEvict());
 					} else {
-						notOnlyTime=true;
+						notOnlyTime = true;
 					}
 				}
-				if (notOnlyTime){
+				if (notOnlyTime) {
 					evicters.add(new TumblingEvictionPolicy<OUT>());
 				}
 			}
@@ -641,7 +640,7 @@ public class WindowedDataStream<OUT> {
 
 	/**
 	 * Gets the output type.
-	 * 
+	 *
 	 * @return The output type.
 	 */
 	public TypeInformation<OUT> getType() {

@@ -23,9 +23,9 @@ import org.apache.flink.streaming.api.invokable.StreamInvokable;
 /**
  * The iterative data stream represents the start of an iteration in a
  * {@link DataStream}.
- * 
+ *
  * @param <IN>
- *            Type of the DataStream
+ * 		Type of the DataStream
  */
 public class IterativeDataStream<IN> extends
 		SingleOutputStreamOperator<IN, IterativeDataStream<IN>> {
@@ -55,13 +55,11 @@ public class IterativeDataStream<IN> extends
 	 * splitting to send a part of the closing data stream to the head. Refer to
 	 * {@link SingleOutputStreamOperator#split(OutputSelector)} for more
 	 * information.
-	 * 
-	 * 
+	 *
 	 * @param iterationResult
-	 *            The data stream that is fed back to the next iteration head.
+	 * 		The data stream that is fed back to the next iteration head.
 	 * @return Returns the stream that was fed back to the iteration. In most
-	 *         cases no further transformation are applied on this stream.
-	 * 
+	 * cases no further transformation are applied on this stream.
 	 */
 	public DataStream<IN> closeWith(DataStream<IN> iterationTail) {
 		DataStream<IN> iterationSink = new DataStreamSink<IN>(environment, "Iteration Sink", null,
