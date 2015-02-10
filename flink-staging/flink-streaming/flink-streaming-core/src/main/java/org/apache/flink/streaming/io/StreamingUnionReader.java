@@ -41,9 +41,11 @@ public class StreamingUnionReader extends UnionBufferReader {
 
 	private final EventNotificationHandler<StreamingSuperstep> superStepEventHandler = new EventNotificationHandler<StreamingSuperstep>();
 
-	public StreamingUnionReader(BufferReaderBase... readers) {
+	public StreamingUnionReader(BufferReader... readers) {
 		super(readers);
-
+		for (BufferReader reader : readers) {
+			reader.setReleaseAtSuperstep(false);
+		}
 		subscribeToSuperstepEvents(new SuperstepBarrierListener());
 	}
 

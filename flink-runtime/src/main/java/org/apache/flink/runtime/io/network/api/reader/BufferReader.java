@@ -18,7 +18,17 @@
 
 package org.apache.flink.runtime.io.network.api.reader;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
+
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.Queue;
+import java.util.Set;
+
 import org.apache.flink.runtime.event.task.AbstractEvent;
+import org.apache.flink.runtime.event.task.StreamingSuperstep;
 import org.apache.flink.runtime.event.task.TaskEvent;
 import org.apache.flink.runtime.io.network.api.EndOfPartitionEvent;
 import org.apache.flink.runtime.io.network.api.EndOfSuperstepEvent;
@@ -29,11 +39,6 @@ import org.apache.flink.runtime.util.event.EventListener;
 import org.apache.flink.runtime.util.event.EventNotificationHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
 
 public final class BufferReader implements BufferReaderBase {
 
@@ -49,6 +54,16 @@ public final class BufferReader implements BufferReaderBase {
 
 	private final InputGate gate;
 
+	// ----------------------------------------------------------------------------
+
+	private final EventNotificationHandler<StreamingSuperstep> superstepHandler = new EventNotificationHandler<StreamingSuperstep>();
+
+	private boolean releaseAfterSuperstepEvent = true;
+
+	private boolean releaseBarrier = true;
+
+	private final BarrierBuffer barrierBuffer = new BarrierBuffer();
+
 	public BufferReader(InputGate gate) {
 		this.gate = checkNotNull(gate);
 	}
@@ -63,7 +78,19 @@ public final class BufferReader implements BufferReaderBase {
 
 		requestPartitionsOnce();
 
-		final BufferOrEvent bufferOrEvent = gate.getNextBufferOrEvent();
+		BufferOrEvent bufferOrEvent = null;
+
+		if (barrierBuffer.containsNonprocessed()) {
+			bufferOrEvent = barrierBuffer.getNonProcessed();
+		}
+		while (bufferOrEvent == null) {
+			BufferOrEvent nextBufferOrEvent = gate.getNextBufferOrEvent();
+			if (barrierBuffer.isBlocked(nextBufferOrEvent)) {
+				barrierBuffer.store(nextBufferOrEvent);
+			} else {
+				bufferOrEvent = nextBufferOrEvent;
+			}
+		}
 
 		final Buffer buffer = bufferOrEvent.getBuffer();
 
@@ -71,8 +98,7 @@ public final class BufferReader implements BufferReaderBase {
 			channelIndexOfLastReadBuffer = bufferOrEvent.getChannelIndex();
 
 			return buffer;
-		}
-		else {
+		} else {
 			try {
 				final AbstractEvent event = bufferOrEvent.getEvent();
 
@@ -87,12 +113,22 @@ public final class BufferReader implements BufferReaderBase {
 				if (event.getClass() == EndOfPartitionEvent.class) {
 					gate.closeInputChannel(bufferOrEvent.getChannelIndex());
 					return null;
-				}
-				else if (event.getClass() == EndOfSuperstepEvent.class) {
+				} else if (event.getClass() == EndOfSuperstepEvent.class) {
 					incrementEndOfSuperstepEventAndCheck();
 
 					return null;
 				}
+
+				else if (event.getClass() == StreamingSuperstep.class) {
+					StreamingSuperstep superstep = (StreamingSuperstep) event;
+					if (!barrierBuffer.receivedSuperstep()) {
+						barrierBuffer.startSuperstep(superstep);
+					}
+					barrierBuffer.blockChannel(bufferOrEvent);
+					
+					return null;
+				}
+
 				// ------------------------------------------------------------
 				// Task events (user)
 				// ------------------------------------------------------------
@@ -100,12 +136,11 @@ public final class BufferReader implements BufferReaderBase {
 					taskEventHandler.publish((TaskEvent) event);
 
 					return null;
+				} else {
+					throw new IllegalStateException("Received unexpected event " + event
+							+ " from input channel.");
 				}
-				else {
-					throw new IllegalStateException("Received unexpected event " + event + " from input channel.");
-				}
-			}
-			catch (Throwable t) {
+			} catch (Throwable t) {
 				throw new IOException("Error while reading event: " + t.getMessage(), t);
 			}
 		}
@@ -113,7 +148,8 @@ public final class BufferReader implements BufferReaderBase {
 
 	@Override
 	public Buffer getNextBuffer(Buffer exchangeBuffer) {
-		throw new UnsupportedOperationException("Buffer exchange when reading data is not yet supported.");
+		throw new UnsupportedOperationException(
+				"Buffer exchange when reading data is not yet supported.");
 	}
 
 	@Override
@@ -150,7 +186,8 @@ public final class BufferReader implements BufferReaderBase {
 	}
 
 	@Override
-	public void subscribeToTaskEvent(EventListener<TaskEvent> listener, Class<? extends TaskEvent> eventType) {
+	public void subscribeToTaskEvent(EventListener<TaskEvent> listener,
+			Class<? extends TaskEvent> eventType) {
 		taskEventHandler.subscribe(listener, eventType);
 	}
 
@@ -183,13 +220,81 @@ public final class BufferReader implements BufferReaderBase {
 		currentNumEndOfSuperstepEvents++;
 
 		checkState(currentNumEndOfSuperstepEvents <= gate.getNumberOfInputChannels(),
-				"Received too many (" + currentNumEndOfSuperstepEvents + ") end of superstep events.");
+				"Received too many (" + currentNumEndOfSuperstepEvents
+						+ ") end of superstep events.");
 
 		return currentNumEndOfSuperstepEvents == gate.getNumberOfInputChannels();
+	}
+
+	// ------------------------------------------------------------------------
+	// Handling streaming supersteps
+	// ------------------------------------------------------------------------
+
+	public void subscribeToSuperstepEvents(EventListener<StreamingSuperstep> listener) {
+		superstepHandler.subscribe(listener, StreamingSuperstep.class);
+	}
+
+	public void setReleaseAtSuperstep(boolean autoRelease) {
+		this.releaseAfterSuperstepEvent = autoRelease;
+		this.releaseBarrier = autoRelease;
 	}
 
 	@Override
 	public String toString() {
 		return String.format("BufferReader %s", gate.getConsumedResultId());
+	}
+
+	private class BarrierBuffer {
+
+		private Queue<BufferOrEvent> bufferOrEvents = new LinkedList<BufferOrEvent>();
+		private Queue<BufferOrEvent> unprocessed = new LinkedList<BufferOrEvent>();
+
+		private Set<Integer> blockedChannels = new HashSet<Integer>();
+		private int totalNumberOfInputChannels = gate.getNumberOfInputChannels();
+
+		private StreamingSuperstep currentSuperstep;
+		private boolean receivedSuperstep;
+
+		public void startSuperstep(StreamingSuperstep superstep) {
+			this.currentSuperstep = superstep;
+			this.receivedSuperstep = true;
+		}
+
+		public void store(BufferOrEvent bufferOrEvent) {
+			bufferOrEvents.add(bufferOrEvent);
+		}
+
+		public BufferOrEvent getNonProcessed() {
+			return unprocessed.poll();
+		}
+
+		public boolean isBlocked(BufferOrEvent bufferOrEvent) {
+			return blockedChannels.contains(bufferOrEvent);
+		}
+
+		public boolean containsNonprocessed() {
+			return !unprocessed.isEmpty();
+		}
+
+		public boolean receivedSuperstep() {
+			return receivedSuperstep;
+		}
+
+		public void blockChannel(BufferOrEvent bufferOrEvent) {
+			Integer channelIndex = bufferOrEvent.getChannelIndex();
+			if (!blockedChannels.contains(channelIndex)) {
+				blockedChannels.add(channelIndex);
+				if (blockedChannels.size() == totalNumberOfInputChannels) {
+					superstepHandler.publish(currentSuperstep);
+					unprocessed.addAll(bufferOrEvents);
+					bufferOrEvents.clear();
+					blockedChannels.clear();
+					receivedSuperstep = false;
+				}
+			} else {
+				throw new RuntimeException("Tried to block an already blocked channel");
+			}
+		}
+
 	}
 }

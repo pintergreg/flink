@@ -58,12 +58,13 @@ public class InputHandler<IN> {
 
 			if (numberOfInputs < 2) {
 				BufferReader reader = streamVertex.getEnvironment().getReader(0);
-//				reader.subscribeToSuperstepEvents(streamVertex.getSuperstepListener());
+				reader.subscribeToSuperstepEvents(streamVertex.getSuperstepListener());
+				reader.setReleaseAtSuperstep(true);
 				inputs = new MutableRecordReader<IOReadableWritable>(reader);
 
 			} else {
-				StreamingUnionReader reader = new StreamingUnionReader(streamVertex.getEnvironment()
-						.getAllReaders());
+				StreamingUnionReader reader = new StreamingUnionReader(streamVertex
+						.getEnvironment().getAllReaders());
 				reader.subscribeToSuperstepEvents(streamVertex.getSuperstepListener());
 				inputs = new MutableRecordReader<IOReadableWritable>(reader);
 			}
