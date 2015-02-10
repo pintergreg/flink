@@ -51,7 +51,6 @@ object TwitterStream {
   // PROGRAM
   // *************************************************************************
 
-
   def main(args: Array[String]) {
     
     if (!parseParameters(args)) {
