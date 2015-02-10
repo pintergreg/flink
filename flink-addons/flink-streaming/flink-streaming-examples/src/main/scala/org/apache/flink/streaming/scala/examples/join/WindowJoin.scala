@@ -24,6 +24,22 @@ import scala.Stream._
 import scala.util.Random
 import java.util.concurrent.TimeUnit
 
+/**
+ * Example illustrating join over sliding windows of streams in Flink.
+ *
+ * <p>
+ * his example will join two streams with a sliding window. One which emits
+ * grades and one which emits salaries of people.
+ * </p>
+ *
+ * <p>
+ * This example shows how to:
+ * <ul>
+ * <li>do windowed joins,
+ * <li>use tuple data types,
+ * <li>write a simple streaming program.
+ */
+
 object WindowJoin {
 
   case class Name(id: Long, name: String)

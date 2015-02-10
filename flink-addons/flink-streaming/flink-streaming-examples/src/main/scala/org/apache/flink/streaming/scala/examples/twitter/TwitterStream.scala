@@ -93,9 +93,6 @@ object TwitterStream {
     }
   }
   
-  
-  
-  
   private def getTextDataStream (env : StreamExecutionEnvironment) : DataStream[String] = {
     if (fileOutput) {
       env.readTextFile(textPath)

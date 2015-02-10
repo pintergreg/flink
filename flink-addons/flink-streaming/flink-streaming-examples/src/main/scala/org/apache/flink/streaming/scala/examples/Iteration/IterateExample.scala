@@ -40,8 +40,6 @@ import scala.util.Random
 
 object IterateExample {
 
-
-
   // *************************************************************************
   // PROGRAM
   // *************************************************************************
@@ -116,11 +114,5 @@ object IterateExample {
 
   private var fileOutput : Boolean = false
   private var outputPath: String = null
-
-
-
-
-
-
 
 }
