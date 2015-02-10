@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit
  *
  * <p>
  * his example will join two streams with a sliding window. One which emits
- * grades and one which emits salaries of people.
+ * names and one which emits ages of people.
  * </p>
  *
  * <p>
@@ -45,6 +45,10 @@ object WindowJoin {
   case class Name(id: Long, name: String)
   case class Age(id: Long, age: Int)
   case class Person(name: String, age: Long)
+
+  // *************************************************************************
+  // PROGRAM
+  // *************************************************************************
 
   def main(args: Array[String]) {
 
@@ -67,6 +71,12 @@ object WindowJoin {
     env.execute("WindowJoin")
   }
 
+  // *************************************************************************
+  // USER FUNCTIONS
+  // *************************************************************************
+  /**
+   * Continuously emit tuples with random id and names (names).
+   */
   def nameStream() : Stream[(Long,String)] = {
     def nameMapper(names: Array[String])(x: Int) : (Long, String) =
     {
@@ -76,6 +86,9 @@ object WindowJoin {
     range(1,10000).map(nameMapper(Array("tom", "jerry", "alice", "bob", "john", "grace")))
   }
 
+  /**
+   * Continuously emit tuples with random id and integers (ages).
+   */
   def ageStream() : Stream[(Long,Int)] = {
     def ageMapper(x: Int) : (Long, Int) =
     {

@@ -44,6 +44,9 @@ import org.apache.flink.streaming.api.scala._
  */
 object SocketTextStreamWordCount {
 
+  // *************************************************************************
+  // PROGRAM
+  // *************************************************************************
   def main(args: Array[String]) {
     if (!parseParameters(args)) {
       return
@@ -67,6 +70,9 @@ object SocketTextStreamWordCount {
     env.execute("Scala SocketTextStreamWordCount Example")
   }
 
+  // *************************************************************************
+  // UTIL METHODS
+  // *************************************************************************
   private def parseParameters(args: Array[String]): Boolean = {
       if (args.length == 3) {
         fileOutput = true

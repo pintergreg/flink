@@ -80,6 +80,7 @@ object IncrementalLearningSkeleton {
   // *************************************************************************
   // USER FUNCTIONS
   // *************************************************************************
+
   /**
    * Feeds new training data for the partial model builder. By default it is
    * implemented as constantly emitting an infinite Integer stream of  1.
@@ -95,7 +96,8 @@ object IncrementalLearningSkeleton {
   def genNewDataSrc(): Stream[Int]  = {
     Stream.from(1,1).map(_ => {Thread.sleep(NEW_DATA_SLEEEP_TIME); 1})
   }
-  
+
+
   def map1 (tData : Int): Int ={
     def predict(inTuple: Int): Int = {
       return 0

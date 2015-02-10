@@ -47,6 +47,10 @@ import scala.util.parsing.json.JSON
  */
 object TwitterStream {
 
+  // *************************************************************************
+  // PROGRAM
+  // *************************************************************************
+
 
   def main(args: Array[String]) {
     
@@ -55,15 +59,13 @@ object TwitterStream {
     }
     
     val env = StreamExecutionEnvironment.getExecutionEnvironment
-    
-    env.setBufferTimeout(1000)
-    
+
     val streamSource = getTextDataStream(env)
 
     val tweets = streamSource.flatMap(enTweetTokenize _)
                   .map {(_,1)}
-                  .groupBy(0)
-                  .sum(1)
+                  .groupBy(0).sum(1)
+                  .flatMap(selectMaxOccurence _) // TODO: cannot maintain the state of maxOccurence
 
         // emit result
         if (fileOutput) {
@@ -77,29 +79,63 @@ object TwitterStream {
         env.execute("Twitter Streaming Example")
 
   }
-  
+
+  // *************************************************************************
+  // USER FUNCTIONS
+  // *************************************************************************
+  /**
+   * Makes sentences from English tweets.
+   *
+   * <p>
+   * Implements a string tokenizer that splits sentences into words as a
+   * user-defined FlatMapFunction. The function takes a line (String) and
+   * splits it into multiple pairs in the form of "(word,1)" (Tuple2<String,
+   * Integer>).
+   * </p>
+   */
   def enTweetTokenize (tweet: String, out:Collector[String]) = {
     val tweetObj = JSON.parseFull(tweet)
     if (getJsonString(tweetObj, "lang").equals("en")){
       val content = getJsonString(tweetObj,"text")
-      content.toLowerCase().split("\\W+") filter (_.nonEmpty) foreach(out.collect(_))
+      content.toLowerCase().split("\\s+") filter (_.matches("\\w+")) foreach(out.collect(_))
     }
-
   }
-  def getJsonString(jsonObj: Option[Any], field: String) :  String={
+
+  private def getJsonString(jsonObj: Option[Any], field: String) :  String={
     jsonObj match {
       case Some(map : Map[String,Any])=> map.getOrElse(field, "f").toString
       case None => "Not found"
     }
   }
-  
-  private def getTextDataStream (env : StreamExecutionEnvironment) : DataStream[String] = {
+
+
+  /**
+   * Implements a user-defined selectMaxOccurence Function that checks if the current
+   * occurence is higher than the maximum occurence. If so, returns the word
+   * and changes the maximum.
+   */
+  def selectMaxOccurence ( word:(String, Int), out:Collector[(String, Int)])= {
+    //TODO: problem: maxOccurence is reset whenever the function is recalled
+    var maxOccurence : Int= 0
+    if (word._2 >= maxOccurence ) {
+      out.collect(word)
+      maxOccurence = word._2
+    }
+  }
+
+  /**
+   *  generate a sample Twitter Stream
+   */
+  def getTextDataStream (env : StreamExecutionEnvironment) : DataStream[String] = {
     if (fileOutput) {
       env.readTextFile(textPath)
     }else{
       env.fromCollection(TwitterStreamData.TEXTS)
     }
   }
+  // *************************************************************************
+  // UTIL METHODS
+  // *************************************************************************
 
   private def parseParameters(args: Array[String]) = {
     if (args.length > 0) {

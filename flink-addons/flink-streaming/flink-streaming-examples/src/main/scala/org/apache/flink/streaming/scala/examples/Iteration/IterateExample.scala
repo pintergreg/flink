@@ -71,12 +71,18 @@ object IterateExample {
   // USER FUNCTIONS
   // *************************************************************************
 
-
+  /**
+  *  generate a source stream of (0.0, 0)
+  */
   def generateStream: Stream[(Double, Int)] ={
     Stream.from(0,1).map(x => (0.0,0))
   }
 
-
+  /**
+   * Iteration step function which takes a data stream of (Double , Integer) and
+   * produces 2 split streams of (Double + random, Integer + 1).
+   * One of them is output, the second will be fed back into the next iteration
+   */
   def stepFunction (input: DataStream[(Double, Int)]) : (DataStream[(Double, Int)], DataStream[(Double, Int)]) = {
       def  Myselector: ((Double,Int))=> String  ={
           case (x: Double,_) if x > 2 =>"output"
