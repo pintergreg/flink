@@ -65,8 +65,7 @@ object TwitterStream {
     val tweets = streamSource.flatMap(enTweetTokenize _)
                   .map {(_,1)}
                   .groupBy(0).sum(1)
-                  .flatMap(selectMaxOccurence _) // TODO: cannot maintain the state of maxOccurence
-
+                  .flatMap(selectMaxOccurence _)
         // emit result
         if (fileOutput) {
           tweets.writeAsText(outputPath, 1)
@@ -115,8 +114,6 @@ object TwitterStream {
    * and changes the maximum.
    */
   def selectMaxOccurence ( word:(String, Int), out:Collector[(String, Int)])= {
-    //TODO: problem: maxOccurence is reset whenever the function is recalled
-    var maxOccurence : Int= 0
     if (word._2 >= maxOccurence ) {
       out.collect(word)
       maxOccurence = word._2
@@ -160,5 +157,5 @@ object TwitterStream {
   private var fileOutput : Boolean = false
   private var  textPath : String = null
   private var outputPath : String = null
-  
+  private var maxOccurence: Int = 0
 }
