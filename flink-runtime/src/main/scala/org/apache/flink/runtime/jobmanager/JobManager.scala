@@ -278,6 +278,18 @@ Actor with ActorLogMessages with ActorLogging {
 
             removeJob(jobID)
           }
+          else {
+            newJobStatus match{
+              case JobStatus.RUNNING =>
+                currentJobs.get(jobID) match {
+                  case Some((executionGraph, _)) =>
+                    StreamStateMonitor.props(context,executionGraph)
+                  case None =>
+                    log.error("Cannot create state monitor for job ID {}.", jobID)
+                      new IllegalStateException("Cannot find execution graph for job ID " + jobID)
+                }
+            }
+          }
         case None =>
           removeJob(jobID)
       }

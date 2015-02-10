@@ -43,7 +43,7 @@ import org.apache.flink.runtime.io.disk.iomanager.IOManagerAsync
 import org.apache.flink.runtime.io.network.NetworkEnvironment
 import org.apache.flink.runtime.io.network.netty.NettyConfig
 import org.apache.flink.runtime.jobgraph.IntermediateDataSetID
-import org.apache.flink.runtime.jobmanager.JobManager
+import org.apache.flink.runtime.jobmanager.{BarrierReq, BarrierAck, JobManager}
 import org.apache.flink.runtime.memorymanager.DefaultMemoryManager
 import org.apache.flink.runtime.messages.JobManagerMessages.UpdateTaskExecutionState
 import org.apache.flink.runtime.messages.RegistrationMessages.{AlreadyRegistered,
@@ -326,6 +326,15 @@ import scala.collection.JavaConverters._
       cleanupTaskManager()
 
       tryJobManagerRegistration()
+
+    case BarrierReq(attemptID, checkpointID) =>
+      log.info("Barrier checkpointing request received for attempt {}", attemptID)
+      runningTasks.get(attemptID) match {
+        case Some(i) => 
+          //FIXME i.getEnvironment.getInvokable.isInstanceOf[StreamVertex]
+        case None => 
+      }
+      
   }
 
   /**

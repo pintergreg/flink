@@ -17,12 +17,15 @@
 
 package org.apache.flink.streaming.api.streamvertex;
 
+import java.io.IOException;
 import java.util.Map;
 
 import org.apache.flink.runtime.event.task.StreamingSuperstep;
+import akka.actor.ActorRef;
 import org.apache.flink.runtime.execution.Environment;
 import org.apache.flink.runtime.jobgraph.tasks.AbstractInvokable;
 import org.apache.flink.runtime.util.event.EventListener;
+import org.apache.flink.runtime.messages.JobManagerMessages;
 import org.apache.flink.streaming.api.StreamConfig;
 import org.apache.flink.streaming.api.invokable.ChainableInvokable;
 import org.apache.flink.streaming.api.invokable.StreamInvokable;
@@ -93,6 +96,10 @@ public class StreamVertex<IN, OUT> extends AbstractInvokable implements StreamTa
 			invokable.close();
 		}
 
+	}
+	
+	public void broadcastBarrier(int id) throws IOException, InterruptedException {
+		outputHandler.broadcastBarrier(id);
 	}
 
 	public void setInputsOutputs() {
