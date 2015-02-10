@@ -329,13 +329,16 @@ import scala.collection.JavaConverters._
       tryJobManagerRegistration()
 
     case BarrierReq(attemptID, checkpointID) =>
-      log.info("Barrier checkpointing request received for attempt {}", attemptID)
+      log.info("[FT-TaskManager] Barrier checkpointing request received for attempt {}", attemptID)
       runningTasks.get(attemptID) match {
-        case Some(i) => 
-          i.getEnvironment.getInvokable.isInstanceOf[BarrierListener]
-        case None =>
+        case Some(i) =>
+          i.getEnvironment.getInvokable match {
+            case barrierListener: BarrierListener =>
+              barrierListener.broadcastBarrier(checkpointID)
+            case _ => log.info("[FT-TaskManager] Received a barrier for the wrong vertex")
+          }
+        case None => log.info("[FT-TaskManager] Received a barrier for an unknown vertex") 
       }
-      
   }
 
   /**

@@ -33,7 +33,8 @@ import org.apache.flink.util.MutableObjectIterator;
 
 import java.util.Map;
 
-public class StreamVertex<IN, OUT> extends AbstractInvokable implements StreamTaskContext<OUT>, BarrierListener {
+public class StreamVertex<IN, OUT> extends AbstractInvokable implements StreamTaskContext<OUT>, 
+		BarrierListener {
 
 	private static int numTasks;
 
@@ -98,6 +99,7 @@ public class StreamVertex<IN, OUT> extends AbstractInvokable implements StreamTa
 
 	@Override
 	public void broadcastBarrier(long id) {
+		System.err.println("[FT-Vertex] Received barrier");
 		try {
 			outputHandler.broadcastBarrier(id);
 		} catch (Exception e) {
