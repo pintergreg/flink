@@ -23,6 +23,7 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.fs.Path;
 import org.apache.flink.runtime.broadcast.BroadcastVariableManager;
 import org.apache.flink.runtime.io.disk.iomanager.IOManager;
+import org.apache.flink.runtime.io.network.NetworkEnvironment;
 import org.apache.flink.runtime.io.network.api.reader.BufferReader;
 import org.apache.flink.runtime.io.network.api.writer.BufferWriter;
 import org.apache.flink.runtime.jobgraph.JobGraph;
@@ -129,6 +130,8 @@ public interface Environment {
 	Map<String, FutureTask<Path>> getCopyTask();
 
 	BroadcastVariableManager getBroadcastVariableManager();
+
+	NetworkEnvironment getNetworkEnvironment();
 
 	// ------------------------------------------------------------------------
 	// Runtime result writers and readers

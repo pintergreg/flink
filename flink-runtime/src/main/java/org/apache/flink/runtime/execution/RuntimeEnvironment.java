@@ -30,6 +30,7 @@ import org.apache.flink.runtime.io.network.NetworkEnvironment;
 import org.apache.flink.runtime.io.network.api.reader.BufferReader;
 import org.apache.flink.runtime.io.network.api.writer.BufferWriter;
 import org.apache.flink.runtime.io.network.partition.IntermediateResultPartition;
+import org.apache.flink.runtime.io.network.partition.consumer.InputGate;
 import org.apache.flink.runtime.jobgraph.IntermediateDataSetID;
 import org.apache.flink.runtime.jobgraph.JobID;
 import org.apache.flink.runtime.jobgraph.JobVertexID;
@@ -87,6 +88,8 @@ public class RuntimeEnvironment implements Environment, Runnable {
 
 	private final BroadcastVariableManager broadcastVariableManager;
 
+	private final NetworkEnvironment networkEnvironment;
+
 	private final Map<String, FutureTask<Path>> cacheCopyTasks = new HashMap<String, FutureTask<Path>>();
 
 	private final AtomicBoolean canceled = new AtomicBoolean();
@@ -97,7 +100,9 @@ public class RuntimeEnvironment implements Environment, Runnable {
 
 	private final BufferReader[] readers;
 
-	private final Map<IntermediateDataSetID, BufferReader> readersById = new HashMap<IntermediateDataSetID, BufferReader>();
+	private final InputGate[] inputGates;
+
+	private final Map<IntermediateDataSetID, InputGate> inputGatesById = new HashMap<IntermediateDataSetID, InputGate>();
 
 	public RuntimeEnvironment(
 			ActorRef jobManager, Task owner, TaskDeploymentDescriptor tdd, ClassLoader userCodeClassLoader,
@@ -112,6 +117,34 @@ public class RuntimeEnvironment implements Environment, Runnable {
 		this.jobManager = checkNotNull(jobManager);
 
 		this.broadcastVariableManager = checkNotNull(broadcastVariableManager);
+		this.networkEnvironment = checkNotNull(networkEnvironment);
+
+		// ----------------------------------------------------------------
+		// Invokable setup
+		// ----------------------------------------------------------------
+		// Note: This has to be done *after* the readers and writers have
+		// been setup, because the invokable relies on them for I/O.
+		// ----------------------------------------------------------------
+
+		// Load and instantiate the invokable class
+		this.userCodeClassLoader = checkNotNull(userCodeClassLoader);
+		// Class of the task to run in this environment
+		Class<? extends AbstractInvokable> invokableClass;
+		try {
+			final String className = tdd.getInvokableClassName();
+			invokableClass = Class.forName(className, true, userCodeClassLoader).asSubclass(AbstractInvokable.class);
+		}
+		catch (Throwable t) {
+			throw new Exception("Could not load invokable class.", t);
+		}
+
+		try {
+			this.invokable = invokableClass.newInstance();
+		}
+		catch (Throwable t) {
+			throw new Exception("Could not instantiate the invokable class.", t);
+		}
+
 
 		try {
 			// Produced intermediate result partitions
@@ -128,39 +161,16 @@ public class RuntimeEnvironment implements Environment, Runnable {
 			// Consumed intermediate result partitions
 			final List<PartitionConsumerDeploymentDescriptor> consumedPartitions = tdd.getConsumedPartitions();
 
+			this.inputGates = new InputGate[consumedPartitions.size()];
 			this.readers = new BufferReader[consumedPartitions.size()];
 
 			for (int i = 0; i < readers.length; i++) {
-				readers[i] = BufferReader.create(this, networkEnvironment, consumedPartitions.get(i));
+				inputGates[i] = InputGate.create(invokable, networkEnvironment, consumedPartitions.get(i));
 
-				// The readers are organized by key for task updates/channel updates at runtime
-				readersById.put(readers[i].getConsumedResultId(), readers[i]);
-			}
+				// The input gates are organized by key for task updates/channel updates at runtime
+				inputGatesById.put(inputGates[i].getConsumedResultId(), inputGates[i]);
 
-			// ----------------------------------------------------------------
-			// Invokable setup
-			// ----------------------------------------------------------------
-			// Note: This has to be done *after* the readers and writers have
-			// been setup, because the invokable relies on them for I/O.
-			// ----------------------------------------------------------------
-
-			// Load and instantiate the invokable class
-			this.userCodeClassLoader = checkNotNull(userCodeClassLoader);
-			// Class of the task to run in this environment
-			Class<? extends AbstractInvokable> invokableClass;
-			try {
-				final String className = tdd.getInvokableClassName();
-				invokableClass = Class.forName(className, true, userCodeClassLoader).asSubclass(AbstractInvokable.class);
-			}
-			catch (Throwable t) {
-				throw new Exception("Could not load invokable class.", t);
-			}
-
-			try {
-				this.invokable = invokableClass.newInstance();
-			}
-			catch (Throwable t) {
-				throw new Exception("Could not instantiate the invokable class.", t);
+				readers[i] = new BufferReader(inputGates[i]);
 			}
 
 			this.jobConfiguration = tdd.getJobConfiguration();
@@ -341,6 +351,11 @@ public class RuntimeEnvironment implements Environment, Runnable {
 	}
 
 	@Override
+	public NetworkEnvironment getNetworkEnvironment() {
+		return networkEnvironment;
+	}
+
+	@Override
 	public BufferWriter getWriter(int index) {
 		checkElementIndex(index, writers.length, "Illegal environment writer request.");
 
@@ -368,8 +383,8 @@ public class RuntimeEnvironment implements Environment, Runnable {
 		return producedPartitions;
 	}
 
-	public BufferReader getReaderById(IntermediateDataSetID id) {
-		return readersById.get(id);
+	public InputGate getInputGateById(IntermediateDataSetID id) {
+		return inputGatesById.get(id);
 	}
 
 	@Override
@@ -423,5 +438,9 @@ public class RuntimeEnvironment implements Environment, Runnable {
 	@Override
 	public Map<String, FutureTask<Path>> getCopyTask() {
 		return cacheCopyTasks;
+	}
+
+	public InputGate[] getAllInputGates() {
+		return inputGates;
 	}
 }

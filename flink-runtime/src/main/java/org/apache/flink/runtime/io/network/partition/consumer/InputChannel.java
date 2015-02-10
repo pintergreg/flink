@@ -45,13 +45,13 @@ public abstract class InputChannel {
 
 	protected final IntermediateResultPartitionID partitionId;
 
-	protected final BufferReader reader;
+	protected final InputGate gate;
 
-	protected InputChannel(int channelIndex, ExecutionAttemptID producerExecutionId, IntermediateResultPartitionID partitionId, BufferReader reader) {
+	protected InputChannel(int channelIndex, ExecutionAttemptID producerExecutionId, IntermediateResultPartitionID partitionId, InputGate gate) {
 		this.channelIndex = channelIndex;
 		this.producerExecutionId = producerExecutionId;
 		this.partitionId = partitionId;
-		this.reader = reader;
+		this.gate = gate;
 	}
 
 	// ------------------------------------------------------------------------
@@ -80,7 +80,7 @@ public abstract class InputChannel {
 	 * about an available {@link Buffer} instance.
 	 */
 	protected void notifyReaderAboutAvailableBuffer() {
-		reader.onAvailableInputChannel(this);
+		gate.onAvailableData(this);
 	}
 
 	// ------------------------------------------------------------------------

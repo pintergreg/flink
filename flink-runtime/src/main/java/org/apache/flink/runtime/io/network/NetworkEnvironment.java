@@ -20,7 +20,6 @@ package org.apache.flink.runtime.io.network;
 
 import akka.actor.ActorRef;
 import org.apache.flink.runtime.executiongraph.ExecutionAttemptID;
-import org.apache.flink.runtime.io.network.api.reader.BufferReader;
 import org.apache.flink.runtime.io.network.api.writer.BufferWriter;
 import org.apache.flink.runtime.io.network.buffer.BufferPool;
 import org.apache.flink.runtime.io.network.buffer.NetworkBufferPool;
@@ -28,6 +27,7 @@ import org.apache.flink.runtime.io.network.netty.NettyConfig;
 import org.apache.flink.runtime.io.network.netty.NettyConnectionManager;
 import org.apache.flink.runtime.io.network.partition.IntermediateResultPartition;
 import org.apache.flink.runtime.io.network.partition.IntermediateResultPartitionManager;
+import org.apache.flink.runtime.io.network.partition.consumer.InputGate;
 import org.apache.flink.runtime.taskmanager.NetworkEnvironmentConfiguration;
 import org.apache.flink.runtime.taskmanager.Task;
 import org.apache.flink.runtime.taskmanager.TaskManager;
@@ -144,14 +144,14 @@ public class NetworkEnvironment {
 		}
 
 		// Setup the buffer pool for each buffer reader
-		final BufferReader[] readers = task.getReaders();
+		final InputGate[] inputGates = task.getInputGates();
 
-		for (BufferReader reader : readers) {
+		for (InputGate gate : inputGates) {
 			BufferPool bufferPool = null;
 
 			try {
-				bufferPool = networkBufferPool.createBufferPool(reader.getNumberOfInputChannels(), false);
-				reader.setBufferPool(bufferPool);
+				bufferPool = networkBufferPool.createBufferPool(gate.getNumberOfInputChannels(), false);
+				gate.setBufferPool(bufferPool);
 			}
 			catch (Throwable t) {
 				if (bufferPool != null) {
@@ -181,13 +181,13 @@ public class NetworkEnvironment {
 
 		taskEventDispatcher.unregisterWriters(executionId);
 
-		final BufferReader[] readers = task.getReaders();
+		final InputGate[] inputGates = task.getInputGates();
 
-		if (readers != null) {
-			for (BufferReader reader : readers) {
+		if (inputGates != null) {
+			for (InputGate gate : inputGates) {
 				try {
-					if (reader != null) {
-						reader.releaseAllResources();
+					if (gate != null) {
+						gate.releaseAllResources();
 					}
 				}
 				catch (IOException e) {

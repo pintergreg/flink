@@ -21,7 +21,6 @@ package org.apache.flink.runtime.io.network.partition.consumer;
 import org.apache.flink.runtime.event.task.TaskEvent;
 import org.apache.flink.runtime.executiongraph.ExecutionAttemptID;
 import org.apache.flink.runtime.io.network.RemoteAddress;
-import org.apache.flink.runtime.io.network.api.reader.BufferReader;
 import org.apache.flink.runtime.io.network.buffer.Buffer;
 import org.apache.flink.runtime.io.network.buffer.BufferProvider;
 import org.apache.flink.runtime.io.network.netty.PartitionRequestClient;
@@ -62,10 +61,10 @@ public class RemoteInputChannel extends InputChannel {
 			int channelIndex,
 			ExecutionAttemptID producerExecutionId,
 			IntermediateResultPartitionID partitionId,
-			BufferReader reader,
+			InputGate gate,
 			RemoteAddress producerAddress) {
 
-		super(channelIndex, producerExecutionId, partitionId, reader);
+		super(channelIndex, producerExecutionId, partitionId, gate);
 
 		/**
 		 * This ID is used by the {@link PartitionRequestClient} to distinguish
@@ -86,7 +85,7 @@ public class RemoteInputChannel extends InputChannel {
 				LOG.debug("Requesting queue {} from REMOTE partition {}.", partitionId, queueIndex);
 			}
 
-			partitionRequestClient = reader.getConnectionManager().createPartitionRequestClient(producerAddress);
+			partitionRequestClient = gate.getConnectionManager().createPartitionRequestClient(producerAddress);
 
 			partitionRequestClient.requestIntermediateResultPartition(producerExecutionId, partitionId, queueIndex, this);
 		}
@@ -171,7 +170,7 @@ public class RemoteInputChannel extends InputChannel {
 			return null;
 		}
 
-		return reader.getBufferProvider();
+		return gate.getBufferProvider();
 	}
 
 	public void onBuffer(Buffer buffer, int sequenceNumber) {
@@ -215,8 +214,8 @@ public class RemoteInputChannel extends InputChannel {
 		IOException error = ioError.get();
 
 		if (error != null) {
-			throw new IOException(String.format("%s at remote input channel of task '%s': %s].",
-					error.getClass().getName(), reader.getTaskNameWithSubtasks(), error.getMessage()));
+			throw new IOException(String.format("%s at remote input channel: %s].",
+					error.getClass().getName(), error.getMessage()));
 		}
 	}
 

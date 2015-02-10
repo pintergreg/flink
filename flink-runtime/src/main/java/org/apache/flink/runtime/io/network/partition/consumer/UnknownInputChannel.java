@@ -35,8 +35,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
  */
 public class UnknownInputChannel extends InputChannel {
 
-	public UnknownInputChannel(int channelIndex, ExecutionAttemptID producerExecutionId, IntermediateResultPartitionID partitionId, BufferReader reader) {
-		super(channelIndex, producerExecutionId, partitionId, reader);
+	public UnknownInputChannel(int channelIndex, ExecutionAttemptID producerExecutionId, IntermediateResultPartitionID partitionId, InputGate gate) {
+		super(channelIndex, producerExecutionId, partitionId, gate);
 	}
 
 	@Override
@@ -83,10 +83,10 @@ public class UnknownInputChannel extends InputChannel {
 	// ------------------------------------------------------------------------
 
 	public RemoteInputChannel toRemoteInputChannel(RemoteAddress producerAddress) {
-		return new RemoteInputChannel(channelIndex, producerExecutionId, partitionId, reader, checkNotNull(producerAddress));
+		return new RemoteInputChannel(channelIndex, producerExecutionId, partitionId, gate, checkNotNull(producerAddress));
 	}
 
 	public LocalInputChannel toLocalInputChannel() {
-		return new LocalInputChannel(channelIndex, producerExecutionId, partitionId, reader);
+		return new LocalInputChannel(channelIndex, producerExecutionId, partitionId, gate);
 	}
 }

@@ -78,7 +78,7 @@ public class MockIteratorBufferReader<T extends IOReadableWritable> extends Mock
 					serializer.setNextBuffer(buffer);
 					serializer.addRecord(reuse);
 
-					reader.onAvailableInputChannel(inputChannel);
+					gate.onAvailableData(inputChannel);
 
 					// Call getCurrentBuffer to ensure size is set
 					return serializer.getCurrentBuffer();
@@ -100,7 +100,7 @@ public class MockIteratorBufferReader<T extends IOReadableWritable> extends Mock
 	public MockIteratorBufferReader<T> read() {
 		checkState(inputIterator != null && serializer != null, "Iterator/serializer has not been set. Call wrapIterator() first.");
 
-		reader.onAvailableInputChannel(inputChannel);
+		gate.onAvailableData(inputChannel);
 
 		return this;
 	}

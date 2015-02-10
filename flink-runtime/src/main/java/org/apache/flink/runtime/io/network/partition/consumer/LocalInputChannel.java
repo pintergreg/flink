@@ -21,7 +21,6 @@ package org.apache.flink.runtime.io.network.partition.consumer;
 import com.google.common.base.Optional;
 import org.apache.flink.runtime.event.task.TaskEvent;
 import org.apache.flink.runtime.executiongraph.ExecutionAttemptID;
-import org.apache.flink.runtime.io.network.api.reader.BufferReader;
 import org.apache.flink.runtime.io.network.buffer.Buffer;
 import org.apache.flink.runtime.io.network.partition.queue.IntermediateResultPartitionQueueIterator;
 import org.apache.flink.runtime.jobgraph.IntermediateResultPartitionID;
@@ -46,8 +45,8 @@ public class LocalInputChannel extends InputChannel implements NotificationListe
 
 	private Buffer lookAhead;
 
-	public LocalInputChannel(int channelIndex, ExecutionAttemptID producerExecutionId, IntermediateResultPartitionID partitionId, BufferReader reader) {
-		super(channelIndex, producerExecutionId, partitionId, reader);
+	public LocalInputChannel(int channelIndex, ExecutionAttemptID producerExecutionId, IntermediateResultPartitionID partitionId, InputGate gate) {
+		super(channelIndex, producerExecutionId, partitionId, gate);
 	}
 
 	// ------------------------------------------------------------------------
@@ -61,8 +60,8 @@ public class LocalInputChannel extends InputChannel implements NotificationListe
 				LOG.debug("Requesting queue {} from LOCAL partition {}.", partitionId, queueIndex);
 			}
 
-			queueIterator = reader.getIntermediateResultPartitionProvider()
-					.getIntermediateResultPartitionIterator(producerExecutionId, partitionId, queueIndex, Optional.of(reader.getBufferProvider()));
+			queueIterator = gate.getIntermediateResultPartitionProvider()
+					.getIntermediateResultPartitionIterator(producerExecutionId, partitionId, queueIndex, Optional.of(gate.getBufferProvider()));
 
 			getNextLookAhead();
 		}
@@ -93,7 +92,7 @@ public class LocalInputChannel extends InputChannel implements NotificationListe
 	public void sendTaskEvent(TaskEvent event) throws IOException {
 		checkState(queueIterator != null, "Tried to send task event to producer before requesting a queue.");
 
-		if (!reader.getTaskEventDispatcher().publish(producerExecutionId, partitionId, event)) {
+		if (!gate.getTaskEventDispatcher().publish(producerExecutionId, partitionId, event)) {
 			throw new IOException("Error while publishing event " + event + " to producer. The producer could not be found.");
 		}
 	}

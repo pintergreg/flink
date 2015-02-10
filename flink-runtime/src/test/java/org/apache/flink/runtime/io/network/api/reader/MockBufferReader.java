@@ -21,15 +21,17 @@ package org.apache.flink.runtime.io.network.api.reader;
 import org.apache.flink.core.memory.DataInputView;
 import org.apache.flink.core.memory.DataOutputView;
 import org.apache.flink.runtime.event.task.TaskEvent;
-import org.apache.flink.runtime.execution.RuntimeEnvironment;
+import org.apache.flink.runtime.execution.Environment;
 import org.apache.flink.runtime.io.network.MockNetworkEnvironment;
 import org.apache.flink.runtime.io.network.api.EndOfPartitionEvent;
 import org.apache.flink.runtime.io.network.api.EndOfSuperstepEvent;
 import org.apache.flink.runtime.io.network.api.serialization.EventSerializer;
 import org.apache.flink.runtime.io.network.buffer.Buffer;
 import org.apache.flink.runtime.io.network.partition.consumer.InputChannel;
+import org.apache.flink.runtime.io.network.partition.consumer.InputGate;
 import org.apache.flink.runtime.jobgraph.IntermediateDataSetID;
 import org.apache.flink.runtime.jobgraph.IntermediateResultPartitionID;
+import org.apache.flink.runtime.jobgraph.tasks.AbstractInvokable;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.mockito.stubbing.OngoingStubbing;
@@ -41,6 +43,8 @@ import static org.mockito.Mockito.when;
 
 public class MockBufferReader {
 
+	protected final InputGate gate;
+
 	protected final BufferReader reader;
 
 	protected final InputChannel inputChannel = mock(InputChannel.class);
@@ -49,8 +53,15 @@ public class MockBufferReader {
 	protected OngoingStubbing<Buffer> stubbing;
 
 	public MockBufferReader() throws IOException {
-		reader = new BufferReader(mock(RuntimeEnvironment.class), MockNetworkEnvironment.getMock(), new IntermediateDataSetID(), 1, 0);
-		reader.setInputChannel(new IntermediateResultPartitionID(), inputChannel);
+		AbstractInvokable mockInvokable = mock(AbstractInvokable.class);
+		Environment mockEnvironment = mock(Environment.class);
+		when(mockInvokable.getEnvironment()).thenReturn(mockEnvironment);
+		when(mockEnvironment.getNetworkEnvironment()).thenReturn(MockNetworkEnvironment.getMock());
+
+		gate = new InputGate(new IntermediateDataSetID(), 0, 1, mockInvokable);
+		gate.setInputChannel(new IntermediateResultPartitionID(), inputChannel);
+
+		reader = new BufferReader(gate);
 	}
 
 	MockBufferReader read(Buffer buffer) throws IOException {
@@ -61,7 +72,7 @@ public class MockBufferReader {
 			stubbing = stubbing.thenReturn(buffer);
 		}
 
-		reader.onAvailableInputChannel(inputChannel);
+		gate.onAvailableData(inputChannel);
 
 		return this;
 	}
@@ -99,7 +110,7 @@ public class MockBufferReader {
 			stubbing = stubbing.thenAnswer(answer);
 		}
 
-		reader.onAvailableInputChannel(inputChannel);
+		gate.onAvailableData(inputChannel);
 
 		return this;
 	}

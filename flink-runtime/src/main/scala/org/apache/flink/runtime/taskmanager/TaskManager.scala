@@ -473,7 +473,7 @@ import scala.collection.JavaConverters._
       case _ =>
         runningTasks.get(executionId) match {
           case Some(task) =>
-            Option(task.getEnvironment.getReaderById(resultId)) match {
+            Option(task.getEnvironment.getInputGateById(resultId)) match {
               case Some(reader) =>
                 Future {
                   try {

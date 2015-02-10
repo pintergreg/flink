@@ -83,8 +83,6 @@ public interface BufferReaderBase extends ReaderBase {
 	 */
 	int getNumberOfInputChannels();
 
-	boolean isTaskEvent();
-
 	void subscribeToReader(EventListener<BufferReaderBase> listener);
 
 	void requestPartitionsOnce() throws IOException;

@@ -172,11 +172,6 @@ public class UnionBufferReader implements BufferReaderBase {
 	}
 
 	@Override
-	public boolean isTaskEvent() {
-		return isTaskEvent;
-	}
-
-	@Override
 	public void subscribeToReader(EventListener<BufferReaderBase> listener) {
 		dataAvailabilityListener.registerListener(listener);
 	}
