@@ -17,15 +17,11 @@
 
 package org.apache.flink.streaming.api.streamvertex;
 
-import java.io.IOException;
-import java.util.Map;
-
 import org.apache.flink.runtime.event.task.StreamingSuperstep;
-import akka.actor.ActorRef;
 import org.apache.flink.runtime.execution.Environment;
 import org.apache.flink.runtime.jobgraph.tasks.AbstractInvokable;
+import org.apache.flink.runtime.jobgraph.tasks.BarrierListener;
 import org.apache.flink.runtime.util.event.EventListener;
-import org.apache.flink.runtime.messages.JobManagerMessages;
 import org.apache.flink.streaming.api.StreamConfig;
 import org.apache.flink.streaming.api.invokable.ChainableInvokable;
 import org.apache.flink.streaming.api.invokable.StreamInvokable;
@@ -35,7 +31,9 @@ import org.apache.flink.streaming.state.OperatorState;
 import org.apache.flink.util.Collector;
 import org.apache.flink.util.MutableObjectIterator;
 
-public class StreamVertex<IN, OUT> extends AbstractInvokable implements StreamTaskContext<OUT> {
+import java.util.Map;
+
+public class StreamVertex<IN, OUT> extends AbstractInvokable implements StreamTaskContext<OUT>, BarrierListener {
 
 	private static int numTasks;
 
@@ -97,9 +95,14 @@ public class StreamVertex<IN, OUT> extends AbstractInvokable implements StreamTa
 		}
 
 	}
-	
-	public void broadcastBarrier(int id) throws IOException, InterruptedException {
-		outputHandler.broadcastBarrier(id);
+
+	@Override
+	public void broadcastBarrier(long id) {
+		try {
+			outputHandler.broadcastBarrier(id);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 	public void setInputsOutputs() {
@@ -121,7 +124,7 @@ public class StreamVertex<IN, OUT> extends AbstractInvokable implements StreamTa
 	}
 
 	public StreamingRuntimeContext createRuntimeContext(String taskName,
-			Map<String, OperatorState<?>> states) {
+	                                                    Map<String, OperatorState<?>> states) {
 		Environment env = getEnvironment();
 		return new StreamingRuntimeContext(taskName, env, getUserCodeClassLoader(), states);
 	}
@@ -165,9 +168,9 @@ public class StreamVertex<IN, OUT> extends AbstractInvokable implements StreamTa
 	public <X, Y> CoReaderIterator<X, Y> getCoReader() {
 		throw new IllegalArgumentException("CoReader not available");
 	}
-	
-	
-	public EventListener<StreamingSuperstep> getSuperstepListener(){
+
+
+	public EventListener<StreamingSuperstep> getSuperstepListener() {
 		return this.superstepListener;
 	}
 
