@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.runtime.event.task.StreamingSuperstep;
 import org.apache.flink.runtime.event.task.TaskEvent;
 import org.apache.flink.runtime.io.network.api.writer.RecordWriter;
 import org.apache.flink.runtime.plugable.SerializationDelegate;
@@ -85,11 +86,10 @@ public class OutputHandler<OUT> {
 		this.outerCollector = createChainedCollector(configuration);
 
 	}
-	
+
 	public void broadcastBarrier(long id) throws IOException, InterruptedException {
-		TaskEvent barrier = null;
-		for(StreamOutput streamOutput : outputMap.values())
-		{
+		StreamingSuperstep barrier = new StreamingSuperstep(id);
+		for (StreamOutput<?> streamOutput : outputMap.values()) {
 			streamOutput.broadcastEvent(barrier);
 		}
 	}

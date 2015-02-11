@@ -101,9 +101,10 @@ public class StreamVertex<IN, OUT> extends AbstractInvokable implements StreamTa
 
 	@Override
 	public void broadcastBarrier(long id) {
-		System.err.println("[FT-Vertex] Received barrier");
+		System.out.println("Received barrier: " + this);
 		try {
 			outputHandler.broadcastBarrier(id);
+			actOnBarrier(id);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -111,8 +112,9 @@ public class StreamVertex<IN, OUT> extends AbstractInvokable implements StreamTa
 
 	@Override
 	public void confirmBarrier(long barrierID) {
-		getEnvironment().getJobManager().tell(new BarrierAck(getEnvironment().getJobID(),
-				getEnvironment().getJobVertexId(), barrierID), ActorRef.noSender());
+		getEnvironment().getJobManager().tell(
+				new BarrierAck(getEnvironment().getJobID(), getEnvironment().getJobVertexId(),
+						barrierID), ActorRef.noSender());
 	}
 
 	public void setInputsOutputs() {
@@ -179,16 +181,24 @@ public class StreamVertex<IN, OUT> extends AbstractInvokable implements StreamTa
 		throw new IllegalArgumentException("CoReader not available");
 	}
 
-
 	public EventListener<StreamingSuperstep> getSuperstepListener() {
 		return this.superstepListener;
+	}
+
+	private void actOnBarrier(long id) {
+		System.out.println("Superstep " + id + " Processed: " + StreamVertex.this);
+	}
+
+	@Override
+	public String toString() {
+		return configuration.getOperatorName() + " (" + context.getIndexOfThisSubtask() + ")";
 	}
 
 	private class SuperstepEventListener implements EventListener<StreamingSuperstep> {
 
 		@Override
 		public void onEvent(StreamingSuperstep event) {
-			System.out.println("End of superstep");
+			actOnBarrier(event.getId());
 		}
 
 	}

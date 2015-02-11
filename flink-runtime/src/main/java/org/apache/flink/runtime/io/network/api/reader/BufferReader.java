@@ -58,10 +58,11 @@ public final class BufferReader implements BufferReaderBase {
 
 	private final EventNotificationHandler<StreamingSuperstep> superstepHandler = new EventNotificationHandler<StreamingSuperstep>();
 
-	private final BarrierBuffer barrierBuffer = new BarrierBuffer();
+	private final BarrierBuffer barrierBuffer;
 
 	public BufferReader(InputGate gate) {
 		this.gate = checkNotNull(gate);
+		barrierBuffer = new BarrierBuffer();
 	}
 
 	@Override
@@ -117,11 +118,15 @@ public final class BufferReader implements BufferReaderBase {
 				}
 
 				else if (event.getClass() == StreamingSuperstep.class) {
-					StreamingSuperstep superstep = (StreamingSuperstep) event;
-					if (!barrierBuffer.receivedSuperstep()) {
-						barrierBuffer.startSuperstep(superstep);
+					if (!barrierBuffer.isBlocked(bufferOrEvent)) {
+						StreamingSuperstep superstep = (StreamingSuperstep) event;
+						if (!barrierBuffer.receivedSuperstep()) {
+							barrierBuffer.startSuperstep(superstep);
+						}
+						barrierBuffer.blockChannel(bufferOrEvent);
+					} else {
+						barrierBuffer.store(bufferOrEvent);
 					}
-					barrierBuffer.blockChannel(bufferOrEvent);
 
 					return null;
 				}
@@ -242,10 +247,14 @@ public final class BufferReader implements BufferReaderBase {
 		private Queue<BufferOrEvent> unprocessed = new LinkedList<BufferOrEvent>();
 
 		private Set<Integer> blockedChannels = new HashSet<Integer>();
-		private int totalNumberOfInputChannels = gate.getNumberOfInputChannels();
+		private int totalNumberOfInputChannels;
 
 		private StreamingSuperstep currentSuperstep;
 		private boolean receivedSuperstep;
+
+		public BarrierBuffer() {
+			totalNumberOfInputChannels = gate.getNumberOfInputChannels();
+		}
 
 		public void startSuperstep(StreamingSuperstep superstep) {
 			this.currentSuperstep = superstep;
@@ -261,7 +270,7 @@ public final class BufferReader implements BufferReaderBase {
 		}
 
 		public boolean isBlocked(BufferOrEvent bufferOrEvent) {
-			return blockedChannels.contains(bufferOrEvent);
+			return blockedChannels.contains(bufferOrEvent.getChannelIndex());
 		}
 
 		public boolean containsNonprocessed() {
@@ -286,6 +295,10 @@ public final class BufferReader implements BufferReaderBase {
 			} else {
 				throw new RuntimeException("Tried to block an already blocked channel");
 			}
+		}
+
+		public String toString() {
+			return blockedChannels.toString();
 		}
 
 	}
