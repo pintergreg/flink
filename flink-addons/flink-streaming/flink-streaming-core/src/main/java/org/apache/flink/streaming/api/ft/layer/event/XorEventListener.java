@@ -41,7 +41,7 @@ public class XorEventListener implements EventListener {
 			if (LOG.isDebugEnabled()) {
 				LOG.debug("FAIL-event: {}", xorEvent.getRecordId());
 			}
-			ftLayer.fail(recordId.getSourceRecordId());
+			ftLayer.explicitFail(recordId.getSourceRecordId());
 		} else {
 			if (LOG.isDebugEnabled()) {
 				LOG.debug("XOR-event: {}", xorEvent.getRecordId());

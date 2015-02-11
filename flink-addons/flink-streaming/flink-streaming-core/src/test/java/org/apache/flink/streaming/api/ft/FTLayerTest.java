@@ -63,9 +63,9 @@ public class FTLayerTest {
 		}
 
 		@Override
-		public void fail(long sourceRecordId) {
+		public void explicitFail(long sourceRecordId) {
 			failedRecordIds.add(sourceRecordId);
-			super.fail(sourceRecordId);
+			super.explicitFail(sourceRecordId);
 		}
 
 		@Override
@@ -312,7 +312,7 @@ public class FTLayerTest {
 		ftLayer.newSourceRecord(sdssr2, 1);
 		ftLayer.newSourceRecord(sdssr3, 0);
 
-		ftLayer.fail(idToPL2.getSourceRecordId());
+		ftLayer.explicitFail(idToPL2.getSourceRecordId());
 		replayCounter.put(1, replayCounter.get(1) + 1);
 		checkAfterFail(ftLayer, sdssr2, 1);
 
@@ -325,10 +325,10 @@ public class FTLayerTest {
 		// source record 1 fails during the invocation of the flatMap function
 		// source record 3 fails without invoking flatMap on it
 		ftLayer.xor(id11);
-		ftLayer.fail(id11.getSourceRecordId());
+		ftLayer.explicitFail(id11.getSourceRecordId());
 		replayCounter.put(0, replayCounter.get(0) + 1);
 		checkAfterFail(ftLayer, sdssr1, 0);
-		ftLayer.fail(id3.getSourceRecordId());
+		ftLayer.explicitFail(id3.getSourceRecordId());
 		replayCounter.put(0, replayCounter.get(0) + 1);
 		checkAfterFail(ftLayer, sdssr3, 0);
 

@@ -173,7 +173,7 @@ public class FaultToleranceWithTopologyTest {
 		}
 
 		@Override
-		public void fail(long sourceRecordId) {
+		public void explicitFail(long sourceRecordId) {
 			if (ackerTable.contains(sourceRecordId)) {
 				failedIds.add(sourceRecordId);
 				failedSourceRecordIds.add(sourceRecordId);

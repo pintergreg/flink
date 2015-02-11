@@ -80,4 +80,16 @@ public class RotatingHashMap<K, V> implements AbstractPersistenceStorage<K, V> {
 
 		buckets.addFirst(new HashMap<K, V>());
 	}
+
+	@Override
+	public String toString() {
+		StringBuilder stringBuilder = new StringBuilder("[");
+		for (Map<K, V> bucket : buckets) {
+			stringBuilder.append(bucket.size() + ",");
+		}
+		stringBuilder.deleteCharAt(stringBuilder.length() - 1);
+		stringBuilder.append("]");
+
+		return stringBuilder.toString();
+	}
 }

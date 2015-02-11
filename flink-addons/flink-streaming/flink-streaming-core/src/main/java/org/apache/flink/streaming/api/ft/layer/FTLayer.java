@@ -43,10 +43,10 @@ public class FTLayer {
 		this.failedSourceRecordIds = new HashSet<Long>();
 		this.persistenceLayer = new TimeoutPersistenceLayer(this, new ExpiredFunction<Long, RecordWithHashCode>() {
 			@Override
-			public void onExpire(Long key, RecordWithHashCode value) {
-				fail(key);
+			public void onExpire(Long sourceRecordId, RecordWithHashCode recordWithHashCode) {
+				fail(sourceRecordId, recordWithHashCode);
 			}
-		}, 5, 4000L);
+		}, 5, 100L);
 		this.ackerTable = new AckerTable(this);
 	}
 
@@ -58,13 +58,16 @@ public class FTLayer {
 		}
 	}
 
-	public void fail(long sourceRecordId) {
+	public void explicitFail(long sourceRecordId) {
+		fail(sourceRecordId, persistenceLayer.get(sourceRecordId));
+	}
+
+	public void fail(long sourceRecordId, RecordWithHashCode recordWithHashCode) {
 		if (ackerTable.contains(sourceRecordId)) {
 			failedSourceRecordIds.add(sourceRecordId);
 
 			// find sourceRecord
 			int sourceId = sourceIdOfRecord.get(sourceRecordId);
-			RecordWithHashCode recordWithHashCode = persistenceLayer.get(sourceRecordId);
 
 			// generate new sourceRecordId
 			RecordId newSourceRecordId = RecordId.newSourceRecordId();
