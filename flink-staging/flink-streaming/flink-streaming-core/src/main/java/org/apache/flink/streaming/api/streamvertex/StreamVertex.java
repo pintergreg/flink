@@ -17,10 +17,12 @@
 
 package org.apache.flink.streaming.api.streamvertex;
 
+import akka.actor.ActorRef;
 import org.apache.flink.runtime.event.task.StreamingSuperstep;
 import org.apache.flink.runtime.execution.Environment;
 import org.apache.flink.runtime.jobgraph.tasks.AbstractInvokable;
-import org.apache.flink.runtime.jobgraph.tasks.BarrierListener;
+import org.apache.flink.runtime.jobgraph.tasks.BarrierTransceiver;
+import org.apache.flink.runtime.jobmanager.BarrierAck;
 import org.apache.flink.runtime.util.event.EventListener;
 import org.apache.flink.streaming.api.StreamConfig;
 import org.apache.flink.streaming.api.invokable.ChainableInvokable;
@@ -33,8 +35,8 @@ import org.apache.flink.util.MutableObjectIterator;
 
 import java.util.Map;
 
-public class StreamVertex<IN, OUT> extends AbstractInvokable implements StreamTaskContext<OUT>, 
-		BarrierListener {
+public class StreamVertex<IN, OUT> extends AbstractInvokable implements StreamTaskContext<OUT>,
+		BarrierTransceiver {
 
 	private static int numTasks;
 
@@ -105,6 +107,12 @@ public class StreamVertex<IN, OUT> extends AbstractInvokable implements StreamTa
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+
+	@Override
+	public void confirmBarrier(long barrierID) {
+		getEnvironment().getJobManager().tell(new BarrierAck(getEnvironment().getJobID(),
+				getEnvironment().getJobVertexId(), barrierID), ActorRef.noSender());
 	}
 
 	public void setInputsOutputs() {

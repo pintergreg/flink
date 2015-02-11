@@ -43,7 +43,7 @@ import org.apache.flink.runtime.io.disk.iomanager.IOManagerAsync
 import org.apache.flink.runtime.io.network.NetworkEnvironment
 import org.apache.flink.runtime.io.network.netty.NettyConfig
 import org.apache.flink.runtime.jobgraph.IntermediateDataSetID
-import org.apache.flink.runtime.jobgraph.tasks.BarrierListener
+import org.apache.flink.runtime.jobgraph.tasks.BarrierTransceiver
 import org.apache.flink.runtime.jobmanager.{BarrierReq, BarrierAck, JobManager}
 import org.apache.flink.runtime.memorymanager.DefaultMemoryManager
 import org.apache.flink.runtime.messages.JobManagerMessages.UpdateTaskExecutionState
@@ -332,14 +332,16 @@ import scala.collection.JavaConverters._
       log.info("[FT-TaskManager] Barrier checkpointing request received for attempt {}", attemptID)
       runningTasks.get(attemptID) match {
         case Some(i) =>
-          i.getEnvironment.getInvokable match {
-            case barrierListener: BarrierListener =>
-              barrierListener.broadcastBarrier(checkpointID)
-            case _ => log.info("[FT-TaskManager] Received a barrier for the wrong vertex")
+          if(i.getExecutionState == ExecutionState.RUNNING) {
+            i.getEnvironment.getInvokable match {
+              case barrierTransceiver: BarrierTransceiver =>
+                barrierTransceiver.broadcastBarrier(checkpointID)
+              case _ => log.info("[FT-TaskManager] Received a barrier for the wrong vertex")
+            }
+          }
           }
         case None => log.info("[FT-TaskManager] Received a barrier for an unknown vertex") 
       }
-  }
 
   /**
    * Receives a [[TaskDeploymentDescriptor]] describing the task to be executed. Sets up a

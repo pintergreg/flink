@@ -110,12 +110,15 @@ Actor with ActorLogMessages with ActorLogging {
   val instanceManager = new InstanceManager()
   val scheduler = new FlinkScheduler()
   val libraryCacheManager = new BlobLibraryCacheManager(new BlobServer(), cleanupInterval)
-
+  
   // List of current jobs running
   val currentJobs = scala.collection.mutable.HashMap[JobID, (ExecutionGraph, JobInfo)]()
 
   // Map of actors which want to be notified once a specific job terminates
   val finalJobStatusListener = scala.collection.mutable.HashMap[JobID, Set[ActorRef]]()
+  
+  //Map of actors used for monitoring streaming jobs and triggering barriers
+  val barrierMonitors = scala.collection.mutable.HashMap[JobID, ActorRef]()
 
   instanceManager.addInstanceListener(scheduler)
 
@@ -281,9 +284,9 @@ Actor with ActorLogMessages with ActorLogging {
           else {
             newJobStatus match{
               case JobStatus.RUNNING =>
-                currentJobs.get(jobID) match {
+                  currentJobs.get(jobID) match {
                   case Some((executionGraph, _)) =>
-                    StreamStateMonitor.props(context,executionGraph)
+                    barrierMonitors += jobID -> StreamStateMonitor.props(context,executionGraph)
                   case None =>
                     log.error("Cannot create state monitor for job ID {}.", jobID)
                       new IllegalStateException("Cannot find execution graph for job ID " + jobID)
@@ -294,6 +297,12 @@ Actor with ActorLogMessages with ActorLogging {
           removeJob(jobID)
       }
 
+    case BarrierAck(jobID, jobVertex, checkpoint) =>
+      barrierMonitors.get(jobID) match {
+        case Some(monitor) => monitor ! BarrierAck(jobID, jobVertex, checkpoint)
+        case None =>
+      }
+      
     case RequestFinalJobStatus(jobID) =>
       currentJobs.get(jobID) match {
         case Some(_) =>

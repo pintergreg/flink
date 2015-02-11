@@ -3,7 +3,7 @@ package org.apache.flink.runtime.jobmanager
 import akka.actor._
 import org.apache.flink.runtime.ActorLogMessages
 import org.apache.flink.runtime.executiongraph.{ExecutionAttemptID, ExecutionGraph, ExecutionVertex}
-import org.apache.flink.runtime.jobgraph.JobVertexID
+import org.apache.flink.runtime.jobgraph.{JobID, JobVertexID}
 
 import scala.collection.JavaConversions.mapAsScalaMap
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -45,9 +45,8 @@ class StreamStateMonitor(val executionGraph: ExecutionGraph,
       vertices.filter(v => v.getJobVertex.getJobVertex.isInputVertex).foreach(vertex
       => vertex.getCurrentAssignedResource.getInstance.getTaskManager
                 ! BarrierReq(vertex.getCurrentExecutionAttempt.getAttemptId, curId))
-    case BarrierAck(jobVertexID, checkpointID) =>
-      acks += (jobVertexID -> checkpointID)
-      log.info("[FT-MONITOR] Updated acknowledgement table")
+    case BarrierAck(_, jobVertexID, checkpointID) =>
+      acks += jobVertexID -> checkpointID
       log.info(acks.toString)
   }
 }
@@ -58,7 +57,7 @@ case class InitBarrierScheduler()
 
 case class BarrierReq(attemptID: ExecutionAttemptID, checkpointID: Long)
 
-case class BarrierAck(jobVertexID: JobVertexID, checkpointID: Long)
+case class BarrierAck(jobID: JobID, jobVertexID: JobVertexID, checkpointID: Long)
 
 
 
