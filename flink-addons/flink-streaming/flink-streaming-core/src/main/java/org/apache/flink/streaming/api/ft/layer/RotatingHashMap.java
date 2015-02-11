@@ -25,7 +25,7 @@ import org.apache.flink.streaming.api.ft.layer.util.ExpiredFunction;
 
 public class RotatingHashMap<K, V> implements AbstractPersistenceStorage<K, V> {
 
-	private LinkedList<Map<K, V>> buckets;
+	protected LinkedList<Map<K, V>> buckets;
 	private ExpiredFunction<K, V> expiredFunction;
 	private int numberOfBuckets;
 
