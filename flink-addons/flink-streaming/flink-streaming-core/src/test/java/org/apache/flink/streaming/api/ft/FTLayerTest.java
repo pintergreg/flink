@@ -17,10 +17,13 @@
 
 package org.apache.flink.streaming.api.ft;
 
+import org.apache.flink.streaming.api.ft.layer.AbstractPersistenceLayer;
 import org.apache.flink.streaming.api.ft.layer.AckerTable;
 import org.apache.flink.streaming.api.ft.layer.FTLayer;
-import org.apache.flink.streaming.api.ft.layer.PersistenceLayer;
+import org.apache.flink.streaming.api.ft.layer.DefaultPersistenceLayer;
+import org.apache.flink.streaming.api.ft.layer.TimeoutPersistenceLayer;
 import org.apache.flink.streaming.api.ft.layer.id.RecordId;
+import org.apache.flink.streaming.api.ft.layer.id.RecordWithHashCode;
 import org.apache.flink.streaming.api.ft.layer.serialization.SemiDeserializedStreamRecord;
 import org.junit.Test;
 
@@ -71,8 +74,8 @@ public class FTLayerTest {
 			replayedRecords.get(sourceId).add(sourceRecord);
 		}
 
-		public PersistenceLayer getPersistenceLayer() {
-			return (PersistenceLayer) this.persistenceLayer;
+		public AbstractPersistenceLayer<Long, RecordWithHashCode> getPersistenceLayer() {
+			return this.persistenceLayer;
 		}
 
 		public AckerTable getAckerTable() {
@@ -97,7 +100,7 @@ public class FTLayerTest {
 	private void checkAfterNewSourceRecord(MockFTLayer ftLayer, SemiDeserializedStreamRecord sdssr,
 			int sourceId) {
 		MockAckerTable ackerTable = (MockAckerTable) ftLayer.getAckerTable();
-		PersistenceLayer persistenceLayer = ftLayer.getPersistenceLayer();
+		AbstractPersistenceLayer<Long, RecordWithHashCode> persistenceLayer = ftLayer.getPersistenceLayer();
 		RecordId persistenceRecordId = sdssr.getId();
 		byte[] record = sdssr.getArray();
 		int hashCode = sdssr.getHashCode();
@@ -134,7 +137,7 @@ public class FTLayerTest {
 	private void checkAfterFail(MockFTLayer ftLayer, SemiDeserializedStreamRecord sdssr,
 			int sourceId) {
 		MockAckerTable ackerTable = (MockAckerTable) ftLayer.getAckerTable();
-		PersistenceLayer persistenceLayer = ftLayer.getPersistenceLayer();
+		AbstractPersistenceLayer<Long, RecordWithHashCode> persistenceLayer = ftLayer.getPersistenceLayer();
 		RecordId persistenceRecordId = sdssr.getId();
 		byte[] record = sdssr.getArray();
 		int hashCode = sdssr.getHashCode();

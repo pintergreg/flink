@@ -247,6 +247,8 @@ public class FTLayerVertex extends AbstractInvokable {
 			LOG.trace("Invoked:\tFTLayerVertex");
 		}
 
+		ftLayer.open();
+
 		reuse = inputOutputSerializer.createInstance();
 
 		int fromInput;
@@ -255,7 +257,10 @@ public class FTLayerVertex extends AbstractInvokable {
 			ftLayer.newSourceRecord(reuse, fromInput);
 		}
 
+		ftLayer.close();
+
 		flushOutputs();
+
 		if (LOG.isTraceEnabled()) {
 			LOG.trace("Invoke finished:\tFTLayerVertex");
 		}

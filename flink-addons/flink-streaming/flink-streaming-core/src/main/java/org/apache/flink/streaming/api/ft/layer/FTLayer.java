@@ -24,6 +24,7 @@ import java.util.HashSet;
 import org.apache.flink.streaming.api.ft.layer.id.RecordId;
 import org.apache.flink.streaming.api.ft.layer.id.RecordWithHashCode;
 import org.apache.flink.streaming.api.ft.layer.serialization.SemiDeserializedStreamRecord;
+import org.apache.flink.streaming.api.ft.layer.util.ExpiredFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +41,12 @@ public class FTLayer {
 		// TODO initialize record replayer
 		this.sourceIdOfRecord = new HashMap<Long, Integer>();
 		this.failedSourceRecordIds = new HashSet<Long>();
-		this.persistenceLayer = new PersistenceLayer(this);
+		this.persistenceLayer = new TimeoutPersistenceLayer(this, new ExpiredFunction<Long, RecordWithHashCode>() {
+			@Override
+			public void onExpire(Long key, RecordWithHashCode value) {
+				fail(key);
+			}
+		}, 5, 4000L);
 		this.ackerTable = new AckerTable(this);
 	}
 
@@ -140,4 +146,13 @@ public class FTLayer {
 	public void setRecordReplayer(RecordReplayer recordReplayer) {
 		this.recordReplayer = recordReplayer;
 	}
+
+	public void open() {
+		persistenceLayer.open();
+	}
+
+	public void close() {
+		persistenceLayer.close();
+	}
+
 }

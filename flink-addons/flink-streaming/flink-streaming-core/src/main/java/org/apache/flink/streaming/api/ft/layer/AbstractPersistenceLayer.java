@@ -27,14 +27,11 @@ public abstract class AbstractPersistenceLayer<U, V> implements Serializable {
 
 	protected AbstractPersistenceLayer(FTLayer ftLayer) {
 		this.ftLayer = ftLayer;
-		setPersistentStorage();
 	}
 
 	public FTLayer getFTLayer() {
 		return ftLayer;
 	}
-
-	protected abstract void setPersistentStorage();
 
 	public void put(U sourceRecordId, V sourceRecord) {
 		storage.put(sourceRecordId, sourceRecord);
@@ -51,5 +48,9 @@ public abstract class AbstractPersistenceLayer<U, V> implements Serializable {
 	public void remove(U sourceRecordId) {
 		storage.remove(sourceRecordId);
 	}
+
+	public abstract void open();
+
+	public abstract void close();
 
 }
