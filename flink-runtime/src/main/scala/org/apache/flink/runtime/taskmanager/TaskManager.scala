@@ -194,7 +194,7 @@ import scala.collection.JavaConverters._
 
   override def receiveWithLogMessages: Receive = {
     case RegisterAtJobManager =>
-      if(!registered) {
+      if (!registered) {
         registrationDuration += registrationDelay
         // double delay for exponential backoff
         registrationDelay *= 2
@@ -217,17 +217,17 @@ import scala.collection.JavaConverters._
       }
 
     case AcknowledgeRegistration(id, blobPort) =>
-      if(!registered) {
+      if (!registered) {
         finishRegistration(sender, id, blobPort)
       } else {
         log.info("The TaskManager {} is already registered at the JobManager {}, but received " +
-          "another AcknowledgeRegistration message.", self.path, currentJobManager.path)
+                "another AcknowledgeRegistration message.", self.path, currentJobManager.path)
       }
 
     case AlreadyRegistered(id, blobPort) =>
-      if(!registered) {
+      if (!registered) {
         log.warning("The TaskManager {} seems to be already registered at the JobManager {} even" +
-          "though it has not yet finished the registration process.", self.path, sender.path)
+                "though it has not yet finished the registration process.", self.path, sender.path)
 
         finishRegistration(sender, id, blobPort)
       } else {
@@ -237,16 +237,16 @@ import scala.collection.JavaConverters._
       }
 
     case RefuseRegistration(reason) =>
-      if(!registered) {
+      if (!registered) {
         log.error("The registration of task manager {} was refused by the job manager {} " +
-          "because {}.", self.path, jobManagerAkkaURL, reason)
+                "because {}.", self.path, jobManagerAkkaURL, reason)
 
         // Shut task manager down
         self ! PoisonPill
       } else {
         // ignore RefuseRegistration messages which arrived after AcknowledgeRegistration
         log.info("Received RefuseRegistration from the JobManager even though being already " +
-          "registered")
+                "registered")
       }
 
     case SubmitTask(tdd) =>
@@ -271,27 +271,27 @@ import scala.collection.JavaConverters._
     case UnregisterTask(executionID) =>
       unregisterTask(executionID)
 
-    case updateMsg:UpdateTaskExecutionState =>
+    case updateMsg: UpdateTaskExecutionState =>
       val futureResponse = (currentJobManager ? updateMsg)(timeout)
 
       val jobID = updateMsg.taskExecutionState.getJobID
       val executionID = updateMsg.taskExecutionState.getID
       val executionState = updateMsg.taskExecutionState.getExecutionState
 
-      futureResponse.mapTo[Boolean].onComplete{
+      futureResponse.mapTo[Boolean].onComplete {
         case Success(result) =>
-          if(!result){
+          if (!result) {
             self ! FailTask(executionID,
               new IllegalStateException("Task has been disposed on JobManager."))
           }
 
           if (!result || executionState == ExecutionState.FINISHED || executionState ==
-            ExecutionState.CANCELED || executionState == ExecutionState.FAILED) {
+                  ExecutionState.CANCELED || executionState == ExecutionState.FAILED) {
             self ! UnregisterTask(executionID)
           }
         case Failure(t) =>
           log.warning(s"Execution state change notification failed for task $executionID " +
-            s"of job $jobID. Cause ${t.getMessage}.")
+                  s"of job $jobID. Cause ${t.getMessage}.")
           self ! UnregisterTask(executionID)
       }
 
@@ -320,7 +320,7 @@ import scala.collection.JavaConverters._
 
     case Terminated(jobManager) =>
       log.info("Job manager {} is no longer reachable. Cancelling all tasks and trying to " +
-        "reregister.", jobManager.path)
+              "reregister.", jobManager.path)
 
       cancelAndClearEverything(new Throwable("Lost connection to JobManager"))
 
@@ -332,16 +332,19 @@ import scala.collection.JavaConverters._
       log.info("[FT-TaskManager] Barrier checkpointing request received for attempt {}", attemptID)
       runningTasks.get(attemptID) match {
         case Some(i) =>
-          if(i.getExecutionState == ExecutionState.RUNNING) {
+          if (i.getExecutionState == ExecutionState.RUNNING) {
             i.getEnvironment.getInvokable match {
               case barrierTransceiver: BarrierTransceiver =>
-                barrierTransceiver.broadcastBarrier(checkpointID)
+                //FIXME this is just a temp workaround till deadlock with blocking rpcs is resolved
+                new Thread(new Runnable {
+                  override def run(): Unit = barrierTransceiver.broadcastBarrier(checkpointID)
+                })
               case _ => log.info("[FT-TaskManager] Received a barrier for the wrong vertex")
             }
           }
-          }
-        case None => log.info("[FT-TaskManager] Received a barrier for an unknown vertex") 
+        case None => log.info("[FT-TaskManager] Received a barrier for an unknown vertex")
       }
+  }
 
   /**
    * Receives a [[TaskDeploymentDescriptor]] describing the task to be executed. Sets up a
