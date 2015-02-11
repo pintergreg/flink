@@ -43,9 +43,6 @@ public class StreamingUnionReader extends UnionBufferReader {
 
 	public StreamingUnionReader(BufferReader... readers) {
 		super(readers);
-		for (BufferReader reader : readers) {
-			reader.setReleaseAtSuperstep(false);
-		}
 		subscribeToSuperstepEvents(new SuperstepBarrierListener());
 	}
 

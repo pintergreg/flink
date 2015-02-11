@@ -58,10 +58,6 @@ public final class BufferReader implements BufferReaderBase {
 
 	private final EventNotificationHandler<StreamingSuperstep> superstepHandler = new EventNotificationHandler<StreamingSuperstep>();
 
-	private boolean releaseAfterSuperstepEvent = true;
-
-	private boolean releaseBarrier = true;
-
 	private final BarrierBuffer barrierBuffer = new BarrierBuffer();
 
 	public BufferReader(InputGate gate) {
@@ -82,13 +78,14 @@ public final class BufferReader implements BufferReaderBase {
 
 		if (barrierBuffer.containsNonprocessed()) {
 			bufferOrEvent = barrierBuffer.getNonProcessed();
-		}
-		while (bufferOrEvent == null) {
-			BufferOrEvent nextBufferOrEvent = gate.getNextBufferOrEvent();
-			if (barrierBuffer.isBlocked(nextBufferOrEvent)) {
-				barrierBuffer.store(nextBufferOrEvent);
-			} else {
-				bufferOrEvent = nextBufferOrEvent;
+		} else {
+			while (bufferOrEvent == null) {
+				BufferOrEvent nextBufferOrEvent = gate.getNextBufferOrEvent();
+				if (barrierBuffer.isBlocked(nextBufferOrEvent)) {
+					barrierBuffer.store(nextBufferOrEvent);
+				} else {
+					bufferOrEvent = nextBufferOrEvent;
+				}
 			}
 		}
 
@@ -125,7 +122,7 @@ public final class BufferReader implements BufferReaderBase {
 						barrierBuffer.startSuperstep(superstep);
 					}
 					barrierBuffer.blockChannel(bufferOrEvent);
-					
+
 					return null;
 				}
 
@@ -232,11 +229,6 @@ public final class BufferReader implements BufferReaderBase {
 
 	public void subscribeToSuperstepEvents(EventListener<StreamingSuperstep> listener) {
 		superstepHandler.subscribe(listener, StreamingSuperstep.class);
-	}
-
-	public void setReleaseAtSuperstep(boolean autoRelease) {
-		this.releaseAfterSuperstepEvent = autoRelease;
-		this.releaseBarrier = autoRelease;
 	}
 
 	@Override

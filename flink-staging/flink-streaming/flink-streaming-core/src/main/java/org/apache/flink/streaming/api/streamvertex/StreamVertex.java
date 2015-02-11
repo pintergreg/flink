@@ -134,7 +134,7 @@ public class StreamVertex<IN, OUT> extends AbstractInvokable implements StreamTa
 	}
 
 	public StreamingRuntimeContext createRuntimeContext(String taskName,
-	                                                    Map<String, OperatorState<?>> states) {
+			Map<String, OperatorState<?>> states) {
 		Environment env = getEnvironment();
 		return new StreamingRuntimeContext(taskName, env, getUserCodeClassLoader(), states);
 	}

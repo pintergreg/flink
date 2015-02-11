@@ -59,7 +59,6 @@ public class InputHandler<IN> {
 			if (numberOfInputs < 2) {
 				BufferReader reader = streamVertex.getEnvironment().getReader(0);
 				reader.subscribeToSuperstepEvents(streamVertex.getSuperstepListener());
-				reader.setReleaseAtSuperstep(true);
 				inputs = new MutableRecordReader<IOReadableWritable>(reader);
 
 			} else {
