@@ -20,7 +20,6 @@ package org.apache.flink.streaming.api.collector;
 import java.io.IOException;
 
 import org.apache.flink.runtime.event.task.TaskEvent;
-import org.apache.flink.runtime.event.task.StreamingSuperstep;
 import org.apache.flink.runtime.io.network.api.writer.RecordWriter;
 import org.apache.flink.runtime.plugable.SerializationDelegate;
 import org.apache.flink.streaming.api.streamrecord.StreamRecord;
@@ -38,7 +37,6 @@ public class StreamOutput<OUT> implements Collector<OUT> {
 	private SerializationDelegate<StreamRecord<OUT>> serializationDelegate;
 	private StreamRecord<OUT> streamRecord;
 	private int channelID;
-	private int c = 0;
 
 	public StreamOutput(RecordWriter<SerializationDelegate<StreamRecord<OUT>>> output,
 			int channelID, SerializationDelegate<StreamRecord<OUT>> serializationDelegate) {
@@ -65,11 +63,7 @@ public class StreamOutput<OUT> implements Collector<OUT> {
 		serializationDelegate.setInstance(streamRecord);
 
 		try {
-			c++;
 			output.emit(serializationDelegate);
-			if (c == 2 || c == 4) {
-				output.broadcastEvent(new StreamingSuperstep(1));
-			}
 		} catch (Exception e) {
 			if (LOG.isErrorEnabled()) {
 				LOG.error("Emit failed due to: {}", StringUtils.stringifyException(e));
