@@ -131,7 +131,7 @@ public class OpFTLayerBuilder implements FTLayerBuilder {
 
 		//Map<Integer, PartitioningStrategy> helyett legyen Map<Integer, Map<Integer, PartitioningStrategy>>
 		//(S->T)->P kéne, de ehelyett ez nem S->(T->P)??? 2. jó
-		Map<Integer, Map<Integer, PartitioningStrategy>> pStrategies = new HashMap<Integer, Map<Integer, PartitioningStrategy>>();
+		List<Map<Integer, PartitioningStrategy>> pStrategies = new ArrayList<Map<Integer, PartitioningStrategy>>();
 
 		for (String upStreamVertexName : sourceVertices){
 			List<String> outputs = streamGraph.getOutEdges(upStreamVertexName);
@@ -139,8 +139,8 @@ public class OpFTLayerBuilder implements FTLayerBuilder {
 
 			sourceSuccessives.add(list);
 
-			List<String> vertexNames = new ArrayList<String>();
-			vertexNames.add(upStreamVertexName);
+			//List<String> vertexNames = new ArrayList<String>();
+			//vertexNames.add(upStreamVertexName);
 			Map<Integer, PartitioningStrategy> strategiesOfTasks = new HashMap<Integer, PartitioningStrategy>();
 
 			for(String downStreamVertexName : outputs) {
@@ -153,7 +153,7 @@ public class OpFTLayerBuilder implements FTLayerBuilder {
 			}
 
 			//S (upStreamVertexName) sorszáma kell még, de a (T->P) már megvan (strategiesOfTask)
-			pStrategies.put(vertexNames.indexOf(upStreamVertexName), strategiesOfTasks);
+			pStrategies.add(strategiesOfTasks);
 		}
 
 

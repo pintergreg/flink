@@ -22,6 +22,7 @@ import org.apache.flink.util.InstantiationUtil;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import static org.apache.flink.streaming.partitioner.StreamPartitioner.PartitioningStrategy;
@@ -90,9 +91,9 @@ public class FTLayerConfig {
 
 	//gergo
 	@SuppressWarnings("unchecked")
-	public Map<Integer, Map <Integer, PartitioningStrategy>> getPartitioningStrategies() {
+	public List< Map <Integer, PartitioningStrategy>> getPartitioningStrategies() {
 		try {
-			return (Map<Integer, Map<Integer, PartitioningStrategy>>) InstantiationUtil.deserializeObject(config.getBytes(
+			return (List<Map<Integer, PartitioningStrategy>>) InstantiationUtil.deserializeObject(config.getBytes(
 					PARTITIONING_STRATEGIES, new byte[0]), Thread.currentThread()
 					.getContextClassLoader());
 		} catch (Exception e) {
@@ -101,7 +102,7 @@ public class FTLayerConfig {
 	}
 
 	//gergo
-	public void setPartitioningStrategies(Map<Integer, Map<Integer, PartitioningStrategy>> partitioningStrategies) {
+	public void setPartitioningStrategies(List<Map<Integer, PartitioningStrategy>> partitioningStrategies) {
 		try {
 			InstantiationUtil.writeObjectToConfig(partitioningStrategies, config, PARTITIONING_STRATEGIES);
 		} catch (IOException e) {

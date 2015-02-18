@@ -119,8 +119,8 @@ public class FTLayerVertex extends AbstractInvokable {
 		ArrayList<ArrayList<Integer>> sourceSuccessives = config.getSourceSuccessives();
 		//T->P
 //		Map<Integer, PartitioningStrategy> partitioningStrategies = config.getPartitioningStrategies();
-		//S->(T->P)
-		Map<Integer, Map<Integer, PartitioningStrategy>> partitioningStrategies = config.getPartitioningStrategies();
+		//S->(T->P) Listként
+		List<Map<Integer, PartitioningStrategy>> partitioningStrategies = config.getPartitioningStrategies();
 
 		streamOutputs = new ArrayList<RecordWriter<SerializationDelegate<SemiDeserializedStreamRecord>>>(numberOfOutputs);
 
@@ -135,18 +135,16 @@ public class FTLayerVertex extends AbstractInvokable {
 
 			bufferTimeout = config.getBufferTimeout();
 
-			for (int sourceNumber=0; sourceNumber < numberOfSources; sourceNumber++) {
+			for (int sourceNumber=0; sourceNumber < partitioningStrategies.size(); sourceNumber++) {
 				for (int outputNumber = 0; outputNumber < numberOfOutputs; outputNumber++) {
 
 					//Eddig egy Task alapján kiszedte a PartitionStrategy-t, de most már S->(T->P) van itt, tehát source szerint tudom kiszedni a (T->P)-t,
 					//és abból kéne T szerint a P-ket.
 					//Ehhez kellhet új ReplayPartitioner objektum (field)? NEM KELL! Csak be kell járni ezt a struktúrát
 					//az eredeti bejárás a kimeneteket veszi, tehát az output number kijelöli a T-t? Mi jelöli ki a S-t?
-					//Ezt a ciklust körbe kéne venni egy másikkal, ami a source-okon lépked. Mi tartalmazza a source-okat? esetleg a streamOutputs? Nem.
-					//config.getNumberOfSources!
+					//Ezt a ciklust körbe kéne venni egy másikkal, ami a source-okon lépked. Mi tartalmazza a source-okat? esetleg a streamOutputs? Nem
 
-					//partitioningStrategies.get(sourceNumber).(outputNumber)
-					ReplayPartitioner outputPartitioner = ReplayPartitionerFactory.getReplayPartitioner(partitioningStrategies.get(outputNumber));
+					ReplayPartitioner outputPartitioner = ReplayPartitionerFactory.getReplayPartitioner(partitioningStrategies.get(sourceNumber).get(outputNumber));
 
 					RecordWriter<SerializationDelegate<SemiDeserializedStreamRecord>> output;
 					if (bufferTimeout >= 0) {
