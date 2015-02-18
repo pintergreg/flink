@@ -17,13 +17,6 @@
 
 package org.apache.flink.streaming.api.ft.layer.runtime;
 
-import static org.apache.flink.streaming.partitioner.StreamPartitioner.PartitioningStrategy;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.flink.runtime.io.network.api.reader.MutableRecordReader;
 import org.apache.flink.runtime.io.network.api.reader.ReaderBase;
 import org.apache.flink.runtime.io.network.api.writer.BufferWriter;
@@ -49,6 +42,13 @@ import org.apache.flink.streaming.io.MultiUnionReaderIterator;
 import org.apache.flink.streaming.io.StreamRecordWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import static org.apache.flink.streaming.partitioner.StreamPartitioner.PartitioningStrategy;
 
 public class FTLayerVertex extends AbstractInvokable {
 	private static final Logger LOG = LoggerFactory.getLogger(FTLayerVertex.class);
@@ -117,7 +117,11 @@ public class FTLayerVertex extends AbstractInvokable {
 	private void registerOutputs() {
 
 		ArrayList<ArrayList<Integer>> sourceSuccessives = config.getSourceSuccessives();
-		Map<Integer, PartitioningStrategy> partitioningStrategies = config.getPartitioningStrategies();
+		//T->P
+//		Map<Integer, PartitioningStrategy> partitioningStrategies = config.getPartitioningStrategies();
+		//S->(T->P)
+		Map<Integer, Map<Integer, PartitioningStrategy>> partitioningStrategies = config.getPartitioningStrategies();
+
 		streamOutputs = new ArrayList<RecordWriter<SerializationDelegate<SemiDeserializedStreamRecord>>>(numberOfOutputs);
 
 		this.outputs = getEnvironment().getAllWriters();
@@ -131,35 +135,45 @@ public class FTLayerVertex extends AbstractInvokable {
 
 			bufferTimeout = config.getBufferTimeout();
 
-			for (int outputNumber = 0; outputNumber < numberOfOutputs; outputNumber++) {
+			for (int sourceNumber=0; sourceNumber < numberOfSources; sourceNumber++) {
+				for (int outputNumber = 0; outputNumber < numberOfOutputs; outputNumber++) {
 
-				ReplayPartitioner outputPartitioner = ReplayPartitionerFactory.getReplayPartitioner(partitioningStrategies.get(outputNumber));
+					//Eddig egy Task alapján kiszedte a PartitionStrategy-t, de most már S->(T->P) van itt, tehát source szerint tudom kiszedni a (T->P)-t,
+					//és abból kéne T szerint a P-ket.
+					//Ehhez kellhet új ReplayPartitioner objektum (field)? NEM KELL! Csak be kell járni ezt a struktúrát
+					//az eredeti bejárás a kimeneteket veszi, tehát az output number kijelöli a T-t? Mi jelöli ki a S-t?
+					//Ezt a ciklust körbe kéne venni egy másikkal, ami a source-okon lépked. Mi tartalmazza a source-okat? esetleg a streamOutputs? Nem.
+					//config.getNumberOfSources!
 
-				RecordWriter<SerializationDelegate<SemiDeserializedStreamRecord>> output;
-				if (bufferTimeout >= 0) {
+					//partitioningStrategies.get(sourceNumber).(outputNumber)
+					ReplayPartitioner outputPartitioner = ReplayPartitionerFactory.getReplayPartitioner(partitioningStrategies.get(outputNumber));
 
-					output = new StreamRecordWriter<SerializationDelegate
-							<SemiDeserializedStreamRecord>>(getEnvironment().getWriter(outputNumber), outputPartitioner,
-							bufferTimeout);
+					RecordWriter<SerializationDelegate<SemiDeserializedStreamRecord>> output;
+					if (bufferTimeout >= 0) {
+
+						output = new StreamRecordWriter<SerializationDelegate
+								<SemiDeserializedStreamRecord>>(getEnvironment().getWriter(outputNumber), outputPartitioner,
+								bufferTimeout);
+
+						if (LOG.isTraceEnabled()) {
+							LOG.trace("StreamRecordWriter initiated with {} bufferTimeout for {}",
+									bufferTimeout, getClass().getSimpleName());
+						}
+					} else {
+						output = new RecordWriter<SerializationDelegate<SemiDeserializedStreamRecord>>(
+								getEnvironment().getWriter(outputNumber), outputPartitioner);
+
+						if (LOG.isTraceEnabled()) {
+							LOG.trace("RecordWriter initiated for {}", getClass().getSimpleName());
+						}
+					}
+					streamOutputs.add(output);
 
 					if (LOG.isTraceEnabled()) {
-						LOG.trace("StreamRecordWriter initiated with {} bufferTimeout for {}",
-								bufferTimeout, getClass().getSimpleName());
+						LOG.trace("Partitioner set: {} with {} outputs for {}", outputPartitioner
+								.getClass().getSimpleName(), outputNumber, this.getClass()
+								.getSimpleName());
 					}
-				} else {
-					output = new RecordWriter<SerializationDelegate<SemiDeserializedStreamRecord>>(
-							getEnvironment().getWriter(outputNumber), outputPartitioner);
-
-					if (LOG.isTraceEnabled()) {
-						LOG.trace("RecordWriter initiated for {}", getClass().getSimpleName());
-					}
-				}
-				streamOutputs.add(output);
-
-				if (LOG.isTraceEnabled()) {
-					LOG.trace("Partitioner set: {} with {} outputs for {}", outputPartitioner
-							.getClass().getSimpleName(), outputNumber, this.getClass()
-							.getSimpleName());
 				}
 			}
 		} catch (StreamVertexException e) {

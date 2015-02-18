@@ -17,14 +17,14 @@
 
 package org.apache.flink.streaming.api.ft.layer.runtime;
 
-import static org.apache.flink.streaming.partitioner.StreamPartitioner.PartitioningStrategy;
+import org.apache.flink.configuration.Configuration;
+import org.apache.flink.util.InstantiationUtil;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Map;
 
-import org.apache.flink.configuration.Configuration;
-import org.apache.flink.util.InstantiationUtil;
+import static org.apache.flink.streaming.partitioner.StreamPartitioner.PartitioningStrategy;
 
 public class FTLayerConfig {
 
@@ -69,10 +69,30 @@ public class FTLayerConfig {
 		}
 	}
 
+//	@SuppressWarnings("unchecked")
+//	public Map<Integer, PartitioningStrategy> getPartitioningStrategies() {
+//		try {
+//			return (Map<Integer, PartitioningStrategy>) InstantiationUtil.deserializeObject(config.getBytes(
+//					PARTITIONING_STRATEGIES, new byte[0]), Thread.currentThread()
+//					.getContextClassLoader());
+//		} catch (Exception e) {
+//			throw new RuntimeException(e);
+//		}
+//	}
+//
+//	public void setPartitioningStrategies(Map<Integer, PartitioningStrategy> partitioningStrategies) {
+//		try {
+//			InstantiationUtil.writeObjectToConfig(partitioningStrategies, config, PARTITIONING_STRATEGIES);
+//		} catch (IOException e) {
+//			throw new RuntimeException(e);
+//		}
+//	}
+
+	//gergo
 	@SuppressWarnings("unchecked")
-	public Map<Integer, PartitioningStrategy> getPartitioningStrategies() {
+	public Map<Integer, Map <Integer, PartitioningStrategy>> getPartitioningStrategies() {
 		try {
-			return (Map<Integer, PartitioningStrategy>) InstantiationUtil.deserializeObject(config.getBytes(
+			return (Map<Integer, Map<Integer, PartitioningStrategy>>) InstantiationUtil.deserializeObject(config.getBytes(
 					PARTITIONING_STRATEGIES, new byte[0]), Thread.currentThread()
 					.getContextClassLoader());
 		} catch (Exception e) {
@@ -80,13 +100,15 @@ public class FTLayerConfig {
 		}
 	}
 
-	public void setPartitioningStrategies(Map<Integer, PartitioningStrategy> partitioningStrategies) {
+	//gergo
+	public void setPartitioningStrategies(Map<Integer, Map<Integer, PartitioningStrategy>> partitioningStrategies) {
 		try {
 			InstantiationUtil.writeObjectToConfig(partitioningStrategies, config, PARTITIONING_STRATEGIES);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
 	}
+
 
 	public int getNumberOfOutputs() {
 		return config.getInteger(NUMBER_OF_OUTPUTS, -1);

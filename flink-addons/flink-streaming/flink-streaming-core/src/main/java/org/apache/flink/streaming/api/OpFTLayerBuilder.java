@@ -17,14 +17,6 @@
 
 package org.apache.flink.streaming.api;
 
-import static org.apache.flink.streaming.partitioner.StreamPartitioner.PartitioningStrategy;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.runtime.jobgraph.AbstractJobVertex;
 import org.apache.flink.runtime.jobgraph.DistributionPattern;
@@ -34,6 +26,14 @@ import org.apache.flink.streaming.api.ft.layer.runtime.FTLayerConfig;
 import org.apache.flink.streaming.api.ft.layer.runtime.FTLayerVertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import static org.apache.flink.streaming.partitioner.StreamPartitioner.PartitioningStrategy;
 
 public class OpFTLayerBuilder implements FTLayerBuilder {
 	private static final Logger LOG = LoggerFactory.getLogger(OpFTLayerBuilder.class);
@@ -108,28 +108,69 @@ public class OpFTLayerBuilder implements FTLayerBuilder {
 	@Override
 	public void setSourceSuccessives() {
 
+		//T->P
 		ArrayList<ArrayList<Integer>> sourceSuccessives = new ArrayList<ArrayList<Integer>>();
 		Map<Integer, PartitioningStrategy> partitioningStrategies = new HashMap<Integer, PartitioningStrategy>();
 		Set<String> processingTaskVertices = ftLayerOutputs.keySet();
-		for (String upStreamVertexName : sourceVertices) {
+//		for (String upStreamVertexName : sourceVertices) {
+//			List<String> outputs = streamGraph.getOutEdges(upStreamVertexName);
+//			ArrayList<Integer> list = new ArrayList<Integer>();
+//
+//			sourceSuccessives.add(list);
+//
+//			for (String downStreamVertexName : outputs) {
+//				if (processingTaskVertices.contains(downStreamVertexName)) {
+//					list.add(ftLayerOutputs.get(downStreamVertexName));
+//
+//					partitioningStrategies.put(ftLayerOutputs.get(downStreamVertexName), streamGraph.getOutPartitioner(upStreamVertexName, downStreamVertexName)
+//							.getStrategy());
+//				}
+//			}
+//
+//		}
+
+		//Map<Integer, PartitioningStrategy> helyett legyen Map<Integer, Map<Integer, PartitioningStrategy>>
+		//(S->T)->P kéne, de ehelyett ez nem S->(T->P)??? 2. jó
+		Map<Integer, Map<Integer, PartitioningStrategy>> pStrategies = new HashMap<Integer, Map<Integer, PartitioningStrategy>>();
+
+		for (String upStreamVertexName : sourceVertices){
 			List<String> outputs = streamGraph.getOutEdges(upStreamVertexName);
 			ArrayList<Integer> list = new ArrayList<Integer>();
 
 			sourceSuccessives.add(list);
 
-			for (String downStreamVertexName : outputs) {
+			List<String> vertexNames = new ArrayList<String>();
+			vertexNames.add(upStreamVertexName);
+			Map<Integer, PartitioningStrategy> strategiesOfTasks = new HashMap<Integer, PartitioningStrategy>();
+
+			for(String downStreamVertexName : outputs) {
 				if (processingTaskVertices.contains(downStreamVertexName)) {
 					list.add(ftLayerOutputs.get(downStreamVertexName));
 
-					partitioningStrategies.put(ftLayerOutputs.get(downStreamVertexName), streamGraph.getOutPartitioner(upStreamVertexName, downStreamVertexName)
+					strategiesOfTasks.put(ftLayerOutputs.get(downStreamVertexName), streamGraph.getOutPartitioner(upStreamVertexName, downStreamVertexName)
 							.getStrategy());
 				}
 			}
+
+			//S (upStreamVertexName) sorszáma kell még, de a (T->P) már megvan (strategiesOfTask)
+			pStrategies.put(vertexNames.indexOf(upStreamVertexName), strategiesOfTasks);
 		}
+
+
+//		for (int i = 0; i < sourceVertices.size(); i++) {
+//			Map<Integer, PartitioningStrategy> strategiesOfTasks = new HashMap<Integer, PartitioningStrategy>();
+//			for (int j = 0; j < sourceSuccessives.get(i).size(); j++) {
+//				strategiesOfTasks.put(j, partitioningStrategies.get(j));//átszámozom, másik lenne, hogy foreach-ezek, akkor az eredeti számozás maradna
+//			}
+//			pStrategies.put(i, strategiesOfTasks);
+//		}
+
+
 		FTLayerConfig ftLayerConfig = new FTLayerConfig(ftLayerVertex.getConfiguration());
 		ftLayerConfig.setNumberOfOutputs(processingTaskVertices.size());
 		ftLayerConfig.setSourceSuccessives(sourceSuccessives);
-		ftLayerConfig.setPartitioningStrategies(partitioningStrategies);
+//		ftLayerConfig.setPartitioningStrategies(partitioningStrategies);
+		ftLayerConfig.setPartitioningStrategies(pStrategies);
 	}
 
 	@Override
