@@ -18,6 +18,7 @@
 package org.apache.flink.streaming.api.ft.layer.runtime;
 
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.streaming.api.ft.layer.util.FTEdgeInformation;
 import org.apache.flink.util.InstantiationUtil;
 
 import java.io.IOException;
@@ -34,6 +35,7 @@ public class FTLayerConfig {
 	private static final String SOURCE_SUCCESSIVES = "source successives";
 	private static final String NUMBER_OF_SOURCES = "number of sources";
 	private static final String PARTITIONING_STRATEGIES = "partitioning strategies";
+	private static final String EDGE_INFORMATIONS = "edge informations";
 
 	private Configuration config;
 
@@ -91,7 +93,7 @@ public class FTLayerConfig {
 
 	//gergo
 	@SuppressWarnings("unchecked")
-	public List< Map <Integer, PartitioningStrategy>> getPartitioningStrategies() {
+	public List<Map<Integer, PartitioningStrategy>> getPartitioningStrategies() {
 		try {
 			return (List<Map<Integer, PartitioningStrategy>>) InstantiationUtil.deserializeObject(config.getBytes(
 					PARTITIONING_STRATEGIES, new byte[0]), Thread.currentThread()
@@ -105,6 +107,26 @@ public class FTLayerConfig {
 	public void setPartitioningStrategies(List<Map<Integer, PartitioningStrategy>> partitioningStrategies) {
 		try {
 			InstantiationUtil.writeObjectToConfig(partitioningStrategies, config, PARTITIONING_STRATEGIES);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	public List<FTEdgeInformation> getEdgeInformations() {
+
+		try {
+			return (List<FTEdgeInformation>) InstantiationUtil.deserializeObject(
+					config.getBytes(EDGE_INFORMATIONS, new byte[0]), Thread.currentThread().getContextClassLoader()
+			);
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	public void setEdgeInformations(List<FTEdgeInformation> edgeInformations) {
+		try {
+			InstantiationUtil.writeObjectToConfig(edgeInformations, config, EDGE_INFORMATIONS);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}

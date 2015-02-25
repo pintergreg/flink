@@ -17,16 +17,6 @@
 
 package org.apache.flink.streaming.api;
 
-import static org.apache.flink.streaming.api.FTLayerBuilder.FTStatus;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.Configuration;
@@ -44,6 +34,16 @@ import org.apache.flink.streaming.partitioner.StreamPartitioner;
 import org.apache.flink.streaming.partitioner.StreamPartitioner.PartitioningStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import static org.apache.flink.streaming.api.FTLayerBuilder.FTStatus;
 
 public class StreamingJobGraphGenerator {
 
@@ -265,6 +265,10 @@ public class StreamingJobGraphGenerator {
 		} else {
 			downStreamVertex.connectNewDataSetAsInput(headVertex, DistributionPattern.ALL_TO_ALL);
 		}
+
+
+		//kellene ide egy feltétel, hogy ha upstream source és a downstream task csak akkor tegye meg?
+		ftBuilder.addEdgeInformation(upStreamVertexName, downStreamVertexName, partitioner.getStrategy());
 
 		if (LOG.isDebugEnabled()) {
 			LOG.debug("CONNECTED: {} - {} -> {}", partitioner.getClass().getSimpleName(),

@@ -18,6 +18,7 @@
 package org.apache.flink.streaming.api;
 
 import org.apache.flink.runtime.jobgraph.JobGraph;
+import org.apache.flink.streaming.partitioner.StreamPartitioner;
 
 public class NOpFTLayerBuilder implements FTLayerBuilder {
 
@@ -43,4 +44,10 @@ public class NOpFTLayerBuilder implements FTLayerBuilder {
 	public FTStatus getStatus() {
 		return FTStatus.OFF;
 	}
+
+	@Override
+	public void addEdgeInformation(String sourceName, String taskName, StreamPartitioner.PartitioningStrategy partitionStrategy) {
+	}
+
+
 }

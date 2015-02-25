@@ -17,9 +17,10 @@
 
 package org.apache.flink.streaming.api;
 
-import java.io.Serializable;
-
 import org.apache.flink.runtime.jobgraph.JobGraph;
+import org.apache.flink.streaming.partitioner.StreamPartitioner;
+
+import java.io.Serializable;
 
 public interface FTLayerBuilder {
 
@@ -36,4 +37,6 @@ public interface FTLayerBuilder {
 	public void setSourceSuccessives();
 
 	public FTStatus getStatus();
+
+	public void addEdgeInformation(String sourceName, String taskName, StreamPartitioner.PartitioningStrategy partitionStrategy);
 }

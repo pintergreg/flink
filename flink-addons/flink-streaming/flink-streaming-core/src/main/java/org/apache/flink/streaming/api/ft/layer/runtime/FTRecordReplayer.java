@@ -18,14 +18,25 @@
 package org.apache.flink.streaming.api.ft.layer.runtime;
 
 import org.apache.flink.streaming.api.ft.layer.RecordReplayer;
-import org.apache.flink.streaming.api.ft.layer.collector.FailedRecordCollector;
 import org.apache.flink.streaming.api.ft.layer.serialization.SemiDeserializedStreamRecord;
+import org.apache.flink.streaming.api.ft.layer.util.SourceReplayer;
 
 public class FTRecordReplayer implements RecordReplayer {
 
-	private FailedRecordCollector[] failedRecordCollectors;
+//	private FailedRecordCollector[] failedRecordCollectors;
+//
+//	public FTRecordReplayer(FailedRecordCollector[] failedRecordCollectors) {
+//		this.failedRecordCollectors = failedRecordCollectors;
+//	}
+//
+//	@Override
+//	public void replayRecord(int sourceId, SemiDeserializedStreamRecord sourceRecord) {
+//		failedRecordCollectors[sourceId].collect(sourceRecord);
+//	}
 
-	public FTRecordReplayer(FailedRecordCollector[] failedRecordCollectors) {
+	private SourceReplayer[] failedRecordCollectors;
+
+	public FTRecordReplayer(SourceReplayer[] failedRecordCollectors) {
 		this.failedRecordCollectors = failedRecordCollectors;
 	}
 

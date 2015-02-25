@@ -24,6 +24,8 @@ import org.apache.flink.runtime.jobgraph.JobGraph;
 import org.apache.flink.runtime.jobgraph.tasks.AbstractInvokable;
 import org.apache.flink.streaming.api.ft.layer.runtime.FTLayerConfig;
 import org.apache.flink.streaming.api.ft.layer.runtime.FTLayerVertex;
+import org.apache.flink.streaming.api.ft.layer.util.FTEdgeInformation;
+import org.apache.flink.streaming.partitioner.StreamPartitioner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,12 +47,20 @@ public class OpFTLayerBuilder implements FTLayerBuilder {
 	protected Set<String> sourceVertices;
 
 	private HashMap<String, Integer> ftLayerOutputs;
+	private HashMap<String, Integer> ftLayerInputs;
+
+	private List<FTEdgeInformation> ftLayerEdgeInformations;
+	//TODO remove this
+	//Map<Integer, Integer> taskEdges=new HashMap<Integer, Integer>();
 
 	public OpFTLayerBuilder(StreamingJobGraphGenerator jobGraphGenerator) {
 		this.streamGraph = jobGraphGenerator.getStreamGraph();
 		this.streamVertices = jobGraphGenerator.getStreamVertices();
 		this.sourceVertices = jobGraphGenerator.getSourceVertices();
 		this.ftLayerOutputs = new HashMap<String, Integer>();
+
+		this.ftLayerInputs = new HashMap<String, Integer>();
+		this.ftLayerEdgeInformations = new ArrayList<FTEdgeInformation>();
 	}
 
 	@Override
@@ -78,6 +88,10 @@ public class OpFTLayerBuilder implements FTLayerBuilder {
 	public void connectWithFTLayer(String vertexName) {
 		if (sourceVertices.contains(vertexName)) {
 			setFTLayerInput(vertexName);
+			//sajat
+			ftLayerInputs.put(vertexName, ftLayerInputs.size());
+			//TODO
+			System.out.println("...");
 		} else {
 			setFTLayerOutput(vertexName);
 			ftLayerOutputs.put(vertexName, ftLayerOutputs.size());
@@ -88,6 +102,9 @@ public class OpFTLayerBuilder implements FTLayerBuilder {
 		AbstractJobVertex upStreamVertex = ftLayerVertex;
 		AbstractJobVertex downStreamVertex = streamVertices.get(vertexName);
 		downStreamVertex.connectNewDataSetAsInput(upStreamVertex, DistributionPattern.ALL_TO_ALL);
+		//TODO delete this line:
+		//taskEdges.put(ftLayerOutputs.get(vertexName),taskEdges.size());
+
 		if (LOG.isDebugEnabled()) {
 			LOG.debug("CONNECTED FTLayer to: {}", vertexName);
 		}
@@ -96,6 +113,7 @@ public class OpFTLayerBuilder implements FTLayerBuilder {
 	private void setFTLayerInput(String vertexName) {
 		AbstractJobVertex upStreamVertex = streamVertices.get(vertexName);
 		AbstractJobVertex downStreamVertex = ftLayerVertex;
+
 		downStreamVertex.connectNewDataSetAsInput(upStreamVertex, DistributionPattern.ALL_TO_ALL);
 		StreamConfig upStreamConfig = new StreamConfig(upStreamVertex.getConfiguration());
 		KeySelector<?, ?> keySelector = streamGraph.getKeySelector(vertexName);
@@ -133,7 +151,7 @@ public class OpFTLayerBuilder implements FTLayerBuilder {
 		//(S->T)->P kéne, de ehelyett ez nem S->(T->P)??? 2. jó
 		List<Map<Integer, PartitioningStrategy>> pStrategies = new ArrayList<Map<Integer, PartitioningStrategy>>();
 
-		for (String upStreamVertexName : sourceVertices){
+		for (String upStreamVertexName : sourceVertices) {
 			List<String> outputs = streamGraph.getOutEdges(upStreamVertexName);
 			ArrayList<Integer> list = new ArrayList<Integer>();
 
@@ -143,7 +161,7 @@ public class OpFTLayerBuilder implements FTLayerBuilder {
 			//vertexNames.add(upStreamVertexName);
 			Map<Integer, PartitioningStrategy> strategiesOfTasks = new HashMap<Integer, PartitioningStrategy>();
 
-			for(String downStreamVertexName : outputs) {
+			for (String downStreamVertexName : outputs) {
 				if (processingTaskVertices.contains(downStreamVertexName)) {
 					list.add(ftLayerOutputs.get(downStreamVertexName));
 
@@ -156,26 +174,39 @@ public class OpFTLayerBuilder implements FTLayerBuilder {
 			pStrategies.add(strategiesOfTasks);
 		}
 
-
-//		for (int i = 0; i < sourceVertices.size(); i++) {
-//			Map<Integer, PartitioningStrategy> strategiesOfTasks = new HashMap<Integer, PartitioningStrategy>();
-//			for (int j = 0; j < sourceSuccessives.get(i).size(); j++) {
-//				strategiesOfTasks.put(j, partitioningStrategies.get(j));//átszámozom, másik lenne, hogy foreach-ezek, akkor az eredeti számozás maradna
-//			}
-//			pStrategies.put(i, strategiesOfTasks);
-//		}
-
-
 		FTLayerConfig ftLayerConfig = new FTLayerConfig(ftLayerVertex.getConfiguration());
 		ftLayerConfig.setNumberOfOutputs(processingTaskVertices.size());
 		ftLayerConfig.setSourceSuccessives(sourceSuccessives);
 //		ftLayerConfig.setPartitioningStrategies(partitioningStrategies);
 		ftLayerConfig.setPartitioningStrategies(pStrategies);
+
+		//edge information
+		ftLayerConfig.setEdgeInformations(ftLayerEdgeInformations);
 	}
 
 	@Override
 	public FTStatus getStatus() {
 		return FTStatus.ON;
+	}
+
+	@Override
+	public void addEdgeInformation(String sourceName, String taskName, StreamPartitioner.PartitioningStrategy partitionStrategy) {
+
+
+		//System.out.println(sourceName+"->"+taskName);
+		//if (sourceVertices.contains(sourceName) && !sourceVertices.contains(taskName) ){
+			//LOG.debug(sourceName+"-->"+taskName);
+			System.out.println(sourceName+"->"+taskName);
+			System.out.println(ftLayerInputs.size());
+
+
+			ftLayerEdgeInformations.add(new FTEdgeInformation(
+							ftLayerInputs.get(sourceName),
+							ftLayerOutputs.get(taskName),
+							streamGraph.getOutPartitioner(sourceName, taskName).getStrategy())
+			);
+
+		//}
 	}
 
 	@SuppressWarnings("unused")
