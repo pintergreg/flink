@@ -48,9 +48,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-
-import static org.apache.flink.streaming.partitioner.StreamPartitioner.PartitioningStrategy;
 
 public class FTLayerVertex extends AbstractInvokable {
 	private static final Logger LOG = LoggerFactory.getLogger(FTLayerVertex.class);
@@ -118,123 +115,64 @@ public class FTLayerVertex extends AbstractInvokable {
 
 	private void registerOutputs() {
 
-		ArrayList<ArrayList<Integer>> sourceSuccessives = config.getSourceSuccessives();
-		//T->P
-//		Map<Integer, PartitioningStrategy> partitioningStrategies = config.getPartitioningStrategies();
-		//S->(T->P) Listként
-		List<Map<Integer, PartitioningStrategy>> partitioningStrategies = config.getPartitioningStrategies();
-
-		//ebben van egy sourceID, egy taskID és egy PartitionStrategy
+		//This list stores information (sourceID, taskID and Partition Strategy)
+		//about only every "Source to Task" edges
 		List<FTEdgeInformation> edgeInformations = config.getEdgeInformations();
-
+		SourceReplayer[] srcReplayers = new SourceReplayer[numberOfSources];
 
 		streamOutputs = new ArrayList<RecordWriter<SerializationDelegate<SemiDeserializedStreamRecord>>>(numberOfOutputs);
 
-		//Ebben vannak az FT->Task élek, abban a sorrendben, ahogy létrejöttek, azzal az ID-vel, ahogy az edgeinfoben is
+		//stores FTL to source successive tasks edges in the order of creation,
+		// identified by the same ID that is stored in the edgeInformations
 		this.outputs = getEnvironment().getAllWriters();
-		//BW+PS=>RW
-
-		//			List<SourceReplayer> srcReplayersList = new ArrayList<SourceReplayer>();
-		SourceReplayer[] srcReplayers = new SourceReplayer[numberOfSources];
 
 		try {
 			inputOutputSerializer = new AsStreamRecordSerializer();
 
-			SerializationDelegate<SemiDeserializedStreamRecord> outSerializationDelegate = new SerializationDelegate<SemiDeserializedStreamRecord>(
-					inputOutputSerializer);
+			SerializationDelegate<SemiDeserializedStreamRecord> outSerializationDelegate =
+					new SerializationDelegate<SemiDeserializedStreamRecord>(inputOutputSerializer);
 			outSerializationDelegate.setInstance(inputOutputSerializer.createInstance());
 
 			bufferTimeout = config.getBufferTimeout();
 
-
-
-			//az éleket kell bejárni...
+			//iterate over source to task edges and create Record Writers about the information and
+			//stores them according to ths source IDs. To create a RecordWriter a BufferWriter and a
+			//PartitionStrategy is needed.
 			for (FTEdgeInformation edgeInfo : edgeInformations) {
-				//SourceReplayer srcRep = new SourceReplayer(edgeInfo.getSourceID(), inputOutputSerializer, ftLayer);
+				//TODO remove this nasty debugging
+				System.out.println("FROM::" + edgeInfo.getSourceID() + ", TO::" + edgeInfo + ", WITH A '" +
+						edgeInfo.getPartitioningStrategy().name() + "' STRATEGY");
+
+				//if there is no SourceReplayer for the given source create one (otherwise just add a RecordWriter)
 				if (srcReplayers[edgeInfo.getSourceID()] == null) {
 					srcReplayers[edgeInfo.getSourceID()] = new SourceReplayer(edgeInfo.getSourceID(), inputOutputSerializer, ftLayer);
 				}
 				ReplayPartitioner outputPartitioner = ReplayPartitionerFactory.getReplayPartitioner(edgeInfo.getPartitioningStrategy());
 
 				if (bufferTimeout >= 0) {
-					srcReplayers[edgeInfo.getSourceID()].addRecordWriter(new StreamRecordWriter<SerializationDelegate
-								<SemiDeserializedStreamRecord>>(getEnvironment().getWriter(edgeInfo.getTaskID()), outputPartitioner,
-								bufferTimeout)
+					srcReplayers[edgeInfo.getSourceID()].addRecordWriter(
+							new StreamRecordWriter<SerializationDelegate
+									<SemiDeserializedStreamRecord>>(getEnvironment().getWriter(edgeInfo.getTaskID()),
+									outputPartitioner, bufferTimeout)
 					);
-				}else{
-					srcReplayers[edgeInfo.getSourceID()].addRecordWriter(new RecordWriter<SerializationDelegate<SemiDeserializedStreamRecord>>(
+				} else {
+					srcReplayers[edgeInfo.getSourceID()].addRecordWriter(
+							new RecordWriter<SerializationDelegate<SemiDeserializedStreamRecord>>(
 									getEnvironment().getWriter(edgeInfo.getTaskID()), outputPartitioner)
 					);
 				}
 
-
-				//srl.add(srcReplayers[edgeInfo.getSourceID()]);//ezt mitől fogadta el??? ez hülyeség.
 			}
 
-
-//				for (int outputNumber = 0; outputNumber < numberOfOutputs; outputNumber++) {
-//
-//					ReplayPartitioner outputPartitioner = ReplayPartitionerFactory.getReplayPartitioner(edgeInformations.get(outputNumber).getPartitioningStrategy());
-//
-//					//ReplayPartitioner outputPartitioner = ReplayPartitionerFactory.getReplayPartitioner(partitioningStrategies.get(sourceNumber).get(outputNumber));
-//					////ReplayPartitioner outputPartitioner = ReplayPartitionerFactory.getReplayPartitioner(partitioningStrategies.get(outputNumber));
-//
-//					RecordWriter<SerializationDelegate<SemiDeserializedStreamRecord>> output;
-//					if (bufferTimeout >= 0) {
-//
-//						output = new StreamRecordWriter<SerializationDelegate
-//								<SemiDeserializedStreamRecord>>(getEnvironment().getWriter(outputNumber), outputPartitioner,
-//								bufferTimeout);
-//
-//						if (LOG.isTraceEnabled()) {
-//							LOG.trace("StreamRecordWriter initiated with {} bufferTimeout for {}",
-//									bufferTimeout, getClass().getSimpleName());
-//						}
-//					} else {
-//						output = new RecordWriter<SerializationDelegate<SemiDeserializedStreamRecord>>(
-//								getEnvironment().getWriter(outputNumber), outputPartitioner);
-//
-//						if (LOG.isTraceEnabled()) {
-//							LOG.trace("RecordWriter initiated for {}", getClass().getSimpleName());
-//						}
-//					}
-//					streamOutputs.add(output);
-//
-//					if (LOG.isTraceEnabled()) {
-//						LOG.trace("Partitioner set: {} with {} outputs for {}", outputPartitioner
-//								.getClass().getSimpleName(), outputNumber, this.getClass()
-//								.getSimpleName());
-//					}
-//				}
 		} catch (StreamVertexException e) {
 			throw new StreamVertexException("Cannot register outputs for "
 					+ this.getClass().getSimpleName(), e);
 		}
 
-//		failedRecordCollectors = new FailedRecordCollector[numberOfSources];
-//		for (int sourceNumber = 0; sourceNumber < numberOfSources; sourceNumber++) {
-//			failedRecordCollectors[sourceNumber] = new FailedRecordCollector(getSourceSuccessives(
-//					sourceNumber, sourceSuccessives), inputOutputSerializer, ftLayer);
-//		}
-		//TODO
-		//recordReplayer = new FTRecordReplayer(failedRecordCollectors);
-		recordReplayer = new FTRecordReplayer( srcReplayers);
+		recordReplayer = new FTRecordReplayer(srcReplayers);
 		ftLayer.setRecordReplayer(recordReplayer);
 	}
 
-//
-//	private List<RecordWriter<SerializationDelegate<SemiDeserializedStreamRecord>>> getSourceSuccessives(
-//			int sourceIndex, ArrayList<ArrayList<Integer>> sourceSuccessives) {
-//
-//		ArrayList<RecordWriter<SerializationDelegate<SemiDeserializedStreamRecord>>> sourceSuccessive = new ArrayList<RecordWriter<SerializationDelegate<SemiDeserializedStreamRecord>>>(
-//				sourceSuccessives.get(sourceIndex).size());
-//
-//		for (int i = 0; i < sourceSuccessives.get(sourceIndex).size(); i++) {
-//			sourceSuccessive.add(streamOutputs.get(sourceSuccessives.get(sourceIndex).get(i)));
-//		}
-//
-//		return sourceSuccessive;
-//	}
 
 	private void flushOutputs() throws IOException, InterruptedException {
 		if (LOG.isTraceEnabled()) {

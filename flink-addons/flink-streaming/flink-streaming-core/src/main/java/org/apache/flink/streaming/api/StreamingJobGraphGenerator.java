@@ -266,9 +266,9 @@ public class StreamingJobGraphGenerator {
 			downStreamVertex.connectNewDataSetAsInput(headVertex, DistributionPattern.ALL_TO_ALL);
 		}
 
-
-		//kellene ide egy feltétel, hogy ha upstream source és a downstream task csak akkor tegye meg?
+		//Add information about edges to ftBuilder for replaying purpose
 		ftBuilder.addEdgeInformation(upStreamVertexName, downStreamVertexName, partitioner.getStrategy());
+
 
 		if (LOG.isDebugEnabled()) {
 			LOG.debug("CONNECTED: {} - {} -> {}", partitioner.getClass().getSimpleName(),

@@ -17,11 +17,11 @@
 
 package org.apache.flink.streaming.partitioner;
 
-import java.io.Serializable;
-
 import org.apache.flink.runtime.io.network.api.writer.ChannelSelector;
 import org.apache.flink.runtime.plugable.SerializationDelegate;
 import org.apache.flink.streaming.api.streamrecord.StreamRecord;
+
+import java.io.Serializable;
 
 public abstract class StreamPartitioner<T> implements
 		ChannelSelector<SerializationDelegate<StreamRecord<T>>>, Serializable {

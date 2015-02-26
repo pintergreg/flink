@@ -19,7 +19,10 @@ package org.apache.flink.streaming.api.ft.layer.util;
 
 import org.apache.flink.streaming.partitioner.StreamPartitioner.PartitioningStrategy;
 
-public class FTEdgeInformation {
+import java.io.Serializable;
+
+public class FTEdgeInformation implements Serializable{
+	private static final long serialVersionUID = 1L;
 
 	private int sourceID;
 	private int taskID;

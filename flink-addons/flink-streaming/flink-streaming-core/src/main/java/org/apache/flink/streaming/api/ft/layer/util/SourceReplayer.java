@@ -45,7 +45,7 @@ public class SourceReplayer implements Collector<SemiDeserializedStreamRecord> {
 
 	public SourceReplayer(int sourceID,
 			TypeSerializer<SemiDeserializedStreamRecord> typeSerializer, FTLayer ftLayer) {
-		this.sourceID=sourceID;
+		this.sourceID = sourceID;
 		this.outputs = new ArrayList<RecordWriter<SerializationDelegate<SemiDeserializedStreamRecord>>>();
 		this.serializationDelegate = new SerializationDelegate<SemiDeserializedStreamRecord>(
 				typeSerializer);
@@ -89,12 +89,11 @@ public class SourceReplayer implements Collector<SemiDeserializedStreamRecord> {
 	public void close() {
 	}
 
-
-	public void addRecordWriter(RecordWriter<SerializationDelegate<SemiDeserializedStreamRecord>> output){
+	public void addRecordWriter(RecordWriter<SerializationDelegate<SemiDeserializedStreamRecord>> output) {
 		this.outputs.add(output);
 	}
 
-	public int getSourceID(){
+	public int getSourceID() {
 		return this.sourceID;
 	}
 }

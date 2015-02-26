@@ -35,8 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.apache.flink.streaming.partitioner.StreamPartitioner.PartitioningStrategy;
-
 public class OpFTLayerBuilder implements FTLayerBuilder {
 	private static final Logger LOG = LoggerFactory.getLogger(OpFTLayerBuilder.class);
 
@@ -46,12 +44,12 @@ public class OpFTLayerBuilder implements FTLayerBuilder {
 	private Map<String, AbstractJobVertex> streamVertices;
 	protected Set<String> sourceVertices;
 
+	//used for indexing inputs and outputs
 	private HashMap<String, Integer> ftLayerOutputs;
 	private HashMap<String, Integer> ftLayerInputs;
 
+	//stores edge informations
 	private List<FTEdgeInformation> ftLayerEdgeInformations;
-	//TODO remove this
-	//Map<Integer, Integer> taskEdges=new HashMap<Integer, Integer>();
 
 	public OpFTLayerBuilder(StreamingJobGraphGenerator jobGraphGenerator) {
 		this.streamGraph = jobGraphGenerator.getStreamGraph();
@@ -88,10 +86,7 @@ public class OpFTLayerBuilder implements FTLayerBuilder {
 	public void connectWithFTLayer(String vertexName) {
 		if (sourceVertices.contains(vertexName)) {
 			setFTLayerInput(vertexName);
-			//sajat
 			ftLayerInputs.put(vertexName, ftLayerInputs.size());
-			//TODO
-			System.out.println("...");
 		} else {
 			setFTLayerOutput(vertexName);
 			ftLayerOutputs.put(vertexName, ftLayerOutputs.size());
@@ -102,8 +97,6 @@ public class OpFTLayerBuilder implements FTLayerBuilder {
 		AbstractJobVertex upStreamVertex = ftLayerVertex;
 		AbstractJobVertex downStreamVertex = streamVertices.get(vertexName);
 		downStreamVertex.connectNewDataSetAsInput(upStreamVertex, DistributionPattern.ALL_TO_ALL);
-		//TODO delete this line:
-		//taskEdges.put(ftLayerOutputs.get(vertexName),taskEdges.size());
 
 		if (LOG.isDebugEnabled()) {
 			LOG.debug("CONNECTED FTLayer to: {}", vertexName);
@@ -127,8 +120,8 @@ public class OpFTLayerBuilder implements FTLayerBuilder {
 	public void setSourceSuccessives() {
 
 		//T->P
-		ArrayList<ArrayList<Integer>> sourceSuccessives = new ArrayList<ArrayList<Integer>>();
-		Map<Integer, PartitioningStrategy> partitioningStrategies = new HashMap<Integer, PartitioningStrategy>();
+		//ArrayList<ArrayList<Integer>> sourceSuccessives = new ArrayList<ArrayList<Integer>>();
+		//Map<Integer, PartitioningStrategy> partitioningStrategies = new HashMap<Integer, PartitioningStrategy>();
 		Set<String> processingTaskVertices = ftLayerOutputs.keySet();
 //		for (String upStreamVertexName : sourceVertices) {
 //			List<String> outputs = streamGraph.getOutEdges(upStreamVertexName);
@@ -147,40 +140,40 @@ public class OpFTLayerBuilder implements FTLayerBuilder {
 //
 //		}
 
-		//Map<Integer, PartitioningStrategy> helyett legyen Map<Integer, Map<Integer, PartitioningStrategy>>
-		//(S->T)->P kéne, de ehelyett ez nem S->(T->P)??? 2. jó
-		List<Map<Integer, PartitioningStrategy>> pStrategies = new ArrayList<Map<Integer, PartitioningStrategy>>();
-
-		for (String upStreamVertexName : sourceVertices) {
-			List<String> outputs = streamGraph.getOutEdges(upStreamVertexName);
-			ArrayList<Integer> list = new ArrayList<Integer>();
-
-			sourceSuccessives.add(list);
-
-			//List<String> vertexNames = new ArrayList<String>();
-			//vertexNames.add(upStreamVertexName);
-			Map<Integer, PartitioningStrategy> strategiesOfTasks = new HashMap<Integer, PartitioningStrategy>();
-
-			for (String downStreamVertexName : outputs) {
-				if (processingTaskVertices.contains(downStreamVertexName)) {
-					list.add(ftLayerOutputs.get(downStreamVertexName));
-
-					strategiesOfTasks.put(ftLayerOutputs.get(downStreamVertexName), streamGraph.getOutPartitioner(upStreamVertexName, downStreamVertexName)
-							.getStrategy());
-				}
-			}
-
-			//S (upStreamVertexName) sorszáma kell még, de a (T->P) már megvan (strategiesOfTask)
-			pStrategies.add(strategiesOfTasks);
-		}
+//		//Map<Integer, PartitioningStrategy> helyett legyen Map<Integer, Map<Integer, PartitioningStrategy>>
+//		//(S->T)->P kéne, de ehelyett ez nem S->(T->P)??? 2. jó
+//		List<Map<Integer, PartitioningStrategy>> pStrategies = new ArrayList<Map<Integer, PartitioningStrategy>>();
+//
+//		for (String upStreamVertexName : sourceVertices) {
+//			List<String> outputs = streamGraph.getOutEdges(upStreamVertexName);
+//			ArrayList<Integer> list = new ArrayList<Integer>();
+//
+//			sourceSuccessives.add(list);
+//
+//			//List<String> vertexNames = new ArrayList<String>();
+//			//vertexNames.add(upStreamVertexName);
+//			Map<Integer, PartitioningStrategy> strategiesOfTasks = new HashMap<Integer, PartitioningStrategy>();
+//
+//			for (String downStreamVertexName : outputs) {
+//				if (processingTaskVertices.contains(downStreamVertexName)) {
+//					list.add(ftLayerOutputs.get(downStreamVertexName));
+//
+//					strategiesOfTasks.put(ftLayerOutputs.get(downStreamVertexName), streamGraph.getOutPartitioner(upStreamVertexName, downStreamVertexName)
+//							.getStrategy());
+//				}
+//			}
+//
+//			//S (upStreamVertexName) sorszáma kell még, de a (T->P) már megvan (strategiesOfTask)
+//			pStrategies.add(strategiesOfTasks);
+//		}
 
 		FTLayerConfig ftLayerConfig = new FTLayerConfig(ftLayerVertex.getConfiguration());
 		ftLayerConfig.setNumberOfOutputs(processingTaskVertices.size());
-		ftLayerConfig.setSourceSuccessives(sourceSuccessives);
+//		ftLayerConfig.setSourceSuccessives(sourceSuccessives);
 //		ftLayerConfig.setPartitioningStrategies(partitioningStrategies);
-		ftLayerConfig.setPartitioningStrategies(pStrategies);
+//		ftLayerConfig.setPartitioningStrategies(pStrategies);
 
-		//edge information
+		//stores edge information in the config
 		ftLayerConfig.setEdgeInformations(ftLayerEdgeInformations);
 	}
 
@@ -189,24 +182,29 @@ public class OpFTLayerBuilder implements FTLayerBuilder {
 		return FTStatus.ON;
 	}
 
+	/**
+	 * Adds information (sourceID, taskID and Partition Strategy) only about "Source to Task" edges.
+	 * This information is used to set the RecordWriters with the correct Partition Strategy from
+	 * the Fault Tolerance Layer to the source successive tasks. Gets three parameters:
+	 *
+	 * @param sourceName
+	 * 		- mapped to an lower level index, and that is stored
+	 * @param taskName
+	 * 		- mapped to an lower level index, and that is stored
+	 * @param partitionStrategy
+	 * 		- Partition Strategy between the source and the successive task.
+	 */
 	@Override
 	public void addEdgeInformation(String sourceName, String taskName, StreamPartitioner.PartitioningStrategy partitionStrategy) {
-
-
-		//System.out.println(sourceName+"->"+taskName);
-		//if (sourceVertices.contains(sourceName) && !sourceVertices.contains(taskName) ){
-			//LOG.debug(sourceName+"-->"+taskName);
-			System.out.println(sourceName+"->"+taskName);
-			System.out.println(ftLayerInputs.size());
-
-
+		System.out.println(sourceName + "->" + taskName + ", ps:" + partitionStrategy.name());
+		if (ftLayerInputs.containsKey(sourceName) && ftLayerOutputs.containsKey(taskName)) {
+			System.out.println("EDGE_FROM_SOURCE::" + sourceName + "->" + taskName);
 			ftLayerEdgeInformations.add(new FTEdgeInformation(
 							ftLayerInputs.get(sourceName),
 							ftLayerOutputs.get(taskName),
 							streamGraph.getOutPartitioner(sourceName, taskName).getStrategy())
 			);
-
-		//}
+		}
 	}
 
 	@SuppressWarnings("unused")
