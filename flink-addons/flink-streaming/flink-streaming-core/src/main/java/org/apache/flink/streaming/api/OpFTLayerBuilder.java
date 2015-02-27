@@ -118,60 +118,11 @@ public class OpFTLayerBuilder implements FTLayerBuilder {
 
 	@Override
 	public void setSourceSuccessives() {
-
-		//T->P
-		//ArrayList<ArrayList<Integer>> sourceSuccessives = new ArrayList<ArrayList<Integer>>();
-		//Map<Integer, PartitioningStrategy> partitioningStrategies = new HashMap<Integer, PartitioningStrategy>();
+		//TODO ezt a metódust átnevezni vagy megszűntetni
 		Set<String> processingTaskVertices = ftLayerOutputs.keySet();
-//		for (String upStreamVertexName : sourceVertices) {
-//			List<String> outputs = streamGraph.getOutEdges(upStreamVertexName);
-//			ArrayList<Integer> list = new ArrayList<Integer>();
-//
-//			sourceSuccessives.add(list);
-//
-//			for (String downStreamVertexName : outputs) {
-//				if (processingTaskVertices.contains(downStreamVertexName)) {
-//					list.add(ftLayerOutputs.get(downStreamVertexName));
-//
-//					partitioningStrategies.put(ftLayerOutputs.get(downStreamVertexName), streamGraph.getOutPartitioner(upStreamVertexName, downStreamVertexName)
-//							.getStrategy());
-//				}
-//			}
-//
-//		}
-
-//		//Map<Integer, PartitioningStrategy> helyett legyen Map<Integer, Map<Integer, PartitioningStrategy>>
-//		//(S->T)->P kéne, de ehelyett ez nem S->(T->P)??? 2. jó
-//		List<Map<Integer, PartitioningStrategy>> pStrategies = new ArrayList<Map<Integer, PartitioningStrategy>>();
-//
-//		for (String upStreamVertexName : sourceVertices) {
-//			List<String> outputs = streamGraph.getOutEdges(upStreamVertexName);
-//			ArrayList<Integer> list = new ArrayList<Integer>();
-//
-//			sourceSuccessives.add(list);
-//
-//			//List<String> vertexNames = new ArrayList<String>();
-//			//vertexNames.add(upStreamVertexName);
-//			Map<Integer, PartitioningStrategy> strategiesOfTasks = new HashMap<Integer, PartitioningStrategy>();
-//
-//			for (String downStreamVertexName : outputs) {
-//				if (processingTaskVertices.contains(downStreamVertexName)) {
-//					list.add(ftLayerOutputs.get(downStreamVertexName));
-//
-//					strategiesOfTasks.put(ftLayerOutputs.get(downStreamVertexName), streamGraph.getOutPartitioner(upStreamVertexName, downStreamVertexName)
-//							.getStrategy());
-//				}
-//			}
-//
-//			//S (upStreamVertexName) sorszáma kell még, de a (T->P) már megvan (strategiesOfTask)
-//			pStrategies.add(strategiesOfTasks);
-//		}
 
 		FTLayerConfig ftLayerConfig = new FTLayerConfig(ftLayerVertex.getConfiguration());
 		ftLayerConfig.setNumberOfOutputs(processingTaskVertices.size());
-//		ftLayerConfig.setSourceSuccessives(sourceSuccessives);
-//		ftLayerConfig.setPartitioningStrategies(partitioningStrategies);
-//		ftLayerConfig.setPartitioningStrategies(pStrategies);
 
 		//stores edge information in the config
 		ftLayerConfig.setEdgeInformations(ftLayerEdgeInformations);

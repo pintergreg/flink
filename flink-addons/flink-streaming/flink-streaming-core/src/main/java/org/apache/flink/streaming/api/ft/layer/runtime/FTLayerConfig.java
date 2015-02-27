@@ -31,8 +31,6 @@ public class FTLayerConfig {
 	private static final String NUMBER_OF_OUTPUTS = "number of outputs";
 	private static final String SOURCE_SUCCESSIVES = "source successives";
 	private static final String NUMBER_OF_SOURCES = "number of sources";
-	//TODO to be removed
-	//private static final String PARTITIONING_STRATEGIES = "partitioning strategies";
 	private static final String EDGE_INFORMATIONS = "edge informations";
 
 	private Configuration config;
@@ -69,46 +67,6 @@ public class FTLayerConfig {
 			throw new RuntimeException(e);
 		}
 	}
-
-//	@SuppressWarnings("unchecked")
-//	public Map<Integer, PartitioningStrategy> getPartitioningStrategies() {
-//		try {
-//			return (Map<Integer, PartitioningStrategy>) InstantiationUtil.deserializeObject(config.getBytes(
-//					PARTITIONING_STRATEGIES, new byte[0]), Thread.currentThread()
-//					.getContextClassLoader());
-//		} catch (Exception e) {
-//			throw new RuntimeException(e);
-//		}
-//	}
-//
-//	public void setPartitioningStrategies(Map<Integer, PartitioningStrategy> partitioningStrategies) {
-//		try {
-//			InstantiationUtil.writeObjectToConfig(partitioningStrategies, config, PARTITIONING_STRATEGIES);
-//		} catch (IOException e) {
-//			throw new RuntimeException(e);
-//		}
-//	}
-//
-//	//gergo
-//	@SuppressWarnings("unchecked")
-//	public List<Map<Integer, PartitioningStrategy>> getPartitioningStrategies() {
-//		try {
-//			return (List<Map<Integer, PartitioningStrategy>>) InstantiationUtil.deserializeObject(config.getBytes(
-//					PARTITIONING_STRATEGIES, new byte[0]), Thread.currentThread()
-//					.getContextClassLoader());
-//		} catch (Exception e) {
-//			throw new RuntimeException(e);
-//		}
-//	}
-//
-//	//gergo
-//	public void setPartitioningStrategies(List<Map<Integer, PartitioningStrategy>> partitioningStrategies) {
-//		try {
-//			InstantiationUtil.writeObjectToConfig(partitioningStrategies, config, PARTITIONING_STRATEGIES);
-//		} catch (IOException e) {
-//			throw new RuntimeException(e);
-//		}
-//	}
 
 	/**
 	 * Deserializes the stored edge informations
