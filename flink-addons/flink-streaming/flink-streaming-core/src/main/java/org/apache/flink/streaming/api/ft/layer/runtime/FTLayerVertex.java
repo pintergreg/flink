@@ -140,7 +140,10 @@ public class FTLayerVertex extends AbstractInvokable {
 			//PartitionStrategy is needed.
 			for (FTEdgeInformation edgeInfo : edgeInformations) {
 				//TODO remove this nasty debugging
-				System.out.println("FROM::" + edgeInfo.getSourceID() + ", TO::" + edgeInfo + ", WITH A '" +
+				System.out.println("FROM::" + edgeInfo.getSourceID() + ", TO::" + edgeInfo.getTaskID() + ", WITH A '" +
+						edgeInfo.getPartitioningStrategy().name() + "' STRATEGY");
+
+				LOG.debug("EDGE_INFO", "FROM::" + edgeInfo.getSourceID() + ", TO::" + edgeInfo.getTaskID() + ", WITH A '" +
 						edgeInfo.getPartitioningStrategy().name() + "' STRATEGY");
 
 				//if there is no SourceReplayer for the given source create one (otherwise just add a RecordWriter)

@@ -23,22 +23,22 @@ import org.apache.flink.runtime.plugable.SerializationDelegate;
 import org.apache.flink.streaming.api.ft.layer.FTLayer;
 import org.apache.flink.streaming.api.ft.layer.id.RecordId;
 import org.apache.flink.streaming.api.ft.layer.serialization.SemiDeserializedStreamRecord;
-import org.apache.flink.streaming.partitioner.StreamPartitioner.PartitioningStrategy;
 import org.apache.flink.util.Collector;
 import org.apache.flink.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
+/**
+ * SourceReplayer collects RecordWriters on the basis of SourceID, and emits serialized records
+ */
 public class SourceReplayer implements Collector<SemiDeserializedStreamRecord> {
 
 	private static final Logger LOG = LoggerFactory.getLogger(SourceReplayer.class);
 
 	private int sourceID;
-	private HashMap<Integer, PartitioningStrategy> a;
 	private List<RecordWriter<SerializationDelegate<SemiDeserializedStreamRecord>>> outputs;
 	private SerializationDelegate<SemiDeserializedStreamRecord> serializationDelegate;
 	private FTLayer ftLayer;
@@ -89,6 +89,10 @@ public class SourceReplayer implements Collector<SemiDeserializedStreamRecord> {
 	public void close() {
 	}
 
+	/**
+	 * Adds a RecordWriter to the list of a RecordWriters of a source
+	 * @param output
+	 */
 	public void addRecordWriter(RecordWriter<SerializationDelegate<SemiDeserializedStreamRecord>> output) {
 		this.outputs.add(output);
 	}

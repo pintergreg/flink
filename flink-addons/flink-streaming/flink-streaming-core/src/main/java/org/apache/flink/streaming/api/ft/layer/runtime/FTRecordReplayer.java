@@ -23,14 +23,14 @@ import org.apache.flink.streaming.api.ft.layer.util.SourceReplayer;
 
 public class FTRecordReplayer implements RecordReplayer {
 
-	private SourceReplayer[] failedRecordCollectors;
+	private SourceReplayer[] sourceReplayers;
 
-	public FTRecordReplayer(SourceReplayer[] failedRecordCollectors) {
-		this.failedRecordCollectors = failedRecordCollectors;
+	public FTRecordReplayer(SourceReplayer[] sourceReplayers) {
+		this.sourceReplayers = sourceReplayers;
 	}
 
 	@Override
 	public void replayRecord(int sourceId, SemiDeserializedStreamRecord sourceRecord) {
-		failedRecordCollectors[sourceId].collect(sourceRecord);
+		sourceReplayers[sourceId].collect(sourceRecord);
 	}
 }

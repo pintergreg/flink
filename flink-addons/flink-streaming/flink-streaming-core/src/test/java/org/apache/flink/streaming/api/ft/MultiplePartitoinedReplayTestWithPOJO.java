@@ -55,7 +55,6 @@ public class MultiplePartitoinedReplayTestWithPOJO {
 
 
 
-
 		source1.shuffle().merge(source2.map(new crossPOJOMap())).map(new integerPOJOMap()).addSink(new SimpleSink());
 
 
