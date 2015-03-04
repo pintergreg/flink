@@ -41,14 +41,14 @@ public class MultiplePartitionTestWithKeySelector {
 		DataStream<Word> source1 = env.addSource(new TextSource()).setChainingStrategy(StreamInvokable.ChainingStrategy.NEVER);
 		DataStream<String> source2 = env.addSource(new RandomWordSource()).setChainingStrategy(StreamInvokable.ChainingStrategy.NEVER);
 
-//		// ez így jó -- sima wordcount
+//		// this would be a good old word count
 //		source1.groupBy(new WordKeySelector()).sum("count").print();
 
+		// this is more complex topology, with less sense
 		source1.filter(new WordFilter()).merge(source2.shuffle().filter(new StringFilter()).map(new StringToWordMap())).
 				groupBy(new WordKeySelector()).sum("count").addSink(new WordSink());
 
 		source1.groupBy(new WordKeySelector()).map(new WordToStringMap()).merge(source2.filter(new StringFilter())).addSink(new StringSink());
-
 
 		// execute program
 		env.execute("Streaming WordCount");
