@@ -34,6 +34,7 @@ public interface FTLayerBuilder {
 
 	void connectWithFTLayer(String vertexName);
 
+	//TODO rename it to setEdgeInformations
 	public void setSourceSuccessives();
 
 	public FTStatus getStatus();

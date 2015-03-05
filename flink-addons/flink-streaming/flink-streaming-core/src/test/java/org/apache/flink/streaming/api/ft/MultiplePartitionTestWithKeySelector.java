@@ -44,16 +44,22 @@ public class MultiplePartitionTestWithKeySelector {
 //		// this would be a good old word count
 //		source1.groupBy(new WordKeySelector()).sum("count").print();
 
-		// this is more complex topology, with less sense
+		// this one is a more complex topology, with much less sense
+		// contains 2 sources, with 4 outputs (3 different type)
 		source1.filter(new WordFilter()).merge(source2.shuffle().filter(new StringFilter()).map(new StringToWordMap())).
 				groupBy(new WordKeySelector()).sum("count").addSink(new WordSink());
 
 		source1.groupBy(new WordKeySelector()).map(new WordToStringMap()).merge(source2.filter(new StringFilter())).addSink(new StringSink());
 
+		source1.distribute();
+
 		// execute program
 		env.execute("Streaming WordCount");
 	}
 
+	/*
+	 * SOURCE CLASSES
+	 */
 
 	private static final class TextSource implements SourceFunction<Word> {
 		private static final long serialVersionUID = 1L;
@@ -77,6 +83,25 @@ public class MultiplePartitionTestWithKeySelector {
 			}
 		}
 	}
+
+	private static final class RandomWordSource implements SourceFunction<String> {
+		private static final long serialVersionUID = 1L;
+
+		private static final String[] words = {"elephant", "storm", "cloud", "yellow",
+				"house", "bamboo", "valley"};
+
+		@Override
+		public void invoke(Collector<String> collector) throws Exception {
+			Random rand = new Random();
+			for (int i = 0; i < 10; i++) {
+				collector.collect(words[rand.nextInt(words.length)]);
+			}
+		}
+	}
+
+	/*
+	 * WORD POJO AND ITS KEYSELECTOR
+	 */
 
 	public static class Word {
 
@@ -122,6 +147,10 @@ public class MultiplePartitionTestWithKeySelector {
 		}
 	}
 
+	/*
+	 * FILTER CLASSES
+	 */
+
 	private static final class WordFilter implements FilterFunction<Word> {
 		private static final long serialVersionUID = 1L;
 
@@ -146,20 +175,9 @@ public class MultiplePartitionTestWithKeySelector {
 		}
 	}
 
-	private static final class RandomWordSource implements SourceFunction<String> {
-		private static final long serialVersionUID = 1L;
-
-		private static final String[] words = {"elephant", "storm", "cloud", "yellow",
-				"house", "bamboo", "valley"};
-
-		@Override
-		public void invoke(Collector<String> collector) throws Exception {
-			Random rand = new Random();
-			for (int i = 0; i < 10; i++) {
-				collector.collect(words[rand.nextInt(words.length)]);
-			}
-		}
-	}
+	/*
+	 * MAP CLASSES
+	 */
 
 	public static class StringToWordMap implements MapFunction<String, Word> {
 		private static final long serialVersionUID = 1L;
@@ -184,6 +202,10 @@ public class MultiplePartitionTestWithKeySelector {
 			return value.getWord();
 		}
 	}
+
+	/*
+	 * SINK CLASSES
+	 */
 
 	public static class WordSink implements SinkFunction<Word> {
 		private static final long serialVersionUID = 1L;

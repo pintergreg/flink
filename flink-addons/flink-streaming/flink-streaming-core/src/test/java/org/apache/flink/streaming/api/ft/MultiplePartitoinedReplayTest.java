@@ -35,30 +35,43 @@ public class MultiplePartitoinedReplayTest {
 
 	public static void main(String[] args) throws Exception {
 
-//		// set up the execution environment
-//		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-//
-//		// building the job graph
-//		/*      (F)
-//		*      /   \
-//		*  (So)    (Si)
-//		*      \   /
-//		*       (M)
-//		* Source emits numbers as String from 0 to 9
-//		* Filter does nothing, lets pass everything
-//		* Sink prints values to standard error output
-//		*/
-//		DataStream<String> sourceStream1 = env.addSource(new SimpleSource());
-//		sourceStream1.shuffle().filter(new EmptyFilter())
-//				.merge(sourceStream1.map(new SimpleMap()))
-//				.addSink(new SimpleSink());
-//
-//		//run this topology
-//		env.execute();
+		evenOddNumberSequence(10);
 
+	}
+
+	/*
+	 * ACTUAL TEST-TOPOLOGY METHODS
+	 */
+
+	private static void numberSequence() throws Exception {
 		// set up the execution environment
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
+		// building the job graph
+		/*      (F)
+		*      /   \
+		*  (So)    (Si)
+		*      \   /
+		*       (M)
+		* Source emits numbers as String from 0 to 9
+		* Filter does nothing, lets pass everything
+		* Sink prints values to standard error output
+		*/
+		DataStream<String> sourceStream1 = env.addSource(new SimpleSource());
+		sourceStream1.shuffle().filter(new EmptyFilter())
+				.merge(sourceStream1.map(new SimpleMap()))
+				.addSink(new SimpleSink());
+
+		//run this topology
+		env.execute();
+	}
+
+	private static void evenOddNumberSequence() throws Exception {
+		evenOddNumberSequence(10);
+	}
+	private static void evenOddNumberSequence(int n) throws Exception {
+		// set up the execution environment
+		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
 		/*
 		*  (S1)
@@ -71,24 +84,25 @@ public class MultiplePartitoinedReplayTest {
 		* Merge the two source and map integer to string
 		* Sink prints values to standard error output
 		*/
-		DataStream<Integer> source1 = env.addSource(new NumberSource(10, NumberSource.Type.EVEN)).setChainingStrategy(StreamInvokable.ChainingStrategy.NEVER);
-		DataStream<Integer> source2 = env.addSource(new NumberSource(10, NumberSource.Type.ODD)).setChainingStrategy(StreamInvokable.ChainingStrategy.NEVER);
-		;
+		DataStream<Integer> source1 = env.addSource(new NumberSource(n, NumberSource.Type.EVEN)).setChainingStrategy(StreamInvokable.ChainingStrategy.NEVER);
+		DataStream<Integer> source2 = env.addSource(new NumberSource(n, NumberSource.Type.ODD)).setChainingStrategy(StreamInvokable.ChainingStrategy.NEVER);
 
 		//source1.addSink(new NumberSink());
 		//source2 emits numbers, map them to string and sink strings...
 		//source2.map(new NumberMap()).addSink(new SimpleSink());
 
-
 		//source1.merge(source2).map(new NumberMap()).addSink(new SimpleSink());
+
 		//different partitioning in src1 (shuffle) and src2 (default, forward)
 		source1.shuffle().merge(source2).map(new NumberMap()).addSink(new SimpleSink());
-
 
 		//run this topology
 		env.execute();
 	}
 
+	/*
+	 * SOURCE CLASSES
+	 */
 
 	private static final class SimpleSource implements SourceFunction<String> {
 		private static final long serialVersionUID = 1L;
@@ -145,17 +159,23 @@ public class MultiplePartitoinedReplayTest {
 		}
 	}
 
-	public static class NumberSink implements SinkFunction<Integer> {
+	/*
+	 * MAP CLASSES
+	 */
+
+	public static class SimpleMap implements MapFunction<String, String> {
 		private static final long serialVersionUID = 1L;
+
 		private ArrayList<Long> recordsToFail;
 
-		public NumberSink() {
+
+		public SimpleMap() {
 			this.recordsToFail = new ArrayList<Long>();
 		}
 
 		@Override
-		public void invoke(Integer value) {
-			System.err.println(value);
+		public String map(String value) throws Exception {
+			return value;
 		}
 	}
 
@@ -175,6 +195,10 @@ public class MultiplePartitoinedReplayTest {
 		}
 	}
 
+	/*
+	 * FILTER CLASSES
+	 */
+
 	private static final class EmptyFilter implements FilterFunction<String> {
 		private static final long serialVersionUID = 1L;
 
@@ -184,6 +208,9 @@ public class MultiplePartitoinedReplayTest {
 		}
 	}
 
+	/*
+	 * SINK CLASSES
+	 */
 
 	public static class SimpleSink implements SinkFunction<String> {
 		private static final long serialVersionUID = 1L;
@@ -199,19 +226,17 @@ public class MultiplePartitoinedReplayTest {
 		}
 	}
 
-	public static class SimpleMap implements MapFunction<String, String> {
+	public static class NumberSink implements SinkFunction<Integer> {
 		private static final long serialVersionUID = 1L;
-
 		private ArrayList<Long> recordsToFail;
 
-
-		public SimpleMap() {
+		public NumberSink() {
 			this.recordsToFail = new ArrayList<Long>();
 		}
 
 		@Override
-		public String map(String value) throws Exception {
-			return value;
+		public void invoke(Integer value) {
+			System.err.println(value);
 		}
 	}
 

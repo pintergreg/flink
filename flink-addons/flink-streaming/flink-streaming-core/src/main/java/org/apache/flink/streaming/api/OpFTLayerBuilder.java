@@ -48,7 +48,7 @@ public class OpFTLayerBuilder implements FTLayerBuilder {
 	private HashMap<String, Integer> ftLayerOutputs;
 	private HashMap<String, Integer> ftLayerInputs;
 
-	//stores edge informations
+	//stores edge information
 	private List<FTEdgeInformation> ftLayerEdgeInformations;
 
 	public OpFTLayerBuilder(StreamingJobGraphGenerator jobGraphGenerator) {
@@ -118,7 +118,7 @@ public class OpFTLayerBuilder implements FTLayerBuilder {
 
 	@Override
 	public void setSourceSuccessives() {
-		//TODO ezt a metódust átnevezni vagy megszűntetni
+		//TODO ezt a metódust átnevezni (vagy megszűntetni)
 		Set<String> processingTaskVertices = ftLayerOutputs.keySet();
 
 		FTLayerConfig ftLayerConfig = new FTLayerConfig(ftLayerVertex.getConfiguration());
@@ -134,9 +134,10 @@ public class OpFTLayerBuilder implements FTLayerBuilder {
 	}
 
 	/**
-	 * Adds information (sourceID, taskID and Partition Strategy) only about "Source to Task" edges.
-	 * This information is used to set the RecordWriters with the correct Partition Strategy from
-	 * the Fault Tolerance Layer to the source successive tasks. Gets three parameters:
+	 * Adds information (sourceID, taskID and a {@link StreamPartitioner.PartitioningStrategy})
+	 * only about "Source to Task" edges. This information is used to set the RecordWriters with the
+	 * correct Partition Strategy from the Fault Tolerance Layer to the source successive tasks.
+	 * Gets three parameters:
 	 *
 	 * @param sourceName
 	 * 		- mapped to an lower level index, and that is stored
