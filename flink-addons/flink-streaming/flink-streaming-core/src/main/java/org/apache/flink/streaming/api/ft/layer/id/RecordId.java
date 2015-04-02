@@ -17,16 +17,19 @@
 
 package org.apache.flink.streaming.api.ft.layer.id;
 
-import java.io.IOException;
-import java.io.Serializable;
-import java.util.Random;
-
+import com.google.common.hash.HashFunction;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.core.io.IOReadableWritable;
 import org.apache.flink.core.memory.DataInputView;
 import org.apache.flink.core.memory.DataOutputView;
 import org.apache.flink.runtime.plugable.SerializationDelegate;
+
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.Random;
+
+import static com.google.common.hash.Hashing.murmur3_128;
 
 public class RecordId implements IOReadableWritable, Serializable, Comparable<RecordId> {
 
@@ -131,6 +134,31 @@ public class RecordId implements IOReadableWritable, Serializable, Comparable<Re
 	@Override
 	public int hashCode() {
 		return (int) currentRecordId;
+	}
+
+	public static RecordId newRootId() {
+		RecordId rid = new RecordId();
+		long rnd = random.nextLong() & 0xFFFFFFFFFFFFFFFEL; //for setting LSB to zero
+		rid.currentRecordId = rnd;
+		rid.sourceRecordId = rnd;
+		return rid;
+	}
+
+	public static RecordId newReplayedRootId(long originalRootId) {
+		RecordId rid = new RecordId();
+		long rrid = originalRootId | 0x1L; //for setting LSB to one
+		rid.currentRecordId = rrid;
+		rid.sourceRecordId = rrid;
+		return rid;
+	}
+
+	public static RecordId newReplayableRecordId(long sourceRecordId, long parentRecordId, int nodeId, int counter) {
+		RecordId rid = new RecordId();
+		String str = String.valueOf(parentRecordId) + String.valueOf(nodeId) + String.valueOf(counter);
+		HashFunction hash = murmur3_128();
+		rid.currentRecordId = hash.hashBytes(str.getBytes()).asLong();
+		rid.sourceRecordId = sourceRecordId;
+		return rid;
 	}
 
 }

@@ -75,7 +75,8 @@ public class MultiplePartitionTestWithKeySelector {
 		};
 		/*
 		the pink squirrel headed home because of the oncoming storm with a nice piece of acorn, but he
-		thought he would visit his old friend. The pink squirrel found him hiding in his bamboo house
+		thought he would visit his old friend. The pink squirrel found him hiding in his bamboo house.
+		The yellow elephant was glad, because the coming of his friend.
 		 */
 
 		@Override
