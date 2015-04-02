@@ -38,8 +38,6 @@ public class SinkInvokable<IN> extends ChainableInvokable<IN, IN> {
 
 	@Override
 	protected void callUserFunction() throws Exception {
-		//TODO ide akarom a Bloom Filter ellenőrzést tenni
-		nextRecord.getId();
 		sinkFunction.invoke(nextObject);
 	}
 
