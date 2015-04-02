@@ -73,6 +73,10 @@ public class MultiplePartitionTestWithKeySelector {
 				"so when he saw the the elephant shaped storm cloud",
 				"he quickly went into his house hiding from the storm"
 		};
+		/*
+		the pink squirrel headed home because of the oncoming storm with a nice piece of acorn, but he
+		thought he would visit his old friend. The pink squirrel found him hiding in his bamboo house
+		 */
 
 		@Override
 		public void invoke(Collector<Word> collector) throws Exception {
