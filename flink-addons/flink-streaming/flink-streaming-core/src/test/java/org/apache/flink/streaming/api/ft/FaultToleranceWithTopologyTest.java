@@ -184,6 +184,7 @@ public class FaultToleranceWithTopologyTest {
 
 				// generate new sourceRecordId
 				RecordId newSourceRecordId = RecordId.newSourceRecordId();
+
 				long newId = newSourceRecordId.getSourceRecordId();
 
 				// add new sourceRecord to PersistenceLayer

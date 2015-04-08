@@ -25,5 +25,8 @@ public interface IdentifiableStreamRecord {
 
 	public RecordId getId();
 
-	public RecordId newId(long sourceRecordId);
+	//###ID_GEN
+//	public RecordId newId(long sourceRecordId);
+
+	public RecordId newId(long sourceRecordId, long parentRecordId, int instanceID);
 }

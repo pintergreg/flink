@@ -80,7 +80,12 @@ public class SourceReplayer implements Collector<SemiDeserializedStreamRecord> {
 
 	protected RecordId setOutRecordId(SerializationDelegate<SemiDeserializedStreamRecord> outRecord) {
 		long sourceRecordId = outRecord.getInstance().getId().getSourceRecordId();
-		RecordId newSourceRecordId = RecordId.newRecordId(sourceRecordId);
+		//TODO ###ID_GEN -- ez itt elvileg a record visszajátszás, vagyis visszajátszott rekord id-t kell adni
+		// régi:
+		//RecordId newSourceRecordId = RecordId.newRecordId(sourceRecordId);
+
+		RecordId newSourceRecordId = RecordId.newReplayedRootId(sourceRecordId);
+
 		outRecord.getInstance().setId(newSourceRecordId);
 		return newSourceRecordId;
 	}
@@ -91,6 +96,7 @@ public class SourceReplayer implements Collector<SemiDeserializedStreamRecord> {
 
 	/**
 	 * Adds a RecordWriter to the list of a RecordWriters of a source
+	 *
 	 * @param output
 	 */
 	public void addRecordWriter(RecordWriter<SerializationDelegate<SemiDeserializedStreamRecord>> output) {

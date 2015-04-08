@@ -39,7 +39,11 @@ public class FTPersister<T> implements Persister<T> {
 
 	@Override
 	public void persist(StreamRecord<T> record) {
-		record.setId(RecordId.newSourceRecordId());
+		//TODO ###ID_GEN -- hát te mi vagy? >> source to FTL communication for persist
+		// régi:
+		//record.setId(RecordId.newSourceRecordId());
+		record.setId(RecordId.newRootId());
+
 		anchorHandler.setAnchorRecord(record);
 		serializationDelegate.setInstance(record);
 		try {

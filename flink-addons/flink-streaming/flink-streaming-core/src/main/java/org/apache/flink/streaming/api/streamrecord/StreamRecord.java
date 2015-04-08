@@ -17,11 +17,11 @@
 
 package org.apache.flink.streaming.api.streamrecord;
 
-import java.io.Serializable;
-
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.api.java.tuple.Tuple;
 import org.apache.flink.streaming.api.ft.layer.id.RecordId;
+
+import java.io.Serializable;
 
 /**
  * Object for wrapping a tuple or other object with ID used for sending records
@@ -60,9 +60,20 @@ public class StreamRecord<T> implements IdentifiableStreamRecord, Serializable {
 		this.id = id;
 	}
 
-	@Override
-	public RecordId newId(long sourceRecordId) {
-		id = RecordId.newRecordId(sourceRecordId);
+
+//	@Override
+//	public RecordId newId(long sourceRecordId) {
+//
+//		id = RecordId.newRecordId(sourceRecordId);
+//
+//		return id;
+//	}
+
+	public RecordId newId(long sourceRecordId, long parentRecordId, int instanceID) {
+
+		//TODO ###ID_GEN -- ez a gyermek rekord, adjuk oda neki a szülő ID-jét, meg a nodeID-t
+		id = RecordId.newReplayableRecordId(sourceRecordId, parentRecordId, instanceID);
+
 		return id;
 	}
 

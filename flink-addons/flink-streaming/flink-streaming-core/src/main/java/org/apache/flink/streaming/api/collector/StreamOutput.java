@@ -17,8 +17,6 @@
 
 package org.apache.flink.streaming.api.collector;
 
-import java.io.IOException;
-
 import org.apache.flink.runtime.io.network.api.writer.RecordWriter;
 import org.apache.flink.runtime.plugable.SerializationDelegate;
 import org.apache.flink.streaming.api.ft.layer.runtime.AbstractFTHandler;
@@ -29,6 +27,8 @@ import org.apache.flink.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+
 public class StreamOutput<OUT> implements Collector<OUT> {
 
 	private static final Logger LOG = LoggerFactory.getLogger(StreamOutput.class);
@@ -36,11 +36,12 @@ public class StreamOutput<OUT> implements Collector<OUT> {
 	private RecordWriter<SerializationDelegate<StreamRecord<OUT>>> output;
 	private SerializationDelegate<StreamRecord<OUT>> serializationDelegate;
 	private StreamRecord<OUT> streamRecord;
-	private int channelID;
+	// ex-channelID
+	private int instanceID;
 	private AbstractFTHandler<?> abstractFTHandler;
 
 	public StreamOutput(RecordWriter<SerializationDelegate<StreamRecord<OUT>>> output,
-			int channelID, SerializationDelegate<StreamRecord<OUT>> serializationDelegate,
+			int instanceID, SerializationDelegate<StreamRecord<OUT>> serializationDelegate,
 			AbstractFTHandler<?> abstractFTHandler) {
 
 		this.serializationDelegate = serializationDelegate;
@@ -51,7 +52,7 @@ public class StreamOutput<OUT> implements Collector<OUT> {
 		} else {
 			throw new RuntimeException("Serializer cannot be null");
 		}
-		this.channelID = channelID;
+		this.instanceID = instanceID;
 		this.output = output;
 	}
 
@@ -66,7 +67,8 @@ public class StreamOutput<OUT> implements Collector<OUT> {
 		serializationDelegate.setInstance(streamRecord);
 
 		try {
-			abstractFTHandler.setOutRecordId(serializationDelegate);
+			//TODO ###ID_GEN innen kell átadogatni a szukseges extra parametereket
+			abstractFTHandler.setOutRecordId(serializationDelegate, this.instanceID);
 			output.emit(serializationDelegate);
 			abstractFTHandler.xor(serializationDelegate.getInstance());
 		} catch (Exception e) {

@@ -56,8 +56,8 @@ public abstract class AbstractFTHandler<T> extends XorHandler implements
 
 	@Override
 	public RecordId setOutRecordId(SerializationDelegate<? extends IdentifiableStreamRecord>
-			outRecord) {
-		return anchorHandler.setOutRecordId(outRecord);
+			outRecord, int instanceID) {
+		return anchorHandler.setOutRecordId(outRecord, instanceID);
 	}
 
 	@Override

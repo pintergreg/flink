@@ -27,7 +27,11 @@ public interface AnchorHandler {
 
 	public RecordId getAnchorRecord();
 
+	//###ID_GEN
+//	public RecordId setOutRecordId(SerializationDelegate<? extends IdentifiableStreamRecord>
+//			outRecord);
+
 	public RecordId setOutRecordId(SerializationDelegate<? extends IdentifiableStreamRecord>
-			outRecord);
+			outRecord, int instanceID);
 
 }

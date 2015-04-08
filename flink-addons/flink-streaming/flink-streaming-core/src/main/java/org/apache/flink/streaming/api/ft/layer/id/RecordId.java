@@ -17,7 +17,6 @@
 
 package org.apache.flink.streaming.api.ft.layer.id;
 
-import com.google.common.hash.HashFunction;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.typeutils.TypeExtractor;
 import org.apache.flink.core.io.IOReadableWritable;
@@ -28,8 +27,6 @@ import org.apache.flink.runtime.plugable.SerializationDelegate;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Random;
-
-import static com.google.common.hash.Hashing.murmur3_128;
 
 public class RecordId implements IOReadableWritable, Serializable, Comparable<RecordId> {
 
@@ -155,8 +152,9 @@ public class RecordId implements IOReadableWritable, Serializable, Comparable<Re
 	public static RecordId newReplayableRecordId(long sourceRecordId, long parentRecordId, int nodeId, int counter) {
 		RecordId rid = new RecordId();
 		String str = String.valueOf(parentRecordId) + String.valueOf(nodeId) + String.valueOf(counter);
-		HashFunction hash = murmur3_128();
-		rid.currentRecordId = hash.hashBytes(str.getBytes()).asLong();
+
+		//rid.currentRecordId = redis.clients.util.MurmurHash.hash64A(str.getBytes(),0x5EED);
+		rid.currentRecordId = random.nextLong();
 		rid.sourceRecordId = sourceRecordId;
 		return rid;
 	}

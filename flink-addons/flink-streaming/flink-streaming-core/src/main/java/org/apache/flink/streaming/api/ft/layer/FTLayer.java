@@ -17,16 +17,16 @@
 
 package org.apache.flink.streaming.api.ft.layer;
 
-import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.HashSet;
-
 import org.apache.flink.streaming.api.ft.layer.id.RecordId;
 import org.apache.flink.streaming.api.ft.layer.id.RecordWithHashCode;
 import org.apache.flink.streaming.api.ft.layer.serialization.SemiDeserializedStreamRecord;
 import org.apache.flink.streaming.api.ft.layer.util.ExpiredFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.nio.ByteBuffer;
+import java.util.HashMap;
+import java.util.HashSet;
 
 public class FTLayer {
 	private final static Logger LOG = LoggerFactory.getLogger(FTLayer.class);
@@ -70,7 +70,11 @@ public class FTLayer {
 			int sourceId = sourceIdOfRecord.get(sourceRecordId);
 
 			// generate new sourceRecordId
-			RecordId newSourceRecordId = RecordId.newSourceRecordId();
+			//TODO ###ID_GEN -- feltételezve, hogy ez a visszajátszott id, lecseréltem az id generáló metódust
+			//régi:
+			//RecordId newSourceRecordId = RecordId.newSourceRecordId();
+			RecordId newSourceRecordId = RecordId.newReplayedRootId(sourceRecordId);
+
 			long newId = newSourceRecordId.getSourceRecordId();
 
 			// add new sourceRecord to PersistenceLayer
@@ -138,9 +142,10 @@ public class FTLayer {
 		}
 	}
 
-	protected RecordId generateNewRecordId() {
-		return RecordId.newSourceRecordId();
-	}
+	//TODO ###ID_GEN -- ez sehol sincs meghívva
+//	protected RecordId generateNewRecordId() {
+//		return RecordId.newSourceRecordId();
+//	}
 
 	public boolean isEmpty() {
 		return ackerTable.isEmpty();

@@ -17,13 +17,13 @@
 
 package org.apache.flink.streaming.api.ft.layer.serialization;
 
-import java.io.Serializable;
-import java.nio.ByteBuffer;
-
 import org.apache.flink.api.common.typeutils.TypeSerializer;
 import org.apache.flink.runtime.plugable.SerializationDelegate;
 import org.apache.flink.streaming.api.ft.layer.id.RecordId;
 import org.apache.flink.streaming.api.streamrecord.IdentifiableStreamRecord;
+
+import java.io.Serializable;
+import java.nio.ByteBuffer;
 
 public class SemiDeserializedStreamRecord implements IdentifiableStreamRecord, Serializable {
 
@@ -73,9 +73,16 @@ public class SemiDeserializedStreamRecord implements IdentifiableStreamRecord, S
 		this.id = id;
 	}
 
+	//###ID_GEN régi:
+//	@Override
+//	public RecordId newId(long sourceRecordId) {
+//		id = RecordId.newRecordId(sourceRecordId);
+//		return id;
+//	}
+
 	@Override
-	public RecordId newId(long sourceRecordId) {
-		id = RecordId.newRecordId(sourceRecordId);
+	public RecordId newId(long sourceRecordId, long parentRecordId, int instanceID) {
+		id = RecordId.newReplayableRecordId(sourceRecordId, parentRecordId, instanceID);
 		return id;
 	}
 

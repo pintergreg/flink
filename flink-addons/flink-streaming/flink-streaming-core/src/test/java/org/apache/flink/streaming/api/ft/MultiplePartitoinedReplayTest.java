@@ -35,8 +35,8 @@ public class MultiplePartitoinedReplayTest {
 
 	public static void main(String[] args) throws Exception {
 
-		evenOddNumberSequence(10);
-
+		//evenOddNumberSequence(10);
+		numberSequence();
 	}
 
 	/*
