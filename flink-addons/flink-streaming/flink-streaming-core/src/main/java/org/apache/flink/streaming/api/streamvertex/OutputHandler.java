@@ -17,13 +17,6 @@
 
 package org.apache.flink.streaming.api.streamvertex;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.runtime.io.network.api.writer.RecordWriter;
 import org.apache.flink.runtime.plugable.SerializationDelegate;
@@ -41,6 +34,13 @@ import org.apache.flink.streaming.partitioner.StreamPartitioner;
 import org.apache.flink.util.Collector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class OutputHandler<OUT> {
 	private static final Logger LOG = LoggerFactory.getLogger(OutputHandler.class);
@@ -230,6 +230,17 @@ public class OutputHandler<OUT> {
 		}
 
 		try {
+
+			//###ID_GEN
+//			outputMap.get(outEdgesInOrder.get(vertex.getInstanceID())).resetChildRecordCounter();
+
+			for (StreamOutput<?> so:outputMap.values()){
+				so.resetChildRecordCounter();
+			}
+
+			System.out.println("...." + vertex.getName() + "," + vertex.getInstanceID() + "   " + outputMap.size());
+
+
 			vertex.invokeUserFunction(userInvokable);
 		} catch (Exception e) {
 			flushOutputs();
@@ -243,4 +254,5 @@ public class OutputHandler<OUT> {
 
 		flushOutputs();
 	}
+
 }

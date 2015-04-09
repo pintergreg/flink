@@ -17,8 +17,6 @@
 
 package org.apache.flink.streaming.api.streamvertex;
 
-import java.util.Map;
-
 import org.apache.flink.runtime.execution.Environment;
 import org.apache.flink.runtime.io.network.api.reader.MutableRecordReader;
 import org.apache.flink.runtime.io.network.api.writer.BufferWriter;
@@ -40,6 +38,8 @@ import org.apache.flink.streaming.io.CoReaderIterator;
 import org.apache.flink.streaming.state.OperatorState;
 import org.apache.flink.util.Collector;
 import org.apache.flink.util.MutableObjectIterator;
+
+import java.util.Map;
 
 public class StreamVertex<IN, OUT> extends AbstractInvokable implements
 		StreamTaskContext<OUT> {

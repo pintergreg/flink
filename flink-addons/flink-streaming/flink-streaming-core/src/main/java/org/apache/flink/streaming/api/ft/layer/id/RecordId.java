@@ -149,12 +149,16 @@ public class RecordId implements IOReadableWritable, Serializable, Comparable<Re
 		return rid;
 	}
 
-	public static RecordId newReplayableRecordId(long sourceRecordId, long parentRecordId, int nodeId, int counter) {
+	public static RecordId newReplayableRecordId(long sourceRecordId, long parentRecordId, int nodeId, int chidRecordCounter) {
 		RecordId rid = new RecordId();
-		String str = String.valueOf(parentRecordId) + String.valueOf(nodeId) + String.valueOf(counter);
+		String str = String.valueOf(parentRecordId) + String.valueOf(nodeId) + String.valueOf(chidRecordCounter);
 
-		//rid.currentRecordId = redis.clients.util.MurmurHash.hash64A(str.getBytes(),0x5EED);
-		rid.currentRecordId = random.nextLong();
+		//TODO chnage nasty debug
+		System.out.println("  NEWID_COMPONENTS:" + String.valueOf(parentRecordId) + "," + String.valueOf(nodeId) + "," + String.valueOf(chidRecordCounter));
+
+		rid.currentRecordId = redis.clients.util.MurmurHash.hash64A(str.getBytes(),0x5EED);
+
+		System.out.println("    NEWID:" + rid.currentRecordId );
 		rid.sourceRecordId = sourceRecordId;
 		return rid;
 	}

@@ -32,8 +32,15 @@ public class NonFTAnchorHandler implements AnchorHandler {
 		return null;
 	}
 
+	//##ID_GEN old one:
+//	@Override
+//	public RecordId setOutRecordId(SerializationDelegate<? extends IdentifiableStreamRecord> outRecord) {
+//		return null;
+//	}
+
 	@Override
-	public RecordId setOutRecordId(SerializationDelegate<? extends IdentifiableStreamRecord> outRecord) {
+	public RecordId setOutRecordId(SerializationDelegate<? extends IdentifiableStreamRecord> outRecord, int instanceID, int childRecordCounter) {
 		return null;
 	}
+
 }

@@ -37,10 +37,10 @@ public class FTAnchorHandler implements AnchorHandler {
 	}
 
 	@Override
-	public RecordId setOutRecordId(SerializationDelegate<? extends IdentifiableStreamRecord> outRecord, int instanceID) {
+	public RecordId setOutRecordId(SerializationDelegate<? extends IdentifiableStreamRecord> outRecord, int instanceID, int childRecordCounter) {
 		long sourceRecordId = anchorRecordId.getSourceRecordId();
 		//###ID_GEN
-		return outRecord.getInstance().newId(sourceRecordId, anchorRecordId.getCurrentRecordId(), instanceID);
+		return outRecord.getInstance().newId(sourceRecordId, anchorRecordId.getCurrentRecordId(), instanceID, childRecordCounter);
 	}
 
 }

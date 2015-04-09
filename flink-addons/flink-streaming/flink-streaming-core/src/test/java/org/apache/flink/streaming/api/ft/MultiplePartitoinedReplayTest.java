@@ -35,8 +35,8 @@ public class MultiplePartitoinedReplayTest {
 
 	public static void main(String[] args) throws Exception {
 
-		//evenOddNumberSequence(10);
-		numberSequence();
+		evenOddNumberSequence(10);
+		//numberSequenceWithoutShuffle();
 	}
 
 	/*
@@ -60,6 +60,28 @@ public class MultiplePartitoinedReplayTest {
 		DataStream<String> sourceStream1 = env.addSource(new SimpleSource());
 		sourceStream1.shuffle().filter(new EmptyFilter())
 				.merge(sourceStream1.map(new SimpleMap()))
+				.addSink(new SimpleSink());
+
+		//run this topology
+		env.execute();
+	}
+
+	private static void numberSequenceWithoutShuffle() throws Exception {
+		// set up the execution environment
+		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+
+		// building the job graph
+		/*      (F)
+		*      /   \
+		*  (So)    (Si)
+		*      \   /
+		*       (M)
+		* Source emits numbers as String from 0 to 9
+		* Filter does nothing, lets pass everything
+		* Sink prints values to standard error output
+		*/
+		DataStream<String> sourceStream1 = env.addSource(new SimpleSource()).setChainingStrategy(StreamInvokable.ChainingStrategy.NEVER);
+		sourceStream1.distribute().filter(new EmptyFilter()).merge(sourceStream1.map(new SimpleMap()))
 				.addSink(new SimpleSink());
 
 		//run this topology

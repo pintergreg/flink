@@ -32,6 +32,6 @@ public interface AnchorHandler {
 //			outRecord);
 
 	public RecordId setOutRecordId(SerializationDelegate<? extends IdentifiableStreamRecord>
-			outRecord, int instanceID);
+			outRecord, int instanceID, int childRecordCounter);
 
 }

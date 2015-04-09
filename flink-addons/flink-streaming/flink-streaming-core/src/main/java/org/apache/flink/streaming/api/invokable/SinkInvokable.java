@@ -19,14 +19,21 @@ package org.apache.flink.streaming.api.invokable;
 
 import org.apache.flink.streaming.api.function.sink.SinkFunction;
 
+import java.util.HashSet;
+
 public class SinkInvokable<IN> extends ChainableInvokable<IN, IN> {
 	private static final long serialVersionUID = 1L;
 
 	private SinkFunction<IN> sinkFunction;
 
+	//TODO ##ID_GEN amíg nem BF-et teszek ide teszelni
+	private HashSet<Long> idStore;
+
 	public SinkInvokable(SinkFunction<IN> sinkFunction) {
 		super(sinkFunction);
 		this.sinkFunction = sinkFunction;
+
+		this.idStore = new HashSet<Long>();
 	}
 
 	@Override
@@ -39,8 +46,13 @@ public class SinkInvokable<IN> extends ChainableInvokable<IN, IN> {
 	@Override
 	protected void callUserFunction() throws Exception {
 		//TODO ide akarom a Bloom Filter ellenőrzést tenni
-		nextRecord.getId();
-		sinkFunction.invoke(nextObject);
+		//###ID_GEN
+		if(!idStore.contains(nextRecord.getId().getCurrentRecordId())) {
+			idStore.add(nextRecord.getId().getCurrentRecordId());
+
+			sinkFunction.invoke(nextObject);
+		}
+
 	}
 
 	@Override

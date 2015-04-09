@@ -69,10 +69,11 @@ public class StreamRecord<T> implements IdentifiableStreamRecord, Serializable {
 //		return id;
 //	}
 
-	public RecordId newId(long sourceRecordId, long parentRecordId, int instanceID) {
+	@Override
+	public RecordId newId(long sourceRecordId, long parentRecordId, int instanceID, int childRecordCounter) {
 
 		//TODO ###ID_GEN -- ez a gyermek rekord, adjuk oda neki a szülő ID-jét, meg a nodeID-t
-		id = RecordId.newReplayableRecordId(sourceRecordId, parentRecordId, instanceID);
+		id = RecordId.newReplayableRecordId(sourceRecordId, parentRecordId, instanceID, childRecordCounter);
 
 		return id;
 	}
