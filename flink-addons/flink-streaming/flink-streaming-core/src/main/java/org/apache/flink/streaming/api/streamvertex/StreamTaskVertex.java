@@ -30,7 +30,7 @@ public class StreamTaskVertex<IN, OUT> extends StreamVertex<IN, OUT> {
 	@Override
 	public void setInputsOutputs() {
 		inputHandler = new InputHandler<IN>(this);
-		outputHandler = new OutputHandler<OUT>(this, abstractFTHandler);
+		outputHandler = new OutputHandler<OUT>(this, abstractFTHandler, "TASK");
 		// TODO set FT
 		abstractFTHandler = new NonFTHandler();
 	}

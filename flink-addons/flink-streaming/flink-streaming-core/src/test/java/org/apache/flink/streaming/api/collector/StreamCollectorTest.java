@@ -17,8 +17,6 @@
 
 package org.apache.flink.streaming.api.collector;
 
-import static org.junit.Assert.assertArrayEquals;
-
 import org.apache.flink.api.java.tuple.Tuple1;
 import org.apache.flink.runtime.plugable.SerializationDelegate;
 import org.apache.flink.streaming.api.ft.layer.runtime.NonFTHandler;
@@ -27,6 +25,8 @@ import org.apache.flink.streaming.api.streamvertex.MockRecordWriter;
 import org.apache.flink.streaming.util.MockRecordWriterFactory;
 import org.apache.flink.util.Collector;
 import org.junit.Test;
+
+import static org.junit.Assert.assertArrayEquals;
 
 public class StreamCollectorTest {
 
@@ -37,8 +37,9 @@ public class StreamCollectorTest {
 				null);
 		sd.setInstance(new StreamRecord<Tuple1<Integer>>().setObject(new Tuple1<Integer>()));
 
+		//TODO my modification int StreamOutput might have mad this unworkable, constructor got an empty string which is not too nice
 		Collector<Tuple1<Integer>> collector = new StreamOutput<Tuple1<Integer>>(recWriter, 2,
-				sd, new NonFTHandler());
+				sd, new NonFTHandler(),"");
 		collector.collect(new Tuple1<Integer>(3));
 		collector.collect(new Tuple1<Integer>(4));
 		collector.collect(new Tuple1<Integer>(5));

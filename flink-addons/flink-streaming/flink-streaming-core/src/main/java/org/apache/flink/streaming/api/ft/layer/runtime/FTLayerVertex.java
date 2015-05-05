@@ -139,12 +139,8 @@ public class FTLayerVertex extends AbstractInvokable {
 			//stores them according to ths source IDs. To create a RecordWriter a BufferWriter and a
 			//PartitionStrategy is needed.
 			for (FTEdgeInformation edgeInfo : edgeInformations) {
-				//TODO remove this nasty debugging
-				System.out.println("FROM::" + edgeInfo.getSourceID() + ", TO::" + edgeInfo.getTaskID() + ", WITH A '" +
-						edgeInfo.getPartitioningStrategy().name() + "' STRATEGY");
-
-				LOG.debug("EDGE_INFO", "FROM::" + edgeInfo.getSourceID() + ", TO::" + edgeInfo.getTaskID() + ", WITH A '" +
-						edgeInfo.getPartitioningStrategy().name() + "' STRATEGY");
+				LOG.debug("EDGE_INFO", "FROM::{}, TO::{}, WITH A '{}' STRATEGY", edgeInfo.getSourceID(), edgeInfo.getTaskID(),
+						edgeInfo.getPartitioningStrategy().name());
 
 				//if there is no SourceReplayer for the given source create one (otherwise just add a RecordWriter)
 				if (srcReplayers[edgeInfo.getSourceID()] == null) {

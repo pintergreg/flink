@@ -66,6 +66,7 @@ public class StreamVertex<IN, OUT> extends AbstractInvokable implements
 		userInvokable = null;
 		numTasks = newVertex();
 		instanceID = numTasks;
+
 	}
 
 	protected static int newVertex() {
@@ -123,7 +124,7 @@ public class StreamVertex<IN, OUT> extends AbstractInvokable implements
 		} else {
 			abstractFTHandler = new NonFTHandler();
 		}
-		outputHandler = new OutputHandler<OUT>(this, abstractFTHandler);
+		outputHandler = new OutputHandler<OUT>(this, abstractFTHandler, /*&_&*/"TASK");
 	}
 
 	protected void setInvokable() {
@@ -196,5 +197,11 @@ public class StreamVertex<IN, OUT> extends AbstractInvokable implements
 
 	public BufferWriter getNextWriter() {
 		return getEnvironment().getWriter(currentWriterIndex++);
+	}
+
+
+	public void setState(String name, OperatorState<?> value){
+		long h=userInvokable.bang();
+		this.states.put(name, value);
 	}
 }

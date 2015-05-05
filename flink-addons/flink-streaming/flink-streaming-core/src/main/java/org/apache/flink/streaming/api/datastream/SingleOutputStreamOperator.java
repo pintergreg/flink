@@ -17,9 +17,6 @@
 
 package org.apache.flink.streaming.api.datastream;
 
-import java.util.Map;
-import java.util.Map.Entry;
-
 import org.apache.flink.api.common.functions.RichFunction;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
@@ -27,6 +24,9 @@ import org.apache.flink.streaming.api.invokable.StreamInvokable;
 import org.apache.flink.streaming.api.invokable.StreamInvokable.ChainingStrategy;
 import org.apache.flink.streaming.api.streamvertex.StreamingRuntimeContext;
 import org.apache.flink.streaming.state.OperatorState;
+
+import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  * The SingleOutputStreamOperator represents a user defined transformation
@@ -112,7 +112,7 @@ public class SingleOutputStreamOperator<OUT, O extends SingleOutputStreamOperato
 	 * 		The state to be registered for this name.
 	 * @return The data stream with state registered.
 	 */
-	protected SingleOutputStreamOperator<OUT, O> registerState(String name, OperatorState<?> state) {
+	public SingleOutputStreamOperator<OUT, O> registerState(String name, OperatorState<?> state) {
 		streamGraph.addOperatorState(getId(), name, state);
 		return this;
 	}

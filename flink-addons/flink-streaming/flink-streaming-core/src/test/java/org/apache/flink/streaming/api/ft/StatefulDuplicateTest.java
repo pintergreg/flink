@@ -18,19 +18,23 @@
 package org.apache.flink.streaming.api.ft;
 
 import org.apache.flink.api.common.functions.FlatMapFunction;
-import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.api.common.functions.RichStateMapFunction;
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.function.sink.SinkFunction;
 import org.apache.flink.streaming.api.function.source.SourceFunction;
 import org.apache.flink.streaming.api.invokable.StreamInvokable;
+import org.apache.flink.streaming.api.streamvertex.StreamingRuntimeContext;
+import org.apache.flink.streaming.state.OperatorState;
+import org.apache.flink.streaming.state.SimpleState;
 import org.apache.flink.streaming.util.ExactlyOnceParameters;
 import org.apache.flink.util.Collector;
 
 /**
  * Test created for testing edge information gathering and replaypartition setting
  */
-public class DuplicateTest {
+public class StatefulDuplicateTest {
 
 	public static void main(String[] args) throws Exception {
 
@@ -44,20 +48,24 @@ public class DuplicateTest {
 	private static void numberSequenceWithoutShuffle() throws Exception {
 		// set up the execution environment
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-		env.setDegreeOfParallelism(4);
-		env.setExactlyOnceExecution(new ExactlyOnceParameters(1000000,0.000001,5000));
-		//env.disableExactlyOnceExecution();
+		env.setDegreeOfParallelism(1);
+		env.setExactlyOnceExecution(new ExactlyOnceParameters(1000000, 0.000001, 5000));
 
 		// building the job graph
 		/*
-		*  (So)--(M)--(FM)--(Si)
+		*  (So)--(M)--(Si)
 		*
-		* Source emits numbers as String from 0 to 9
+		* Source emits numbers from 1 to 10
 		* Filter does nothing, lets pass everything
 		* Sink prints values to standard error output
+		* 10!=3628800
 		*/
-		DataStream<Integer> sourceStream1 = env.addSource(new NumberSource(10)).setChainingStrategy(StreamInvokable.ChainingStrategy.NEVER);
-		sourceStream1.flatMap(new LuckySeven()).map(new NumberMap()).setChainingStrategy(StreamInvokable.ChainingStrategy.NEVER).addSink(new SimpleSink()).setChainingStrategy(StreamInvokable.ChainingStrategy.NEVER);
+		SimpleState<Long> ize = new SimpleState<Long>(1L);
+
+		DataStream<Integer> sourceStream1 = env.addSource(new NumberSource(1, 10)).setChainingStrategy(StreamInvokable.ChainingStrategy.NEVER);
+		sourceStream1.map(new NumberMap()).registerState("factorial", ize)
+
+				.setChainingStrategy(StreamInvokable.ChainingStrategy.NEVER).addSink(new SimpleSink()).setChainingStrategy(StreamInvokable.ChainingStrategy.NEVER);
 
 		//run this topology
 		env.execute();
@@ -70,43 +78,17 @@ public class DuplicateTest {
 
 	private static final class NumberSource implements SourceFunction<Integer> {
 		private static final long serialVersionUID = 1L;
-		private int n;
-		Type type;
+		private int from;
+		private int to;
 
-		public enum Type {
-			ODD, EVEN, BOTH
-		}
-
-		public NumberSource(int n) {
-			this.n = n;
-			this.type = Type.BOTH;
-		}
-
-		public NumberSource(int n, Type type) {
-			this.n = n;
-			this.type = type;
+		public NumberSource(int from, int to) {
+			this.from = from;
+			this.to = to;
 		}
 
 		@Override
 		public void invoke(Collector<Integer> collector) throws Exception {
-			int step;
-			int start;
-			switch (this.type) {
-				case EVEN:
-					step = 2;
-					start = 0;
-					break;
-				case ODD:
-					step = 2;
-					start = 1;
-					break;
-				case BOTH:
-				default:
-					step = 1;
-					start = 0;
-					break;
-			}
-			for (int i = start; i < n; i += step) {
+			for (int i = from; i <= to; i++) {
 				Thread.sleep(105L);
 				collector.collect(i);
 			}
@@ -117,29 +99,30 @@ public class DuplicateTest {
 	 * MAP CLASSES
 	 */
 
-	public static class NumberMap implements MapFunction<Integer, String> {
+	public static class NumberMap extends RichStateMapFunction<Integer, String> {
 		private static final long serialVersionUID = 1L;
+
+		private static OperatorState<Long> state;
 
 		public NumberMap() {
 		}
 
 		@Override
-		public String map(Integer value) throws Exception {
+		public String map(Integer value, boolean replayed) throws Exception {
+			if (!replayed) {
+				state.setState(state.getState() * value);
+			}
+
+			System.out.println("STATE:" + state.getState() + " after the value of:" + value);
 			return value.toString();
 		}
-	}
-
-	public static class LuckySeven implements FlatMapFunction<Integer, Integer> {
 
 		@Override
-		public void flatMap(Integer value, Collector<Integer> out) throws Exception {
-			if (value == 7) {
-				out.collect(value);
-				out.collect(value * value);
-			} else {
-				out.collect(value);
-			}
+		public void open(Configuration parameters) throws Exception {
+			state = (OperatorState<Long>) ((StreamingRuntimeContext) getRuntimeContext()).getState("factorial");
 		}
+
+
 	}
 
 	/*
@@ -155,6 +138,19 @@ public class DuplicateTest {
 		@Override
 		public void invoke(String value) {
 			System.err.println(value);
+		}
+	}
+
+	public static class LuckySeven implements FlatMapFunction<String, String> {
+
+		@Override
+		public void flatMap(String value, Collector<String> out) throws Exception {
+			if (value.equals("7")) {
+				out.collect(value);
+				out.collect("49");
+			} else {
+				out.collect(value);
+			}
 		}
 	}
 

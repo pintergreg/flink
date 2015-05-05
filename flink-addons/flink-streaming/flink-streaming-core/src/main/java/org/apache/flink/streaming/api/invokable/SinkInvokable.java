@@ -17,23 +17,35 @@
 
 package org.apache.flink.streaming.api.invokable;
 
+import org.apache.flink.api.common.functions.util.FunctionUtils;
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.function.sink.SinkFunction;
-
-import java.util.HashSet;
+import org.apache.flink.streaming.util.ExactlyOnceParameters;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import pintergreg.bloomfilter.A2BloomFilter;
 
 public class SinkInvokable<IN> extends ChainableInvokable<IN, IN> {
 	private static final long serialVersionUID = 1L;
+	private static final Logger LOG = LoggerFactory.getLogger(SinkInvokable.class);
+
 
 	private SinkFunction<IN> sinkFunction;
 
 	//TODO ##ID_GEN amíg nem BF-et teszek ide teszelni
-	private HashSet<Long> idStore;
+	//private HashSet<Long> idStore;
+	private A2BloomFilter bloomFilter;
+	private boolean isExactlyOnce = false;
 
 	public SinkInvokable(SinkFunction<IN> sinkFunction) {
 		super(sinkFunction);
 		this.sinkFunction = sinkFunction;
 
-		this.idStore = new HashSet<Long>();
+		//this.isExactlyOnce =
+		//this.idStore = new HashSet<Long>();
+//		if (this.isExactlyOnce) {
+//			this.bloomFilter = new A2BloomFilter(1000000, 0.000001, 10000);
+//		}
 	}
 
 	@Override
@@ -45,11 +57,33 @@ public class SinkInvokable<IN> extends ChainableInvokable<IN, IN> {
 
 	@Override
 	protected void callUserFunction() throws Exception {
-		//TODO ide akarom a Bloom Filter ellenőrzést tenni
 		//###ID_GEN
-		if(!idStore.contains(nextRecord.getId().getCurrentRecordId())) {
-			idStore.add(nextRecord.getId().getCurrentRecordId());
+		/*
+		 * Is this record seen before?
+		 */
+//		if(!idStore.contains(nextRecord.getId().getCurrentRecordId())) {
+//			idStore.add(nextRecord.getId().getCurrentRecordId());
+//
+//			sinkFunction.invoke(nextObject);
+//			System.out.println("\t\t\t\t" + nextRecord.getId().getCurrentRecordId() + "\tcontent:" + (String) nextObject);
+//		}else{
+//			System.out.println("\tI'VE ALREADY SEEN THIS BEFORE: "+nextRecord.getId().getCurrentRecordId()+"\tcontent:"+(String)nextObject);
+//		}
 
+		if (this.isExactlyOnce) {
+			if (!bloomFilter.include(nextRecord.getId().getCurrentRecordId())) {
+				bloomFilter.add(nextRecord.getId().getCurrentRecordId());
+
+				sinkFunction.invoke(nextObject);
+
+				if (LOG.isDebugEnabled()) {
+					LOG.debug("BLOOMFILTER", "Bloom Filter has not seen this before with the ID of {}, and the content of: {}", nextRecord.getId().getCurrentRecordId(), String.valueOf(nextObject));
+				}
+			} else if (LOG.isDebugEnabled()) {
+				LOG.debug("BLOOMFILTER", "BLOOMFILTER HAS ALREADY SEEN THIS BEFORE WITH THE ID OF {}, AND THE CONTENT OF: {}", nextRecord.getId().getCurrentRecordId(), String.valueOf(nextObject));
+			}
+
+		} else {
 			sinkFunction.invoke(nextObject);
 		}
 
@@ -59,6 +93,33 @@ public class SinkInvokable<IN> extends ChainableInvokable<IN, IN> {
 	public void collect(IN record) {
 		nextObject = copy(record);
 		callUserFunctionAndLogException();
+	}
+
+	@Override
+	public void open(Configuration parameters) throws Exception {
+		isRunning = true;
+		this.isExactlyOnce = taskContext.getConfig().getExactlyOnce();
+		if (this.isExactlyOnce) {
+			ExactlyOnceParameters p = taskContext.getConfig().getExactlyOnceParameters();
+			this.bloomFilter = new A2BloomFilter(p.getN(), p.getP(), p.getTtl());
+		}
+		FunctionUtils.openFunction(userFunction, parameters);
+
+	}
+
+	@Override
+	public void close() {
+		isRunning = false;
+		collector.close();
+		try {
+			FunctionUtils.closeFunction(userFunction);
+		} catch (Exception e) {
+			throw new RuntimeException("Error when closing the function: " + e.getMessage());
+		} finally {
+			if (this.isExactlyOnce) {
+				this.bloomFilter.stopTimer();
+			}
+		}
 	}
 
 }

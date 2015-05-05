@@ -28,7 +28,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Random;
 
 public class StreamOutput<OUT> implements Collector<OUT> {
 
@@ -40,8 +39,18 @@ public class StreamOutput<OUT> implements Collector<OUT> {
 	// ex-channelID
 	private int instanceID;
 	private AbstractFTHandler<?> abstractFTHandler;
-	//###ID_GEN
-	private int childRecordCounter;
+	//private int childRecordCounter;
+
+	private String vertexType;
+
+	public StreamOutput(RecordWriter<SerializationDelegate<StreamRecord<OUT>>> output,
+			int instanceID, SerializationDelegate<StreamRecord<OUT>> serializationDelegate,
+			AbstractFTHandler<?> abstractFTHandler, String vertexType) {
+
+		this(output, instanceID, serializationDelegate, abstractFTHandler);
+
+		this.vertexType = vertexType;
+	}
 
 	public StreamOutput(RecordWriter<SerializationDelegate<StreamRecord<OUT>>> output,
 			int instanceID, SerializationDelegate<StreamRecord<OUT>> serializationDelegate,
@@ -58,8 +67,9 @@ public class StreamOutput<OUT> implements Collector<OUT> {
 		this.instanceID = instanceID;
 		this.output = output;
 
-		//###ID_GEN
-		this.childRecordCounter = 0;
+		// Set zero the child record counter
+		//this.childRecordCounter = 0;
+
 	}
 
 	public RecordWriter<SerializationDelegate<StreamRecord<OUT>>> getRecordWriter() {
@@ -73,14 +83,22 @@ public class StreamOutput<OUT> implements Collector<OUT> {
 		serializationDelegate.setInstance(streamRecord);
 
 		try {
-			//TODO ###ID_GEN innen kell átadogatni a szukseges extra parametereket
-			Random rand = new Random();
-			this.childRecordCounter ++;//= rand.nextInt();
-			abstractFTHandler.setOutRecordId(serializationDelegate, this.instanceID, this.childRecordCounter);
-			//TODO nasty debug
-			if(this.instanceID>1 && this.instanceID<6) {
-				output.emit(serializationDelegate);
+			/*
+			 * Give parameters for deterministic ID generation.
+			 * Three parameters are necessary:
+			 *  1. instance IDE
+			 *  2. parent record ID
+			 *  3. child record counter, that is an ordering of egress records
+			 *  Instance ID and the child record counter can be given here, parent record ID is passed elsewhere (in FTAnchorHandler)
+			 */
+			//this.childRecordCounter++;
+			//this.childRecordCounter=1;
+			if (this.vertexType!=null && this.vertexType.equals("SOURCE")) {
+				abstractFTHandler.setOutRecordId(serializationDelegate, this.instanceID, /*1,*/ true);
+			}else{
+				abstractFTHandler.setOutRecordId(serializationDelegate, this.instanceID, /*this.childRecordCounter,*/ false);
 			}
+
 			output.emit(serializationDelegate);
 			abstractFTHandler.xor(serializationDelegate.getInstance());
 		} catch (Exception e) {
@@ -107,8 +125,8 @@ public class StreamOutput<OUT> implements Collector<OUT> {
 		}
 	}
 
-	public void resetChildRecordCounter() {
-		this.childRecordCounter = 0;
-	}
+//	public void resetChildRecordCounter() {
+//		this.childRecordCounter = 0;
+//	}
 
 }

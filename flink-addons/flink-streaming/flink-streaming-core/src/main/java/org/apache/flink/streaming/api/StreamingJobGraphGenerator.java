@@ -219,6 +219,10 @@ public class StreamingJobGraphGenerator {
 		config.setChainedOutputs(chainableOutputs);
 		config.setFTStatus(ftStatus);
 
+		//exatcly once switch
+		config.setExactlyOnce(streamGraph.getExactlyOne());
+		config.setExactlyOnceParameters(streamGraph.getExactlyOneParameters());
+
 		Class<? extends AbstractInvokable> vertexClass = streamGraph.getJobVertexClass(vertexName);
 
 		if (vertexClass.equals(StreamIterationHead.class)

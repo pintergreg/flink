@@ -37,10 +37,24 @@ public class FTAnchorHandler implements AnchorHandler {
 	}
 
 	@Override
-	public RecordId setOutRecordId(SerializationDelegate<? extends IdentifiableStreamRecord> outRecord, int instanceID, int childRecordCounter) {
-		long sourceRecordId = anchorRecordId.getSourceRecordId();
-		//###ID_GEN
-		return outRecord.getInstance().newId(sourceRecordId, anchorRecordId.getCurrentRecordId(), instanceID, childRecordCounter);
+	public RecordId setOutRecordId(SerializationDelegate<? extends IdentifiableStreamRecord> outRecord, int instanceID, int childRecordCounter, boolean isItSource) {
+		if (anchorRecordId != null) {
+
+			long sourceRecordId = anchorRecordId.getSourceRecordId();
+		/* Give parameters for deterministic ID generation.
+		 *  0. root ID
+		 *  1. parent record ID
+		 *  2. instance ID
+		 *  3. child record counter, that is an ordering of egress records
+		 *  4. node type (true is source)
+		 *  Instance ID and the child record counter comes from StreamOutput, parent record ID can be passed here
+		 */
+			return outRecord.getInstance().newId(sourceRecordId, anchorRecordId.getCurrentRecordId(), instanceID, childRecordCounter, isItSource);
+		}else{
+			//WTF
+			//System.err.println("WTF");
+			return new RecordId().newRootId();
+		}
 	}
 
 }

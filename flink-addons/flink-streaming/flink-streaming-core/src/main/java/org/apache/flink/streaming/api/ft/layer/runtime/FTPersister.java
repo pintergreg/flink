@@ -43,6 +43,7 @@ public class FTPersister<T> implements Persister<T> {
 		// régi:
 		//record.setId(RecordId.newSourceRecordId());
 		record.setId(RecordId.newRootId());
+		//System.err.println("___ " + record.getId().getSourceRecordId());
 
 		anchorHandler.setAnchorRecord(record);
 		serializationDelegate.setInstance(record);

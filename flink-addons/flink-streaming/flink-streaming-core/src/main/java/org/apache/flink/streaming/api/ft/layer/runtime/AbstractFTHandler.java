@@ -35,17 +35,23 @@ public abstract class AbstractFTHandler<T> extends XorHandler implements
 	protected AnchorHandler anchorHandler;
 	protected XorHandler xorHandler;
 
+	protected int c;//TODO átnevezni, ez a jó counter!!!
+
 	public AbstractFTHandler(Persister<T> persister, XorHandler xorHandler, AnchorHandler
 			anchorHandler) {
 		this.persister = persister;
 		this.anchorHandler = anchorHandler;
 		this.xorHandler = xorHandler;
+
+		c=0;
+
 	}
 
 	public abstract void fail();
 
 	@Override
 	public void setAnchorRecord(IdentifiableStreamRecord anchorRecord) {
+		c=0;
 		anchorHandler.setAnchorRecord(anchorRecord);
 	}
 
@@ -56,8 +62,14 @@ public abstract class AbstractFTHandler<T> extends XorHandler implements
 
 	@Override
 	public RecordId setOutRecordId(SerializationDelegate<? extends IdentifiableStreamRecord>
-			outRecord, int instanceID, int childRecordCounter) {
-		return anchorHandler.setOutRecordId(outRecord, instanceID, childRecordCounter);
+			outRecord, int instanceID, int childRecordCounter, boolean isItSource) {
+		return anchorHandler.setOutRecordId(outRecord, instanceID, childRecordCounter, isItSource);
+	}
+
+
+	public RecordId setOutRecordId(SerializationDelegate<? extends IdentifiableStreamRecord>
+			outRecord, int instanceID, boolean isItSource) {
+		return setOutRecordId(outRecord, instanceID, c++, isItSource);
 	}
 
 	@Override

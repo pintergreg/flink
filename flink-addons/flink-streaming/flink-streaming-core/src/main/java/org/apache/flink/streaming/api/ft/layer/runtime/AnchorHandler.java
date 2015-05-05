@@ -27,11 +27,10 @@ public interface AnchorHandler {
 
 	public RecordId getAnchorRecord();
 
-	//###ID_GEN
-//	public RecordId setOutRecordId(SerializationDelegate<? extends IdentifiableStreamRecord>
-//			outRecord);
-
+	/*
+	 * Additional parameters (instanceID, childRecordCounter) are added for deterministic ID generation
+	 */
 	public RecordId setOutRecordId(SerializationDelegate<? extends IdentifiableStreamRecord>
-			outRecord, int instanceID, int childRecordCounter);
+			outRecord, int instanceID, int childRecordCounter, boolean isItSource);
 
 }

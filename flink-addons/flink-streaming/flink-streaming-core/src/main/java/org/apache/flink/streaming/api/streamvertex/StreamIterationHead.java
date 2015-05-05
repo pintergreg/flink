@@ -17,18 +17,18 @@
 
 package org.apache.flink.streaming.api.streamvertex;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
-
 import org.apache.flink.streaming.api.collector.StreamOutput;
 import org.apache.flink.streaming.api.ft.layer.runtime.NonFTHandler;
 import org.apache.flink.streaming.api.streamrecord.StreamRecord;
 import org.apache.flink.streaming.io.BlockingQueueBroker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 public class StreamIterationHead<OUT> extends StreamSourceVertex<OUT> {
 
@@ -53,7 +53,7 @@ public class StreamIterationHead<OUT> extends StreamSourceVertex<OUT> {
 	@Override
 	public void setInputsOutputs() {
 		abstractFTHandler = new NonFTHandler<OUT>();
-		outputHandler = new OutputHandler<OUT>(this, abstractFTHandler);
+		outputHandler = new OutputHandler<OUT>(this, abstractFTHandler, "SOURCE");
 
 		iterationId = configuration.getIterationId();
 		iterationWaitTime = configuration.getIterationWaitTime();

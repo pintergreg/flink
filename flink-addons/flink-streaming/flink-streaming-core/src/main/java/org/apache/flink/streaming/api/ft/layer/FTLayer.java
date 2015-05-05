@@ -74,6 +74,7 @@ public class FTLayer {
 			//régi:
 			//RecordId newSourceRecordId = RecordId.newSourceRecordId();
 			RecordId newSourceRecordId = RecordId.newReplayedRootId(sourceRecordId);
+			//System.err.println("ft layer");
 
 			long newId = newSourceRecordId.getSourceRecordId();
 

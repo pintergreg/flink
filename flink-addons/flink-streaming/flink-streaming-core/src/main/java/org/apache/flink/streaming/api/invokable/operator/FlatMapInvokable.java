@@ -18,12 +18,20 @@
 package org.apache.flink.streaming.api.invokable.operator;
 
 import org.apache.flink.api.common.functions.FlatMapFunction;
+import org.apache.flink.api.common.functions.StatefulFlatMapFunction;
+import org.apache.flink.api.common.functions.util.FunctionUtils;
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.invokable.ChainableInvokable;
+import org.apache.flink.streaming.util.ExactlyOnceParameters;
+import pintergreg.bloomfilter.A2BloomFilter;
 
 public class FlatMapInvokable<IN, OUT> extends ChainableInvokable<IN, OUT> {
 	private static final long serialVersionUID = 1L;
 
 	private FlatMapFunction<IN, OUT> flatMapper;
+
+	private A2BloomFilter bloomFilter;
+	private boolean isExactlyOnce = false;
 
 	public FlatMapInvokable(FlatMapFunction<IN, OUT> flatMapper) {
 		super(flatMapper);
@@ -39,7 +47,24 @@ public class FlatMapInvokable<IN, OUT> extends ChainableInvokable<IN, OUT> {
 
 	@Override
 	protected void callUserFunction() throws Exception {
-		flatMapper.flatMap(nextObject, collector);
+		//old
+		//flatMapper.flatMap(nextObject, collector);
+
+		//###DOCUMENT
+		if (flatMapper instanceof StatefulFlatMapFunction) {
+			if (this.isExactlyOnce) {
+				if (!bloomFilter.include(nextRecord.getId().getCurrentRecordId())) {
+					bloomFilter.add(nextRecord.getId().getCurrentRecordId());
+					((StatefulFlatMapFunction) flatMapper).flatMap(nextObject, collector, false);
+				} else {
+					((StatefulFlatMapFunction) flatMapper).flatMap(nextObject, collector, true);
+				}
+			}else {
+				flatMapper.flatMap(nextObject, collector);
+			}
+		} else {
+			flatMapper.flatMap(nextObject, collector);
+		}
 	}
 
 	@Override
@@ -48,4 +73,29 @@ public class FlatMapInvokable<IN, OUT> extends ChainableInvokable<IN, OUT> {
 		callUserFunctionAndLogException();
 	}
 
+	@Override
+	public void open(Configuration parameters) throws Exception {
+		isRunning = true;
+		this.isExactlyOnce = taskContext.getConfig().getExactlyOnce();
+		if (this.isExactlyOnce) {
+			ExactlyOnceParameters p = taskContext.getConfig().getExactlyOnceParameters();
+			this.bloomFilter = new A2BloomFilter(p.getN(), p.getP(), p.getTtl());
+		}
+		FunctionUtils.openFunction(userFunction, parameters);
+	}
+
+	@Override
+	public void close() {
+		isRunning = false;
+		collector.close();
+		try {
+			FunctionUtils.closeFunction(userFunction);
+		} catch (Exception e) {
+			throw new RuntimeException("Error when closing the function: " + e.getMessage());
+		} finally {
+			if (this.isExactlyOnce) {
+				this.bloomFilter.stopTimer();
+			}
+		}
+	}
 }

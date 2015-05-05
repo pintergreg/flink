@@ -148,9 +148,12 @@ public class OpFTLayerBuilder implements FTLayerBuilder {
 	 */
 	@Override
 	public void addEdgeInformation(String sourceName, String taskName, StreamPartitioner.PartitioningStrategy partitionStrategy) {
-		System.out.println(sourceName + "->" + taskName + ", ps:" + partitionStrategy.name());
+		// ###edge
+		LOG.debug("EDGE_FROM_SOURCE", "Edge from source:: {}->{}, partition strategy:{}", sourceName, taskName, partitionStrategy.name());
 		if (ftLayerInputs.containsKey(sourceName) && ftLayerOutputs.containsKey(taskName)) {
-			System.out.println("EDGE_FROM_SOURCE::" + sourceName + "->" + taskName);
+
+			LOG.debug("EDGE_FROM_SOURCE", "Edge from source:: {}->{}", sourceName, taskName);
+
 			ftLayerEdgeInformations.add(new FTEdgeInformation(
 							ftLayerInputs.get(sourceName),
 							ftLayerOutputs.get(taskName),

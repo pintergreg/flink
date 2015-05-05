@@ -54,7 +54,6 @@ public class MultiplePartitoinedReplayTestWithPOJO {
 		DataStream<simpleStringPOJO> source2 = env.addSource(new strPOJOSource()).setChainingStrategy(StreamInvokable.ChainingStrategy.NEVER);
 
 
-
 		source1.shuffle().merge(source2.map(new crossPOJOMap())).map(new integerPOJOMap()).addSink(new SimpleSink());
 
 
@@ -170,7 +169,7 @@ public class MultiplePartitoinedReplayTestWithPOJO {
 
 		@Override
 		public void invoke(Collector<simpleIntegerPOJO> collector) throws Exception {
-			for (int i = 0; i < 10; i+=2) {
+			for (int i = 0; i < 10; i += 2) {
 				collector.collect(new simpleIntegerPOJO(i));
 			}
 		}
@@ -181,7 +180,7 @@ public class MultiplePartitoinedReplayTestWithPOJO {
 
 		@Override
 		public void invoke(Collector<simpleStringPOJO> collector) throws Exception {
-			for (int i = 1; i < 10; i+=2) {
+			for (int i = 1; i < 10; i += 2) {
 				collector.collect(new simpleStringPOJO(String.valueOf(i)));
 			}
 		}

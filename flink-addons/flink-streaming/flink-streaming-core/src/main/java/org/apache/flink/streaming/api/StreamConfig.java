@@ -17,14 +17,6 @@
 
 package org.apache.flink.streaming.api;
 
-import static org.apache.flink.streaming.api.FTLayerBuilder.FTStatus;
-
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.commons.lang3.SerializationException;
 import org.apache.commons.lang3.SerializationUtils;
 import org.apache.flink.api.java.functions.KeySelector;
@@ -37,7 +29,16 @@ import org.apache.flink.streaming.api.streamvertex.StreamVertexException;
 import org.apache.flink.streaming.partitioner.ShufflePartitioner;
 import org.apache.flink.streaming.partitioner.StreamPartitioner;
 import org.apache.flink.streaming.state.OperatorState;
+import org.apache.flink.streaming.util.ExactlyOnceParameters;
 import org.apache.flink.util.InstantiationUtil;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static org.apache.flink.streaming.api.FTLayerBuilder.FTStatus;
 
 public class StreamConfig implements Serializable {
 	private static final long serialVersionUID = 1L;
@@ -66,10 +67,30 @@ public class StreamConfig implements Serializable {
 	private static final String OUTPUTS = "outVertexNames";
 	private static final String EDGES_IN_ORDER = "rwOrder";
 	private static final String FT_STATUS = "ftStatus";
+
 	// DEFAULT VALUES
 	private static final long DEFAULT_TIMEOUT = 100;
 	// CONFIG METHODS
 	private Configuration config;
+
+	private static final String EXACTLY_ONCE = "exactlyOnce";
+	private static final String EXACTLY_ONCE_PARAMETERS = "exactlyOnceParameters";
+
+	public void setExactlyOnce(boolean enabled) {
+		config.setBoolean(EXACTLY_ONCE, enabled);
+	}
+
+	public boolean getExactlyOnce() {
+		return config.getBoolean(EXACTLY_ONCE, false);
+	}
+
+	public void setExactlyOnceParameters(ExactlyOnceParameters p) {
+		config.setBytes(EXACTLY_ONCE_PARAMETERS, SerializationUtils.serialize((Serializable) p));
+	}
+
+	public ExactlyOnceParameters getExactlyOnceParameters() {
+		return (ExactlyOnceParameters)SerializationUtils.deserialize(config.getBytes(EXACTLY_ONCE_PARAMETERS, null));
+	}
 
 	public StreamConfig(Configuration config) {
 		this.config = config;

@@ -52,6 +52,7 @@ import org.apache.flink.streaming.api.function.source.SocketTextStreamFunction;
 import org.apache.flink.streaming.api.function.source.SourceFunction;
 import org.apache.flink.streaming.api.invokable.SourceInvokable;
 import org.apache.flink.streaming.api.invokable.StreamInvokable;
+import org.apache.flink.streaming.util.ExactlyOnceParameters;
 
 /**
  * {@link ExecutionEnvironment} for streaming jobs. An instance of it is
@@ -611,6 +612,21 @@ public abstract class StreamExecutionEnvironment {
 	 */
 	public String getExecutionPlan() {
 		return getStreamGraph().getStreamingPlanAsJSON();
+	}
+
+	//Gergő
+
+//	public void setExactlyOnceExecution(boolean value){
+//		this.streamGraph.setExactlyOnce(value);
+//	}
+
+	public void setExactlyOnceExecution(ExactlyOnceParameters p){
+		this.streamGraph.setExactlyOnce(true);
+		this.streamGraph.setExactlyOnceParameters(p);
+	}
+
+	public void disableExactlyOnceExecution(){
+		this.streamGraph.setExactlyOnce(false);
 	}
 
 }

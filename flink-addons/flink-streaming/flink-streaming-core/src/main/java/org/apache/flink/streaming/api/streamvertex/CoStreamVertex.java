@@ -17,8 +17,6 @@
 
 package org.apache.flink.streaming.api.streamvertex;
 
-import java.util.ArrayList;
-
 import org.apache.flink.runtime.io.network.api.reader.BufferReader;
 import org.apache.flink.runtime.io.network.api.reader.BufferReaderBase;
 import org.apache.flink.runtime.io.network.api.reader.UnionBufferReader;
@@ -30,6 +28,8 @@ import org.apache.flink.streaming.api.streamrecord.StreamRecordSerializer;
 import org.apache.flink.streaming.io.CoReaderIterator;
 import org.apache.flink.streaming.io.CoRecordReader;
 import org.apache.flink.util.MutableObjectIterator;
+
+import java.util.ArrayList;
 
 public class CoStreamVertex<IN1, IN2, OUT> extends StreamVertex<IN1, OUT> {
 
@@ -59,7 +59,7 @@ public class CoStreamVertex<IN1, IN2, OUT> extends StreamVertex<IN1, OUT> {
 	@Override
 	public void setInputsOutputs() {
 		abstractFTHandler = new NonFTHandler<OUT>();
-		outputHandler = new OutputHandler<OUT>(this, abstractFTHandler);
+		outputHandler = new OutputHandler<OUT>(this, abstractFTHandler, "CO-TASK");
 
 		setConfigInputs();
 

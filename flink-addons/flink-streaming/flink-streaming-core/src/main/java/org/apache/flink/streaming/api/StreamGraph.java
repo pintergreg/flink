@@ -17,18 +17,6 @@
 
 package org.apache.flink.streaming.api;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import org.apache.flink.api.common.io.InputFormat;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.functions.KeySelector;
@@ -48,6 +36,7 @@ import org.apache.flink.streaming.api.streamvertex.StreamVertex;
 import org.apache.flink.streaming.partitioner.FieldsPartitioner;
 import org.apache.flink.streaming.partitioner.StreamPartitioner;
 import org.apache.flink.streaming.state.OperatorState;
+import org.apache.flink.streaming.util.ExactlyOnceParameters;
 import org.apache.flink.streaming.util.keys.ConstantKeySelector;
 import org.apache.hadoop.net.NetworkTopology.InvalidTopologyException;
 import org.apache.sling.commons.json.JSONArray;
@@ -55,6 +44,18 @@ import org.apache.sling.commons.json.JSONException;
 import org.apache.sling.commons.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Object for building Apache Flink stream processing graphs
@@ -65,6 +66,8 @@ public class StreamGraph extends StreamingPlan {
 	private final static String DEAFULT_JOB_NAME = "Flink Streaming Job";
 
 	protected boolean chaining = true;
+	protected boolean exactlyOnce = false;
+	protected ExactlyOnceParameters exactlyOnceParameters;
 	protected String jobName = DEAFULT_JOB_NAME;
 
 	private static final FTStatus ftStatus = FTStatus.ON;
@@ -680,5 +683,21 @@ public class StreamGraph extends StreamingPlan {
 
 	public KeySelector<?, ?> getKeySelector(String upStreamVertexName) {
 		return keySelectors.get(upStreamVertexName);
+	}
+
+	public boolean getExactlyOne(){
+		return this.exactlyOnce;
+	}
+
+	public void setExactlyOnce(boolean value){
+		this.exactlyOnce = value;
+	}
+
+	public void setExactlyOnceParameters(ExactlyOnceParameters p){
+		this.exactlyOnceParameters = p;
+	}
+
+	public ExactlyOnceParameters getExactlyOneParameters(){
+		return this.exactlyOnceParameters;
 	}
 }

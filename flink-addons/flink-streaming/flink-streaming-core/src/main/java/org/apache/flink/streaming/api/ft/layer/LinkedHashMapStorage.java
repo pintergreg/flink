@@ -17,15 +17,16 @@
 
 package org.apache.flink.streaming.api.ft.layer;
 
-import java.util.LinkedHashMap;
-
 import org.apache.flink.streaming.api.ft.layer.id.RecordWithHashCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class LinkedHashMapStorage implements AbstractPersistenceStorage<Long, RecordWithHashCode> {
-	private final static Logger LOG = LoggerFactory.getLogger(LinkedHashMapStorage.class);
+import java.io.Serializable;
+import java.util.LinkedHashMap;
 
+public class LinkedHashMapStorage implements AbstractPersistenceStorage<Long, RecordWithHashCode>, Serializable {
+	private final static Logger LOG = LoggerFactory.getLogger(LinkedHashMapStorage.class);
+	private static final long serialVersionUID = 1L;
 	private LinkedHashMap<Long, RecordWithHashCode> backup;
 
 	public LinkedHashMapStorage() {

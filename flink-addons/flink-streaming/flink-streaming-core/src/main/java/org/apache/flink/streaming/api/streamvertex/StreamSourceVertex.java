@@ -17,8 +17,6 @@
 
 package org.apache.flink.streaming.api.streamvertex;
 
-import static org.apache.flink.streaming.api.FTLayerBuilder.FTStatus;
-
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.runtime.plugable.SerializationDelegate;
 import org.apache.flink.streaming.api.ft.layer.runtime.AnchorHandler;
@@ -36,6 +34,8 @@ import org.apache.flink.streaming.api.streamrecord.StreamRecordSerializer;
 import org.apache.flink.streaming.io.StreamRecordWriter;
 import org.apache.flink.streaming.partitioner.PersistencePartitioner;
 import org.apache.flink.util.MutableObjectIterator;
+
+import static org.apache.flink.streaming.api.FTLayerBuilder.FTStatus;
 
 public class StreamSourceVertex<OUT> extends StreamVertex<OUT, OUT> {
 
@@ -73,7 +73,7 @@ public class StreamSourceVertex<OUT> extends StreamVertex<OUT, OUT> {
 			abstractFTHandler = new NonFTHandler();
 		}
 		userInvokable = sourceInvokable;
-		outputHandler = new OutputHandler<OUT>(this, abstractFTHandler);
+		outputHandler = new OutputHandler<OUT>(this, abstractFTHandler, "SOURCE");
 	}
 
 	@Override

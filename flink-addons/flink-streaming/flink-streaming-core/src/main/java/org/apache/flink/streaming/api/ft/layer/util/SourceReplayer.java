@@ -68,6 +68,7 @@ public class SourceReplayer implements Collector<SemiDeserializedStreamRecord> {
 		for (RecordWriter<SerializationDelegate<SemiDeserializedStreamRecord>> output : outputs) {
 			try {
 				RecordId newRecordId = setOutRecordId(serializationDelegate);
+				//RecordId newRecordId = serializationDelegate.getInstance().getId();
 				output.emit(serializationDelegate);
 				ftLayer.xor(newRecordId);
 			} catch (Exception e) {

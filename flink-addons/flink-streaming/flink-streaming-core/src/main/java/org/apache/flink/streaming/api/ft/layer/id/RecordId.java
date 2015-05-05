@@ -23,6 +23,8 @@ import org.apache.flink.core.io.IOReadableWritable;
 import org.apache.flink.core.memory.DataInputView;
 import org.apache.flink.core.memory.DataOutputView;
 import org.apache.flink.runtime.plugable.SerializationDelegate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -31,6 +33,7 @@ import java.util.Random;
 public class RecordId implements IOReadableWritable, Serializable, Comparable<RecordId> {
 
 	private static final long serialVersionUID = 1L;
+	private static final Logger LOG = LoggerFactory.getLogger(RecordId.class);
 
 	private static Random random = new Random();
 
@@ -45,6 +48,9 @@ public class RecordId implements IOReadableWritable, Serializable, Comparable<Re
 		this.sourceRecordId = sourceRecordId;
 	}
 
+	/*
+	 * the old ID generation method, not used in production code anymore
+	 */
 	public static RecordId newSourceXorMessage(long offset) {
 		RecordId sourceXorMessage = new RecordId();
 		sourceXorMessage.currentRecordId = offset;
@@ -52,6 +58,9 @@ public class RecordId implements IOReadableWritable, Serializable, Comparable<Re
 		return sourceXorMessage;
 	}
 
+	/*
+	 * the old ID generation method, not used in production code anymore
+	 */
 	public static RecordId newSourceRecordId() {
 		RecordId sourceXorMessage = new RecordId();
 		long rnd = random.nextLong();
@@ -60,6 +69,9 @@ public class RecordId implements IOReadableWritable, Serializable, Comparable<Re
 		return sourceXorMessage;
 	}
 
+	/*
+	 * the old ID generation method, not used in production code anymore
+	 */
 	public static RecordId newRecordId(long sourceRecordId) {
 		RecordId sourceXorMessage = new RecordId();
 		sourceXorMessage.currentRecordId = random.nextLong();
@@ -133,6 +145,11 @@ public class RecordId implements IOReadableWritable, Serializable, Comparable<Re
 		return (int) currentRecordId;
 	}
 
+	/**
+	 * Generates new ID for a root record
+	 *
+	 * @return a RecordId, with a new random selected 64 bit value
+	 */
 	public static RecordId newRootId() {
 		RecordId rid = new RecordId();
 		long rnd = random.nextLong() & 0xFFFFFFFFFFFFFFFEL; //for setting LSB to zero
@@ -141,24 +158,87 @@ public class RecordId implements IOReadableWritable, Serializable, Comparable<Re
 		return rid;
 	}
 
+	/**
+	 * Copies the original record ID to the "new", replayed record.
+	 *
+	 * @param originalRootId
+	 * 		- the 64 bit ID of the original record, that will be replayed
+	 * @return a RecordId
+	 */
 	public static RecordId newReplayedRootId(long originalRootId) {
 		RecordId rid = new RecordId();
-		long rrid = originalRootId | 0x1L; //for setting LSB to one
-		rid.currentRecordId = rrid;
-		rid.sourceRecordId = rrid;
+		rid.currentRecordId = originalRootId;
+		rid.sourceRecordId = originalRootId;//  | 0x1L; //for setting LSB to one
+		//System.err.println(originalRootId + "," +(originalRootId  | 0x1L));
 		return rid;
 	}
 
-	public static RecordId newReplayableRecordId(long sourceRecordId, long parentRecordId, int nodeId, int chidRecordCounter) {
+	/**
+	 * Generated a new record ID for a non-root records in a deterministic way with a 64 bit hash
+	 * function from some paramteres:
+	 *
+	 * @param sourceRecordId
+	 * 		- the root record ID, that shows which record three the record belongs to
+	 * @param parentRecordId
+	 * 		- the ID of the predecessor of the record
+	 * @param nodeId
+	 * 		- ID of the node, where this new record is created
+	 * @param childRecordCounter
+	 * 		- child record are counted from zero according to a predecessor record
+	 * @param isItSource
+	 * 		- shows whether the node is a source or not
+	 * @return a new RecordId object
+	 */
+	public static RecordId newReplayableRecordId(long sourceRecordId, long parentRecordId, int nodeId, int childRecordCounter, boolean isItSource) {
 		RecordId rid = new RecordId();
-		String str = String.valueOf(parentRecordId) + String.valueOf(nodeId) + String.valueOf(chidRecordCounter);
+		if (isItSource) {
+			// if the node is source, keep the root record ID, because at sources this method is called when it would not be necessary...
+			rid.currentRecordId = sourceRecordId;
+			//rid.currentRecordId = parentRecordId;
+		} else {
+			// simply put the parameters into a string and than hash the string
+			StringBuilder sb = new StringBuilder();
+			sb.append(parentRecordId);
+			sb.append(nodeId);
+			sb.append(childRecordCounter);
 
-		//TODO chnage nasty debug
-		System.out.println("  NEWID_COMPONENTS:" + String.valueOf(parentRecordId) + "," + String.valueOf(nodeId) + "," + String.valueOf(chidRecordCounter));
+			rid.currentRecordId = redis.clients.util.MurmurHash.hash64A(sb.toString().getBytes(), 0x5EED);
+		}
 
-		rid.currentRecordId = redis.clients.util.MurmurHash.hash64A(str.getBytes(),0x5EED);
+		System.err.printf(String.format("NEW ID COMPONENTS: %s, %s, %s and the NEW ID: %s\n", String.valueOf(parentRecordId), String.valueOf(nodeId), String.valueOf(childRecordCounter), rid.currentRecordId));
 
-		System.out.println("    NEWID:" + rid.currentRecordId );
+		if (LOG.isDebugEnabled()) {
+			LOG.debug("NEWID", "NEW ID COMPONENTS: {}, {}, {} and the NEW ID: {}", String.valueOf(parentRecordId), String.valueOf(nodeId), String.valueOf(childRecordCounter), rid.currentRecordId);
+		}
+
+		// set the root record ID
+		rid.sourceRecordId = sourceRecordId;
+		return rid;
+	}
+
+	public static RecordId newReplayableParentlessRecordId(long sourceRecordId, long parentRecordId, int nodeId, int childRecordCounter, boolean isItSource) {
+		RecordId rid = new RecordId();
+		if (isItSource) {
+			// if the node is source, keep the root record ID, because at sources this method is called when it would not be necessary...
+			rid.currentRecordId = sourceRecordId;
+			//rid.currentRecordId = parentRecordId;
+		} else {
+			// simply put the parameters into a string and than hash the string
+			StringBuilder sb = new StringBuilder();
+			sb.append(parentRecordId);
+			sb.append(nodeId);
+			sb.append(childRecordCounter);
+
+			rid.currentRecordId = redis.clients.util.MurmurHash.hash64A(sb.toString().getBytes(), 0x5EED);
+		}
+
+		System.err.printf(String.format("NEW ID COMPONENTS: %s, %s, %s and the NEW ID: %s\n", String.valueOf(parentRecordId), String.valueOf(nodeId), String.valueOf(childRecordCounter), rid.currentRecordId));
+
+		if (LOG.isDebugEnabled()) {
+			LOG.debug("NEWID", "NEW ID COMPONENTS: {}, {}, {} and the NEW ID: {}", String.valueOf(parentRecordId), String.valueOf(nodeId), String.valueOf(childRecordCounter), rid.currentRecordId);
+		}
+
+		// set the root record ID
 		rid.sourceRecordId = sourceRecordId;
 		return rid;
 	}

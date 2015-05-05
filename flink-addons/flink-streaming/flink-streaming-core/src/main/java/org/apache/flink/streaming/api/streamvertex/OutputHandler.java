@@ -57,8 +57,14 @@ public class OutputHandler<OUT> {
 	private Map<String, StreamConfig> chainedConfigs;
 	private List<Tuple2<String, String>> outEdgesInOrder;
 	private AbstractFTHandler<OUT> abstractFTHandler;
+	//private String vertexType;
 
-	public OutputHandler(StreamVertex<?, OUT> vertex, AbstractFTHandler<OUT> abstractFTHandler) {
+//	public OutputHandler(StreamVertex<?, OUT> vertex, AbstractFTHandler<OUT> abstractFTHandler, String vertexType) {
+//		this(vertex, abstractFTHandler);
+//		this.vertexType = vertexType;
+//	}
+
+	public OutputHandler(StreamVertex<?, OUT> vertex, AbstractFTHandler<OUT> abstractFTHandler, String vertexType) {
 
 		// Initialize some fields
 		this.vertex = vertex;
@@ -79,7 +85,7 @@ public class OutputHandler<OUT> {
 		// a stream output
 		for (Tuple2<String, String> outEdge : outEdgesInOrder) {
 			StreamOutput<?> streamOutput = createStreamOutput(outEdge.f1,
-					chainedConfigs.get(outEdge.f0), outEdgesInOrder.indexOf(outEdge));
+					chainedConfigs.get(outEdge.f0), outEdgesInOrder.indexOf(outEdge), vertexType);
 			outputMap.put(outEdge.f1, streamOutput);
 		}
 
@@ -173,7 +179,7 @@ public class OutputHandler<OUT> {
 	 * @return
 	 */
 	private <T> StreamOutput<T> createStreamOutput(String outputVertex, StreamConfig configuration,
-			int outputIndex) {
+			int outputIndex, String vertexType) {
 
 		StreamRecordSerializer<T> outSerializer = configuration
 				.getTypeSerializerOut1(vertex.userClassLoader);
@@ -206,7 +212,7 @@ public class OutputHandler<OUT> {
 		}
 
 		StreamOutput<T> streamOutput = new StreamOutput<T>(output, vertex.instanceID,
-				outSerializationDelegate, abstractFTHandler);
+				outSerializationDelegate, abstractFTHandler, vertexType);
 
 		if (LOG.isTraceEnabled()) {
 			LOG.trace("Partitioner set: {} with {} outputs for {}", outputPartitioner.getClass()
@@ -231,15 +237,12 @@ public class OutputHandler<OUT> {
 
 		try {
 
-			//###ID_GEN
-//			outputMap.get(outEdgesInOrder.get(vertex.getInstanceID())).resetChildRecordCounter();
-
-			for (StreamOutput<?> so:outputMap.values()){
-				so.resetChildRecordCounter();
-			}
-
-			System.out.println("...." + vertex.getName() + "," + vertex.getInstanceID() + "   " + outputMap.size());
-
+//			 for id generation and child record counter reset... ###ID_GEN
+//
+//			for (StreamOutput<?> so : outputMap.values()) {
+//				so.resetChildRecordCounter();
+//			}
+//			LOG.debug("TASK_OUTPUT", "node Name {}, node ID:{}, output map:{}", vertex.getName(), vertex.getInstanceID(), outputMap.size());
 
 			vertex.invokeUserFunction(userInvokable);
 		} catch (Exception e) {
@@ -254,5 +257,11 @@ public class OutputHandler<OUT> {
 
 		flushOutputs();
 	}
+
+//	public void resetChildRecordCounter(){
+//		for (StreamOutput<?> so:outputMap.values()){
+//			so.resetChildRecordCounter();
+//		}
+//	}
 
 }

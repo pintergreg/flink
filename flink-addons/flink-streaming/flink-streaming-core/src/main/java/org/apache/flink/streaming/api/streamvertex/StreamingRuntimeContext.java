@@ -18,8 +18,6 @@
 
 package org.apache.flink.streaming.api.streamvertex;
 
-import java.util.Map;
-
 import org.apache.flink.api.common.functions.RuntimeContext;
 import org.apache.flink.api.common.functions.util.RuntimeUDFContext;
 import org.apache.flink.configuration.Configuration;
@@ -27,6 +25,8 @@ import org.apache.flink.runtime.execution.Environment;
 import org.apache.flink.runtime.jobgraph.tasks.InputSplitProvider;
 import org.apache.flink.runtime.operators.util.TaskConfig;
 import org.apache.flink.streaming.state.OperatorState;
+
+import java.util.Map;
 
 /**
  * Implementation of the {@link RuntimeContext}, created by runtime stream UDF
@@ -63,6 +63,12 @@ public class StreamingRuntimeContext extends RuntimeUDFContext {
 				throw new RuntimeException("No state has been registered for the name: " + name);
 			}
 		}
+
+	}
+
+	//###state
+	public void setState(String name, OperatorState<?> value){
+		operatorStates.put(name, value);
 
 	}
 

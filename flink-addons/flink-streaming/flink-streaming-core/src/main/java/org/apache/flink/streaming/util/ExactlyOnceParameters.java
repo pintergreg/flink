@@ -15,29 +15,37 @@
  * limitations under the License.
  */
 
-package org.apache.flink.streaming.api.ft.layer.runtime;
+package org.apache.flink.streaming.util;
 
-import org.apache.flink.runtime.plugable.SerializationDelegate;
-import org.apache.flink.streaming.api.ft.layer.id.RecordId;
-import org.apache.flink.streaming.api.streamrecord.IdentifiableStreamRecord;
+import java.io.Serializable;
 
-public class NonFTAnchorHandler implements AnchorHandler {
+/**
+ * Created by Gergő Pintér on 2015.04.30.
+ */
+public class ExactlyOnceParameters implements Serializable {
 
-	@Override
-	public void setAnchorRecord(IdentifiableStreamRecord anchorRecord) {
+	private static final long serialVersionUID = 1L;
+
+	private int ttl;
+	private int n;
+	private double p;
+
+	public ExactlyOnceParameters(int numberOfElements, double falsePositiveProbability, int ttl) {
+		this.n = numberOfElements;
+		this.p = falsePositiveProbability;
+		this.ttl = ttl;
 	}
 
-	@Override
-	public RecordId getAnchorRecord() {
-		return null;
+	public int getTtl() {
+		return ttl;
 	}
 
-	/*
-	 * Additional parameters (instanceID, childRecordCounter) are added for deterministic ID generation
-	 */
-	@Override
-	public RecordId setOutRecordId(SerializationDelegate<? extends IdentifiableStreamRecord> outRecord, int instanceID, int childRecordCounter, boolean isItSource) {
-		return null;
+	public int getN() {
+		return n;
+	}
+
+	public double getP() {
+		return p;
 	}
 
 }

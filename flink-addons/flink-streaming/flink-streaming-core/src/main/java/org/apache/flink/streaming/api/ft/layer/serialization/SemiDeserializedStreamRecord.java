@@ -81,8 +81,8 @@ public class SemiDeserializedStreamRecord implements IdentifiableStreamRecord, S
 //	}
 
 	@Override
-	public RecordId newId(long sourceRecordId, long parentRecordId, int instanceID, int childRecordCounter) {
-		id = RecordId.newReplayableRecordId(sourceRecordId, parentRecordId, instanceID, childRecordCounter);
+	public RecordId newId(long sourceRecordId, long parentRecordId, int instanceID, int childRecordCounter, boolean isItSource) {
+		id = RecordId.newReplayableRecordId(sourceRecordId, parentRecordId, instanceID, childRecordCounter, isItSource);
 		return id;
 	}
 
