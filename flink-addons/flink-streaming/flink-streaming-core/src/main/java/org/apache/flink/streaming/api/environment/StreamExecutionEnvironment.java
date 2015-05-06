@@ -629,4 +629,12 @@ public abstract class StreamExecutionEnvironment {
 		this.streamGraph.setExactlyOnce(false);
 	}
 
+	public void setReplayTimeout(long millisecs){
+		this.streamGraph.setReplayTimeout(millisecs);
+	}
+
+	public long getReplayTimeout(){
+		return this.streamGraph.getReplayTimeout();
+	}
+
 }

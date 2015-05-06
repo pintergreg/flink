@@ -205,10 +205,10 @@ public class RecordId implements IOReadableWritable, Serializable, Comparable<Re
 			rid.currentRecordId = redis.clients.util.MurmurHash.hash64A(sb.toString().getBytes(), 0x5EED);
 		}
 
-		System.err.printf(String.format("NEW ID COMPONENTS: %s, %s, %s and the NEW ID: %s\n", String.valueOf(parentRecordId), String.valueOf(nodeId), String.valueOf(childRecordCounter), rid.currentRecordId));
+		//System.err.printf(String.format("NEW ID COMPONENTS: %s, %s, %s and the NEW ID: %s\n", String.valueOf(parentRecordId), String.valueOf(nodeId), String.valueOf(childRecordCounter), rid.currentRecordId));
 
 		if (LOG.isDebugEnabled()) {
-			LOG.debug("NEWID", "NEW ID COMPONENTS: {}, {}, {} and the NEW ID: {}", String.valueOf(parentRecordId), String.valueOf(nodeId), String.valueOf(childRecordCounter), rid.currentRecordId);
+			LOG.debug("NEW ID COMPONENTS: {}, {}, {} and the NEW ID: {}", String.valueOf(parentRecordId), String.valueOf(nodeId), String.valueOf(childRecordCounter), rid.currentRecordId);
 		}
 
 		// set the root record ID
@@ -216,31 +216,6 @@ public class RecordId implements IOReadableWritable, Serializable, Comparable<Re
 		return rid;
 	}
 
-	public static RecordId newReplayableParentlessRecordId(long sourceRecordId, long parentRecordId, int nodeId, int childRecordCounter, boolean isItSource) {
-		RecordId rid = new RecordId();
-		if (isItSource) {
-			// if the node is source, keep the root record ID, because at sources this method is called when it would not be necessary...
-			rid.currentRecordId = sourceRecordId;
-			//rid.currentRecordId = parentRecordId;
-		} else {
-			// simply put the parameters into a string and than hash the string
-			StringBuilder sb = new StringBuilder();
-			sb.append(parentRecordId);
-			sb.append(nodeId);
-			sb.append(childRecordCounter);
 
-			rid.currentRecordId = redis.clients.util.MurmurHash.hash64A(sb.toString().getBytes(), 0x5EED);
-		}
-
-		System.err.printf(String.format("NEW ID COMPONENTS: %s, %s, %s and the NEW ID: %s\n", String.valueOf(parentRecordId), String.valueOf(nodeId), String.valueOf(childRecordCounter), rid.currentRecordId));
-
-		if (LOG.isDebugEnabled()) {
-			LOG.debug("NEWID", "NEW ID COMPONENTS: {}, {}, {} and the NEW ID: {}", String.valueOf(parentRecordId), String.valueOf(nodeId), String.valueOf(childRecordCounter), rid.currentRecordId);
-		}
-
-		// set the root record ID
-		rid.sourceRecordId = sourceRecordId;
-		return rid;
-	}
 
 }

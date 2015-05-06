@@ -86,6 +86,7 @@ public class FTLayerVertex extends AbstractInvokable {
 
 		this.config = new FTLayerConfig(getTaskConfiguration());
 
+		ftLayer.setReplayTimeout(config.getReplayTimeout());
 		numberOfOutputs = config.getNumberOfOutputs();
 		numberOfSources = config.getNumberOfSources();
 

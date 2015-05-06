@@ -78,6 +78,7 @@ public class OpFTLayerBuilder implements FTLayerBuilder {
 			LOG.debug("FTLayer parallelism set: {} for {}", parallelism, vertexName);
 		}
 		FTLayerConfig config = new FTLayerConfig(ftLayerVertex.getConfiguration());
+		config.setReplayTimeout(streamGraph.getReplayTimeout());
 		config.setNumberOfSources(sourceVertices.size());
 		config.setBufferTimeout(100L);
 	}

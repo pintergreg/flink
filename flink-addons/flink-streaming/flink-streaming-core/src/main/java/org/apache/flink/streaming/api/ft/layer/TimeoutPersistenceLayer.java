@@ -86,4 +86,7 @@ public class TimeoutPersistenceLayer extends AbstractPersistenceLayer<Long, Reco
 		}
 	}
 
+	public void setRecordTimeout(long recordTimeout) {
+		this.recordTimeout = recordTimeout;
+	}
 }

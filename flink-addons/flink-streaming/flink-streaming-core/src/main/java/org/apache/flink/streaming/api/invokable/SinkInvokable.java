@@ -25,27 +25,23 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pintergreg.bloomfilter.A2BloomFilter;
 
+import java.util.HashSet;
+
 public class SinkInvokable<IN> extends ChainableInvokable<IN, IN> {
 	private static final long serialVersionUID = 1L;
 	private static final Logger LOG = LoggerFactory.getLogger(SinkInvokable.class);
 
-
 	private SinkFunction<IN> sinkFunction;
 
-	//TODO ##ID_GEN amíg nem BF-et teszek ide teszelni
-	//private HashSet<Long> idStore;
+	private HashSet<Long> idStore=new HashSet<Long>();
+	int counter=0;
+	long time;
 	private A2BloomFilter bloomFilter;
 	private boolean isExactlyOnce = false;
 
 	public SinkInvokable(SinkFunction<IN> sinkFunction) {
 		super(sinkFunction);
 		this.sinkFunction = sinkFunction;
-
-		//this.isExactlyOnce =
-		//this.idStore = new HashSet<Long>();
-//		if (this.isExactlyOnce) {
-//			this.bloomFilter = new A2BloomFilter(1000000, 0.000001, 10000);
-//		}
 	}
 
 	@Override
@@ -57,17 +53,22 @@ public class SinkInvokable<IN> extends ChainableInvokable<IN, IN> {
 
 	@Override
 	protected void callUserFunction() throws Exception {
-		//###ID_GEN
 		/*
 		 * Is this record seen before?
 		 */
-//		if(!idStore.contains(nextRecord.getId().getCurrentRecordId())) {
-//			idStore.add(nextRecord.getId().getCurrentRecordId());
+//		if (this.isExactlyOnce) {
+//			if (!idStore.contains(nextRecord.getId().getCurrentRecordId())) {
+//				idStore.add(nextRecord.getId().getCurrentRecordId());
 //
-//			sinkFunction.invoke(nextObject);
-//			System.out.println("\t\t\t\t" + nextRecord.getId().getCurrentRecordId() + "\tcontent:" + (String) nextObject);
+//				sinkFunction.invoke(nextObject);
+//				counter++;
+//				//System.out.println("\t\t\t\t" + nextRecord.getId().getCurrentRecordId() + "\tcontent:" + (String) nextObject);
+//			} else {
+//				//System.out.println("\tI'VE ALREADY SEEN THIS BEFORE: "+nextRecord.getId().getCurrentRecordId()+"\tcontent:"+(String)nextObject);
+//			}
 //		}else{
-//			System.out.println("\tI'VE ALREADY SEEN THIS BEFORE: "+nextRecord.getId().getCurrentRecordId()+"\tcontent:"+(String)nextObject);
+//			counter++;
+//			sinkFunction.invoke(nextObject);
 //		}
 
 		if (this.isExactlyOnce) {
@@ -75,16 +76,17 @@ public class SinkInvokable<IN> extends ChainableInvokable<IN, IN> {
 				bloomFilter.add(nextRecord.getId().getCurrentRecordId());
 
 				sinkFunction.invoke(nextObject);
-
+				counter++;
 				if (LOG.isDebugEnabled()) {
-					LOG.debug("BLOOMFILTER", "Bloom Filter has not seen this before with the ID of {}, and the content of: {}", nextRecord.getId().getCurrentRecordId(), String.valueOf(nextObject));
+					LOG.debug("Bloom Filter has not seen this before with the ID of {}, and the content of: {}", nextRecord.getId().getCurrentRecordId(), String.valueOf(nextObject));
 				}
 			} else if (LOG.isDebugEnabled()) {
-				LOG.debug("BLOOMFILTER", "BLOOMFILTER HAS ALREADY SEEN THIS BEFORE WITH THE ID OF {}, AND THE CONTENT OF: {}", nextRecord.getId().getCurrentRecordId(), String.valueOf(nextObject));
+				LOG.debug("BLOOMFILTER HAS ALREADY SEEN THIS BEFORE WITH THE ID OF {}, AND THE CONTENT OF: {}", nextRecord.getId().getCurrentRecordId(), String.valueOf(nextObject));
 			}
 
 		} else {
 			sinkFunction.invoke(nextObject);
+			counter++;
 		}
 
 	}
@@ -104,7 +106,7 @@ public class SinkInvokable<IN> extends ChainableInvokable<IN, IN> {
 			this.bloomFilter = new A2BloomFilter(p.getN(), p.getP(), p.getTtl());
 		}
 		FunctionUtils.openFunction(userFunction, parameters);
-
+		time=System.nanoTime();
 	}
 
 	@Override
@@ -119,6 +121,7 @@ public class SinkInvokable<IN> extends ChainableInvokable<IN, IN> {
 			if (this.isExactlyOnce) {
 				this.bloomFilter.stopTimer();
 			}
+			System.err.println(String.valueOf(counter)+" in:"+ String.valueOf(System.nanoTime()-time));
 		}
 	}
 

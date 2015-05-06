@@ -67,6 +67,7 @@ public class StreamGraph extends StreamingPlan {
 
 	protected boolean chaining = true;
 	protected boolean exactlyOnce = false;
+	protected long replayTimeout=0;
 	protected ExactlyOnceParameters exactlyOnceParameters;
 	protected String jobName = DEAFULT_JOB_NAME;
 
@@ -699,5 +700,13 @@ public class StreamGraph extends StreamingPlan {
 
 	public ExactlyOnceParameters getExactlyOneParameters(){
 		return this.exactlyOnceParameters;
+	}
+
+	public long getReplayTimeout() {
+		return replayTimeout;
+	}
+
+	public void setReplayTimeout(long replayTimeout) {
+		this.replayTimeout = replayTimeout;
 	}
 }

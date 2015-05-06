@@ -36,6 +36,7 @@ public class FTLayer {
 	protected HashMap<Long, Integer> sourceIdOfRecord;
 	protected HashSet<Long> failedSourceRecordIds;
 	protected RecordReplayer recordReplayer;
+	protected long replayTimeout = 100L;
 
 	public FTLayer() {
 		// TODO initialize record replayer
@@ -46,8 +47,9 @@ public class FTLayer {
 			public void onExpire(Long sourceRecordId, RecordWithHashCode recordWithHashCode) {
 				fail(sourceRecordId, recordWithHashCode);
 			}
-		}, 5, 100L);
+		}, 5, this.replayTimeout);
 		this.ackerTable = new AckerTable(this);
+
 	}
 
 	public void ack(long sourceRecordId) {
@@ -158,10 +160,20 @@ public class FTLayer {
 
 	public void open() {
 		persistenceLayer.open();
+		if (persistenceLayer instanceof TimeoutPersistenceLayer) {
+			((TimeoutPersistenceLayer)persistenceLayer).setRecordTimeout(this.replayTimeout);
+		}
 	}
 
 	public void close() {
 		persistenceLayer.close();
 	}
 
+	public long getReplayTimeout() {
+		return replayTimeout;
+	}
+
+	public void setReplayTimeout(long replayTimeout) {
+		this.replayTimeout = replayTimeout;
+	}
 }

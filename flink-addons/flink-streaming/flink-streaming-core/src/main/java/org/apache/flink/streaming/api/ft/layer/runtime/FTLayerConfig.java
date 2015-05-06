@@ -32,6 +32,7 @@ public class FTLayerConfig {
 	private static final String SOURCE_SUCCESSIVES = "source successives";
 	private static final String NUMBER_OF_SOURCES = "number of sources";
 	private static final String EDGE_INFORMATIONS = "edge informations";
+	private static final String REPLAY_TIMEOUT = "replay timeout";
 
 	private Configuration config;
 
@@ -108,6 +109,15 @@ public class FTLayerConfig {
 
 	public void setBufferTimeout(long timeout) {
 		config.setLong(BUFFER_TIMEOUT, timeout);
+	}
+
+	public void setReplayTimeout(long replayTimeout){
+		config.setLong(REPLAY_TIMEOUT, replayTimeout);
+	}
+
+	public long getReplayTimeout(){
+		return 1000L;
+		//return config.getLong(REPLAY_TIMEOUT, 100L);
 	}
 
 }
