@@ -35,7 +35,9 @@ public class SinkInvokable<IN> extends ChainableInvokable<IN, IN> {
 
 	private HashSet<Long> idStore=new HashSet<Long>();
 	int counter=0;
-	long time;
+	int c=0;
+	long startTime=-1;
+	long stopTime;
 	private A2BloomFilter bloomFilter;
 	private boolean isExactlyOnce = false;
 
@@ -53,6 +55,10 @@ public class SinkInvokable<IN> extends ChainableInvokable<IN, IN> {
 
 	@Override
 	protected void callUserFunction() throws Exception {
+//		if (startTime==-1){
+//			startTime=System.nanoTime();
+//			stopTime=startTime+10000000000L;
+//		}
 		/*
 		 * Is this record seen before?
 		 */
@@ -77,6 +83,9 @@ public class SinkInvokable<IN> extends ChainableInvokable<IN, IN> {
 
 				sinkFunction.invoke(nextObject);
 				counter++;
+				if(System.nanoTime()<stopTime){
+					c++;
+				}
 				if (LOG.isDebugEnabled()) {
 					LOG.debug("Bloom Filter has not seen this before with the ID of {}, and the content of: {}", nextRecord.getId().getCurrentRecordId(), String.valueOf(nextObject));
 				}
@@ -87,7 +96,11 @@ public class SinkInvokable<IN> extends ChainableInvokable<IN, IN> {
 		} else {
 			sinkFunction.invoke(nextObject);
 			counter++;
+			if(System.nanoTime()<stopTime){
+				c++;
+			}
 		}
+
 
 	}
 
@@ -106,7 +119,8 @@ public class SinkInvokable<IN> extends ChainableInvokable<IN, IN> {
 			this.bloomFilter = new A2BloomFilter(p.getN(), p.getP(), p.getTtl());
 		}
 		FunctionUtils.openFunction(userFunction, parameters);
-		time=System.nanoTime();
+		startTime =System.nanoTime();
+		stopTime=startTime+10000000000L;
 	}
 
 	@Override
@@ -121,7 +135,7 @@ public class SinkInvokable<IN> extends ChainableInvokable<IN, IN> {
 			if (this.isExactlyOnce) {
 				this.bloomFilter.stopTimer();
 			}
-			System.err.println(String.valueOf(counter)+" in:"+ String.valueOf(System.nanoTime()-time));
+			System.err.println(String.valueOf(counter)+" in:"+ String.valueOf(System.nanoTime()- startTime)+"|"+String.valueOf(c));
 		}
 	}
 

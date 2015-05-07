@@ -51,8 +51,8 @@ public class PerformanceTest {
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 		env.setDegreeOfParallelism(4);
 		env.setExactlyOnceExecution(new ExactlyOnceParameters(1000000, 0.000001, 5000));
-		env.setReplayTimeout(1000L);
-		env.disableExactlyOnceExecution();
+		env.setReplayTimeout(400L);
+		//env.disableExactlyOnceExecution();
 
 
 		DataStream<ThreeNumbers> sourceStream1 = env.addSource(new ThreeSource()).setChainingStrategy(StreamInvokable.ChainingStrategy.NEVER);
@@ -76,10 +76,14 @@ public class PerformanceTest {
 	private static final class ThreeSource implements SourceFunction<ThreeNumbers> {
 		private static final long serialVersionUID = 1L;
 		private Random rand = new Random();
+		long start=System.nanoTime();
 
 		@Override
 		public void invoke(Collector<ThreeNumbers> collector) throws Exception {
-			for (int i = 0; i < 50000; i++) {
+//			for (int i = 0; i < 50000; i++) {
+//				collector.collect(new ThreeNumbers(rand.nextInt(9) + 1, rand.nextInt(9) + 1, rand.nextInt(9) + 1));
+//			}
+			while(System.nanoTime()<start+12000000000L){
 				collector.collect(new ThreeNumbers(rand.nextInt(9) + 1, rand.nextInt(9) + 1, rand.nextInt(9) + 1));
 			}
 		}
