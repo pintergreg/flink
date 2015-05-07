@@ -17,12 +17,17 @@
 
 package org.apache.flink.streaming.api.invokable;
 
+import org.apache.flink.api.common.functions.util.FunctionUtils;
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.function.sink.SinkFunction;
 
 public class SinkInvokable<IN> extends ChainableInvokable<IN, IN> {
 	private static final long serialVersionUID = 1L;
 
 	private SinkFunction<IN> sinkFunction;
+	int counter=0;
+	long startTime;
+	long stopTime;
 
 	public SinkInvokable(SinkFunction<IN> sinkFunction) {
 		super(sinkFunction);
@@ -39,12 +44,34 @@ public class SinkInvokable<IN> extends ChainableInvokable<IN, IN> {
 	@Override
 	protected void callUserFunction() throws Exception {
 		sinkFunction.invoke(nextObject);
+		counter++;
 	}
 
 	@Override
 	public void collect(IN record) {
 		nextObject = copy(record);
 		callUserFunctionAndLogException();
+	}
+
+	@Override
+	public void open(Configuration parameters) throws Exception {
+		isRunning = true;
+		FunctionUtils.openFunction(userFunction, parameters);
+		startTime =System.nanoTime();
+		stopTime=startTime+10000000000L;
+	}
+
+	@Override
+	public void close() {
+		isRunning = false;
+		collector.close();
+		try {
+			FunctionUtils.closeFunction(userFunction);
+		} catch (Exception e) {
+			throw new RuntimeException("Error when closing the function: " + e.getMessage());
+		} finally {
+			System.err.println(String.valueOf(counter)+" in:"+ String.valueOf(System.nanoTime()- startTime));
+		}
 	}
 
 }
