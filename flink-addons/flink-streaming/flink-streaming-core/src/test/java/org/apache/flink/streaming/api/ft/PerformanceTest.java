@@ -51,16 +51,14 @@ public class PerformanceTest {
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 		env.setDegreeOfParallelism(4);
 		env.setExactlyOnceExecution(new ExactlyOnceParameters(1000000, 0.000001, 5000));
-		env.setReplayTimeout(400L);
-		//env.disableExactlyOnceExecution();
-
+		env.setReplayTimeout(1000L);
+		env.disableExactlyOnceExecution();
 
 		DataStream<ThreeNumbers> sourceStream1 = env.addSource(new ThreeSource()).setChainingStrategy(StreamInvokable.ChainingStrategy.NEVER);
 
 		sourceStream1.map(new ThreeMap()).setChainingStrategy(StreamInvokable.ChainingStrategy.NEVER)
 				.map(new TwoMap()).setChainingStrategy(StreamInvokable.ChainingStrategy.NEVER)
 				.map(new FinalMap()).setChainingStrategy(StreamInvokable.ChainingStrategy.NEVER)
-				//.addSink(new KafkaSink())
 				.addSink(new StringSink())
 		;
 
@@ -80,12 +78,12 @@ public class PerformanceTest {
 
 		@Override
 		public void invoke(Collector<ThreeNumbers> collector) throws Exception {
-//			for (int i = 0; i < 50000; i++) {
-//				collector.collect(new ThreeNumbers(rand.nextInt(9) + 1, rand.nextInt(9) + 1, rand.nextInt(9) + 1));
-//			}
-			while(System.nanoTime()<start+12000000000L){
+			for (int i = 0; i < 50000; i++) {
 				collector.collect(new ThreeNumbers(rand.nextInt(9) + 1, rand.nextInt(9) + 1, rand.nextInt(9) + 1));
 			}
+//			while(System.nanoTime()<start+12000000000L){
+//				collector.collect(new ThreeNumbers(rand.nextInt(9) + 1, rand.nextInt(9) + 1, rand.nextInt(9) + 1));
+//			}
 		}
 	}
 
@@ -135,18 +133,6 @@ public class PerformanceTest {
 	/*
 	 * SINK CLASSES
 	 */
-
-	public static class NumberSink implements SinkFunction<OneNumber> {
-		private static final long serialVersionUID = 1L;
-
-		public NumberSink() {
-		}
-
-		@Override
-		public void invoke(OneNumber value) {
-			System.err.println(value.toString());
-		}
-	}
 
 	public static class StringSink implements SinkFunction<String> {
 		private static final long serialVersionUID = 1L;

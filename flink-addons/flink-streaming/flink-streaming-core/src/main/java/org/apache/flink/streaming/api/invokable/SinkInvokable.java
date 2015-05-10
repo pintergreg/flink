@@ -86,10 +86,14 @@ public class SinkInvokable<IN> extends ChainableInvokable<IN, IN> {
 				if(System.nanoTime()<stopTime){
 					c++;
 				}
+				//System.out.println("\t\t\t\t" + nextRecord.getId().getCurrentRecordId() + "\tcontent:" + String.valueOf(nextObject));
+
 				if (LOG.isDebugEnabled()) {
 					LOG.debug("Bloom Filter has not seen this before with the ID of {}, and the content of: {}", nextRecord.getId().getCurrentRecordId(), String.valueOf(nextObject));
 				}
 			} else if (LOG.isDebugEnabled()) {
+				//System.out.println("\tI'VE ALREADY SEEN THIS BEFORE: "+nextRecord.getId().getCurrentRecordId()+"\tcontent:"+String.valueOf(nextObject));
+
 				LOG.debug("BLOOMFILTER HAS ALREADY SEEN THIS BEFORE WITH THE ID OF {}, AND THE CONTENT OF: {}", nextRecord.getId().getCurrentRecordId(), String.valueOf(nextObject));
 			}
 
@@ -135,7 +139,7 @@ public class SinkInvokable<IN> extends ChainableInvokable<IN, IN> {
 			if (this.isExactlyOnce) {
 				this.bloomFilter.stopTimer();
 			}
-			System.err.println(String.valueOf(counter)+" in:"+ String.valueOf(System.nanoTime()- startTime)+"|"+String.valueOf(c));
+			//System.err.println(String.valueOf(counter)+" in:"+ String.valueOf(System.nanoTime()- startTime)+"|"+String.valueOf(c));
 		}
 	}
 

@@ -17,6 +17,7 @@
 
 package org.apache.flink.streaming.api.ft;
 
+import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.java.functions.KeySelector;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
@@ -45,11 +46,15 @@ public class WordCountTest {
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 		env.setDegreeOfParallelism(4);
 		env.setExactlyOnceExecution(new ExactlyOnceParameters(1000000, 0.000001, 5000));
-		env.disableExactlyOnceExecution();
+		//env.disableExactlyOnceExecution();
+		env.setReplayTimeout(10L);
 
 		DataStream<Word> source1 = env.addSource(new TextSource()).setChainingStrategy(StreamInvokable.ChainingStrategy.NEVER);
 
-		source1.groupBy(new WordKeySelector()).sum("count").setChainingStrategy(StreamInvokable.ChainingStrategy.NEVER).addSink(new WordSink()).setChainingStrategy(StreamInvokable.ChainingStrategy.NEVER);
+		source1.groupBy(new WordKeySelector()).sum("count").setChainingStrategy(StreamInvokable.ChainingStrategy.NEVER)
+				.addSink(new WordSink()).setChainingStrategy(StreamInvokable.ChainingStrategy.NEVER);
+		///source1.groupBy(new WordKeySelector()).reduce(new MyReduce()).setChainingStrategy(StreamInvokable.ChainingStrategy.NEVER)
+		///		.addSink(new WordSink());
 
 		//run this topology
 		env.execute();
@@ -77,14 +82,15 @@ public class WordCountTest {
 		The yellow elephant was glad, because the coming of his friend.
 		 */
 
-		private static final String[] text = {"mókus mókus"};
+		private static final String[] text = {"mókus mókus mókus mókus"};
 
 		@Override
 		public void invoke(Collector<Word> collector) throws Exception {
 			for (String line : text) {
 				for (String word : line.split(" ")) {
-					Thread.sleep(105L);
+					Thread.sleep(1000L);
 					collector.collect(new Word(word, 1));
+					Thread.sleep(1000L);
 				}
 			}
 		}
@@ -109,6 +115,17 @@ public class WordCountTest {
 //			}
 //		}
 //	}
+
+	public static class MyReduce implements ReduceFunction<Word>{
+
+		@Override
+		public Word reduce(Word w1, Word w2) throws Exception {
+//			if (w1.word.equals(w2.word))
+//			return new Word(w1.word, w1.count+w2.count);
+//			else
+				return new Word("GORRAM",0);
+		}
+	}
 
 	/*
 	 * SINK CLASSES
