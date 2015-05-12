@@ -44,6 +44,7 @@ public class DuplicateTest {
 		env.setDegreeOfParallelism(4);
 		env.setExactlyOnceExecution(new ExactlyOnceParameters(1000000,0.000001,5000));
 		//env.disableExactlyOnceExecution();
+		env.setReplayTimeout(50L);
 
 		// building the job graph
 		/*
@@ -105,7 +106,7 @@ public class DuplicateTest {
 					break;
 			}
 			for (int i = start; i < n; i += step) {
-				Thread.sleep(105L);
+				Thread.sleep(1005L);
 				collector.collect(i);
 			}
 		}
