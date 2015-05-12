@@ -29,9 +29,6 @@ import org.apache.flink.util.Collector;
 
 import java.util.Random;
 
-/**
- * Test created for testing edge information gathering and replaypartition setting
- */
 public class ComplexTest {
 
 	public static void main(String[] args) throws Exception {

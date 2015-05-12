@@ -17,7 +17,6 @@
 
 package org.apache.flink.streaming.api.ft;
 
-import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.RichStateMapFunction;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.datastream.DataStream;
@@ -31,9 +30,6 @@ import org.apache.flink.streaming.state.SimpleState;
 import org.apache.flink.streaming.util.ExactlyOnceParameters;
 import org.apache.flink.util.Collector;
 
-/**
- * Test created for testing edge information gathering and replaypartition setting
- */
 public class StatefulDuplicateTest {
 
 	public static void main(String[] args) throws Exception {
@@ -56,7 +52,7 @@ public class StatefulDuplicateTest {
 		*  (So)--(M)--(Si)
 		*
 		* Source emits numbers from 1 to 10
-		* Filter does nothing, lets pass everything
+		* Map converts number to text
 		* Sink prints values to standard error output
 		* 10!=3628800
 		*/
@@ -64,8 +60,7 @@ public class StatefulDuplicateTest {
 
 		DataStream<Integer> sourceStream1 = env.addSource(new NumberSource(1, 10)).setChainingStrategy(StreamInvokable.ChainingStrategy.NEVER);
 		sourceStream1.map(new NumberMap()).registerState("factorial", ize)
-
-				.setChainingStrategy(StreamInvokable.ChainingStrategy.NEVER).addSink(new SimpleSink()).setChainingStrategy(StreamInvokable.ChainingStrategy.NEVER);
+		.setChainingStrategy(StreamInvokable.ChainingStrategy.NEVER).addSink(new SimpleSink()).setChainingStrategy(StreamInvokable.ChainingStrategy.NEVER);
 
 		//run this topology
 		env.execute();
@@ -122,7 +117,6 @@ public class StatefulDuplicateTest {
 			state = (OperatorState<Long>) ((StreamingRuntimeContext) getRuntimeContext()).getState("factorial");
 		}
 
-
 	}
 
 	/*
@@ -138,19 +132,6 @@ public class StatefulDuplicateTest {
 		@Override
 		public void invoke(String value) {
 			System.err.println(value);
-		}
-	}
-
-	public static class LuckySeven implements FlatMapFunction<String, String> {
-
-		@Override
-		public void flatMap(String value, Collector<String> out) throws Exception {
-			if (value.equals("7")) {
-				out.collect(value);
-				out.collect("49");
-			} else {
-				out.collect(value);
-			}
 		}
 	}
 

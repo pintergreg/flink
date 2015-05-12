@@ -27,9 +27,6 @@ import org.apache.flink.streaming.api.invokable.StreamInvokable;
 import org.apache.flink.streaming.util.ExactlyOnceParameters;
 import org.apache.flink.util.Collector;
 
-/**
- * Test created for testing edge information gathering and replaypartition setting
- */
 public class DuplicateTest {
 
 	public static void main(String[] args) throws Exception {
@@ -50,10 +47,11 @@ public class DuplicateTest {
 
 		// building the job graph
 		/*
-		*  (So)--(M)--(FM)--(Si)
+		*  (So)--(FM)--(F)--(Si)
 		*
 		* Source emits numbers as String from 0 to 9
-		* Filter does nothing, lets pass everything
+		* FlatMap emit 49 if input is 7
+		* Map converts number to text
 		* Sink prints values to standard error output
 		*/
 		DataStream<Integer> sourceStream1 = env.addSource(new NumberSource(10)).setChainingStrategy(StreamInvokable.ChainingStrategy.NEVER);
