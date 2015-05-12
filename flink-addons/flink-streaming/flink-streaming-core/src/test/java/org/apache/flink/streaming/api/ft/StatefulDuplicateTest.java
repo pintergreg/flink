@@ -46,6 +46,7 @@ public class StatefulDuplicateTest {
 		final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 		env.setDegreeOfParallelism(1);
 		env.setExactlyOnceExecution(new ExactlyOnceParameters(1000000, 0.000001, 5000));
+		//env.disableExactlyOnceExecution();
 
 		// building the job graph
 		/*
@@ -84,7 +85,7 @@ public class StatefulDuplicateTest {
 		@Override
 		public void invoke(Collector<Integer> collector) throws Exception {
 			for (int i = from; i <= to; i++) {
-				Thread.sleep(105L);
+				Thread.sleep(1005L);
 				collector.collect(i);
 			}
 		}
